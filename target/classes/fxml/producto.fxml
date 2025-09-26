@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.appController"
+      spacing="10" alignment="CENTER" stylesheets="@../Estilos/Estilos.css">
+
+    <Label text="📦 Lista de Productos" styleClass="titulo-seccion"/>
+
+    <TableView fx:id="tablaProductos" prefHeight="400" prefWidth="600"/>
+
+    <Button text="➕ Agregar Producto"/>
+</VBox>
