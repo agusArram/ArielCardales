@@ -7,22 +7,29 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableView;
 
-public class appController {
+import java.util.Locale;
+
+public class AppController {
+
     @FXML
     private TableView<Producto> tablaProductos;
 
     public void initialize() {
         String[][] columnas = {
-                {"ID", "idProducto"},
+                {"Etiqueta", "etiqueta"},
                 {"Nombre", "nombre"},
+                {"Descripción", "descripcion"},
+                {"Categoría", "categoria"},
                 {"Precio", "precio"},
-                {"Stock", "stock"}
+                {"Stock", "stockOnHand"}
         };
 
         TableView<Producto> tabla = Tablas.crearTabla(Producto.class, columnas);
-        tabla.setItems(FXCollections.observableArrayList(ProductoDAO.getAll()));
+        Tablas.formatearMoneda(tabla, "Precio", Locale.forLanguageTag("es-AR"));
 
-        // Reemplaza la tabla del FXML por la generada dinámicamente
+        // CORREGIDO: uso de new ProductoDAO()
+        tabla.setItems(FXCollections.observableArrayList(new ProductoDAO().findAll()));
+
         tablaProductos.getColumns().setAll(tabla.getColumns());
         tablaProductos.setItems(tabla.getItems());
     }

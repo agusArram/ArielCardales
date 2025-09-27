@@ -6,6 +6,12 @@ module com.arielcardales.arielcardales {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires net.synedra.validatorfx;
+    requires java.sql;
+    requires org.postgresql.jdbc;
+    requires com.zaxxer.hikari;
+    requires org.slf4j;
+
+
 
 // Exportar para que el FXML pueda acceder
     opens com.arielcardales.arielcardales.controller to javafx.fxml;

@@ -1,4 +1,77 @@
-.titulo-seccion {
-    -fx-font-size: 20px;
+/* Fondo general */
+.root {
+    -fx-background-color: #d8b895;
+    -fx-font-family: "Segoe UI", "Roboto", sans-serif;
+    -fx-font-size: 16px; /* 👈 más grande para mejorar la lectura */
+}
+
+/* Panel lateral */
+.sidebar {
+    -fx-background-color: #caa472;
+    -fx-padding: 20;
+    -fx-spacing: 12;
+}
+
+/* Labels */
+.label {
+    -fx-text-fill: #3e2c1c;
     -fx-font-weight: bold;
+}
+
+/* ComboBox y TextField */
+.combo-box, .text-field {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-background-color: #fdf6ec;
+    -fx-border-color: #a67856;
+}
+
+/* Tabla */
+.table-view {
+    -fx-border-color: #a67856;
+    -fx-border-radius: 8;
+}
+.table-view .column-header {
+    -fx-background-color: #caa472;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.table-row-cell:odd {
+    -fx-background-color: #f3e5d0;
+}
+.table-row-cell:even {
+    -fx-background-color: #fdf6ec;
+}
+
+/* Footer */
+.footer {
+    -fx-background-color: #caa472;
+    -fx-padding: 10;
+}
+
+/* Botones */
+.button {
+    -fx-background-color: #e6cba8;
+    -fx-text-fill: #3e2c1c;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+.button:hover {
+    -fx-background-color: #d2b48c;
+}
+
+/* Fondo de fila seleccionada */
+.table-row-cell:filled:selected, .table-row-cell:focused:filled:selected {
+    -fx-background-color: #d2b48c; /* marrón claro */
+    -fx-text-fill: #000000;        /* texto negro */
+}
+
+/* Texto dentro de celdas seleccionadas */
+.table-view .table-cell:selected {
+    -fx-text-fill: #000000; /* negro para que se lea siempre */
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #e6c89b; /* un poco más claro que el seleccionado */
 }

@@ -9,7 +9,7 @@ public class App extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/producto.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 800, 600);
+        Scene scene = new Scene(fxmlLoader.load(), 985, 600);
         stage.setTitle("Inventario Ariel");
         stage.setScene(scene);
         stage.show();

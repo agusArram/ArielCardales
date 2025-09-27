@@ -3,14 +3,54 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.arielcardales.arielcardales.controller.appController"
-      spacing="10" alignment="CENTER" stylesheets="@../Estilos/Estilos.css">
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.arielcardales.arielcardales.controller.AppController"
+            prefWidth="1000" prefHeight="600"
+            stylesheets="@../Estilos/Estilos.css">
 
-    <Label text="📦 Lista de Productos" styleClass="titulo-seccion"/>
+    <!-- Panel izquierdo: búsqueda -->
+    <left>
+        <VBox spacing="15" alignment="TOP_LEFT" styleClass="sidebar" prefWidth="200">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
 
-    <TableView fx:id="tablaProductos" prefHeight="400" prefWidth="600"/>
+            <Label text="Etiqueta"/>
+            <TextField fx:id="txtBuscarEtiqueta"/>
 
-    <Button text="➕ Agregar Producto"/>
-</VBox>
+            <Label text="Buscar por:"/>
+            <ComboBox fx:id="comboBuscarPor">
+                <items>
+                    <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="Nombre"/>
+                        <String fx:value="Categoría"/>
+                        <String fx:value="Descripción"/>
+                    </FXCollections>
+                </items>
+            </ComboBox>
+        </VBox>
+    </left>
+
+    <!-- Centro: Tabla -->
+    <center>
+        <TableView fx:id="tablaProductos" prefHeight="500" prefWidth="750"/>
+    </center>
+
+    <!-- Inferior: barra de acciones -->
+    <bottom>
+        <HBox spacing="15" alignment="CENTER" styleClass="footer">
+            <padding>
+                <Insets top="15" right="15" bottom="15" left="15"/>
+            </padding>
+
+            <Button text="➕ Agregar producto" fx:id="btnAgregar"/>
+            <Button text="✏️ Editar producto" fx:id="btnEditar"/>
+            <Button text="🗑️ Eliminar producto" fx:id="btnEliminar"/>
+            <Button text="📄 Exportar lista" fx:id="btnExportar"/>
+        </HBox>
+    </bottom>
+</BorderPane>
