@@ -1,77 +1,89 @@
 /* Fondo general */
 .root {
-    -fx-background-color: #d8b895;
-    -fx-font-family: "Segoe UI", "Roboto", sans-serif;
-    -fx-font-size: 16px; /* 👈 más grande para mejorar la lectura */
+    -fx-background-color: #d2b48c; /* Marrón claro tipo cuero */
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #2b2b2b;
 }
 
-/* Panel lateral */
-.sidebar {
-    -fx-background-color: #caa472;
-    -fx-padding: 20;
-    -fx-spacing: 12;
-}
-
-/* Labels */
-.label {
-    -fx-text-fill: #3e2c1c;
+/* =======================
+   Botones
+   ======================= */
+.button {
+    -fx-background-color: #e6c89b;  /* marrón más claro */
+    -fx-text-fill: #2b2b2b;         /* texto oscuro */
     -fx-font-weight: bold;
-}
-
-/* ComboBox y TextField */
-.combo-box, .text-field {
+    -fx-padding: 6 12;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
-    -fx-background-color: #fdf6ec;
-    -fx-border-color: #a67856;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
 }
 
-/* Tabla */
-.table-view {
-    -fx-border-color: #a67856;
-    -fx-border-radius: 8;
-}
-.table-view .column-header {
-    -fx-background-color: #caa472;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-}
-.table-row-cell:odd {
-    -fx-background-color: #f3e5d0;
-}
-.table-row-cell:even {
-    -fx-background-color: #fdf6ec;
-}
-
-/* Footer */
-.footer {
-    -fx-background-color: #caa472;
-    -fx-padding: 10;
-}
-
-/* Botones */
-.button {
-    -fx-background-color: #e6cba8;
-    -fx-text-fill: #3e2c1c;
-    -fx-font-weight: bold;
-    -fx-background-radius: 8;
-    -fx-padding: 8 14;
-}
 .button:hover {
-    -fx-background-color: #d2b48c;
+    -fx-background-color: #cfa971; /* tono más fuerte al pasar el mouse */
 }
 
-/* Fondo de fila seleccionada */
+.button:pressed {
+    -fx-background-color: #b88a52; /* más oscuro al presionar */
+    -fx-text-fill: white;
+}
+
+/* =======================
+   Tabla
+   ======================= */
+.table-view {
+    -fx-background-color: #f5e5d0; /* Fondo tabla */
+    -fx-table-cell-border-color: transparent;
+    -fx-control-inner-background: #f5e5d0;
+    -fx-control-inner-background-alt: #eddcc4; /* filas alternadas */
+    -fx-font-size: 14px;
+}
+
+/* Cabecera de tabla */
+.table-view .column-header {
+    -fx-background-color: #cfa971;
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+/* Fila seleccionada */
 .table-row-cell:filled:selected, .table-row-cell:focused:filled:selected {
-    -fx-background-color: #d2b48c; /* marrón claro */
-    -fx-text-fill: #000000;        /* texto negro */
+    -fx-background-color: #b88a52;
+    -fx-text-fill: black;
 }
 
-/* Texto dentro de celdas seleccionadas */
+/* Texto de celdas seleccionadas */
 .table-view .table-cell:selected {
-    -fx-text-fill: #000000; /* negro para que se lea siempre */
+    -fx-text-fill: black;
 }
 
+/* Hover en filas */
 .table-row-cell:hover {
-    -fx-background-color: #e6c89b; /* un poco más claro que el seleccionado */
+    -fx-background-color: #dec097;
+}
+
+/* =======================
+   Sidebar y Footer
+   ======================= */
+.sidebar {
+    -fx-background-color: #cfa971;
+    -fx-padding: 15;
+    -fx-spacing: 10;
+    -fx-border-radius: 6;
+}
+
+.footer {
+    -fx-background-color: #cfa971;
+    -fx-padding: 10;
+    -fx-spacing: 15;
+}
+
+/* =======================
+   Labels
+   ======================= */
+.label {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
 }
