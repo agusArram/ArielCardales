@@ -10,7 +10,7 @@ module com.arielcardales.arielcardales {
     requires org.postgresql.jdbc;
     requires com.zaxxer.hikari;
     requires org.slf4j;
-
+    requires jdk.compiler;
 
 
 // Exportar para que el FXML pueda acceder
