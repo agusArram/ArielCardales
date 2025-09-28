@@ -12,7 +12,14 @@ public class UnidadDAO {
 
     public static List<Unidad> getAll() {
         List<Unidad> unidades = new ArrayList<>();
-        String sql = "SELECT * FROM unidad ORDER BY nombre";
+        String sql = """
+            SELECT 
+                id,
+                nombre,
+                abreviatura,
+                createdAt
+            FROM unidad
+        """;
 
         try (Connection conn = Database.get();
              Statement stmt = conn.createStatement();

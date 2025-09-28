@@ -19,25 +19,33 @@
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
 
-            <Label text="Etiqueta"/>
-            <TextField fx:id="txtBuscarEtiqueta"/>
+            <Label text="Busqueda"/>
+            <TextField fx:id="txtBuscarEtiqueta" promptText="Buscar..."/>
+
 
             <Label text="Buscar por:"/>
-            <ComboBox fx:id="comboBuscarPor">
-                <items>
-                    <FXCollections fx:factory="observableArrayList">
-                        <String fx:value="Nombre"/>
-                        <String fx:value="Categoría"/>
-                        <String fx:value="Descripción"/>
-                    </FXCollections>
-                </items>
-            </ComboBox>
+
+            <VBox spacing="10" alignment="CENTER">
+                <ToggleButton fx:id="btnNombre" text="Nombre" toggleGroup="$grupoBusqueda"/>
+                <ToggleButton fx:id="btnCategoria" text="Categoría" toggleGroup="$grupoBusqueda"/>
+                <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" toggleGroup="$grupoBusqueda"/>
+            </VBox>
+
+
+
+
+
         </VBox>
+
     </left>
 
     <!-- Centro: Tabla -->
     <center>
-        <TableView fx:id="tablaProductos" prefHeight="500" prefWidth="750"/>
+        <VBox spacing="10" style="-fx-padding: 0 20 0 0;">
+            <TableView fx:id="tablaProductos" VBox.vgrow="ALWAYS" />
+
+        </VBox>
+
     </center>
 
     <!-- Inferior: barra de acciones -->
