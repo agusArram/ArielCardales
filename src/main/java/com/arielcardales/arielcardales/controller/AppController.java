@@ -11,19 +11,15 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
 import javafx.collections.ListChangeListener;
-
+import javax.swing.filechooser.FileSystemView;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
 import org.controlsfx.control.Notifications;
 import javafx.concurrent.Task;
-import javafx.scene.layout.VBox;
-
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -385,8 +381,29 @@ public class AppController {
     }
 
     // Exportar
-    @FXML private void exportarExcel() { ExportadorExcel.exportar(tablaProductos.getItems(), "productos.xlsx"); }
-    @FXML private void exportarPDF()   { ExportadorPDF.exportar(tablaProductos.getItems(), "productos.pdf"); }
+    private String getRutaEscritorio(String nombreArchivo) {
+        // Detecta la carpeta de Escritorio real (incluido OneDrive)
+        java.io.File escritorio = FileSystemView.getFileSystemView().getHomeDirectory();
+        return new java.io.File(escritorio, nombreArchivo).getAbsolutePath();
+    }
+
+
+    @FXML
+    private void exportarPDF() {
+        String ruta = getRutaEscritorio("productos.pdf");
+        ExportadorPDF.exportar(tablaProductos.getItems(), ruta);
+        ok("PDF exportado en: " + ruta);
+    }
+
+    @FXML
+    private void exportarExcel() {
+        String ruta = getRutaEscritorio("productos.xlsx");
+        ExportadorExcel.exportar(tablaProductos.getItems(), ruta);
+        ok("Excel exportado en: " + ruta);
+    }
+
+
+
 
     @FXML
     private void eliminarProducto() {
@@ -439,3 +456,5 @@ public class AppController {
 
 
 }
+
+

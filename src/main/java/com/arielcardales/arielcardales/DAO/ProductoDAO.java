@@ -140,17 +140,33 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     """;
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
+
             ps.setString(1, p.getNombre());
             ps.setString(2, p.getDescripcion());
-            ps.setLong(3, p.getCategoriaId()); // 👈 importante
+
+            // Si categoriaId == 0 → dejarlo igual que en DB
+            if (p.getCategoriaId() == 0) {
+                // Buscamos el original para conservar la categoría
+                Optional<Producto> original = findById(p.getId());
+                if (original.isPresent()) {
+                    ps.setLong(3, original.get().getCategoriaId());
+                } else {
+                    throw new DaoException("No se encontró producto id=" + p.getId());
+                }
+            } else {
+                ps.setLong(3, p.getCategoriaId());
+            }
+
             ps.setBigDecimal(4, p.getPrecio());
             ps.setInt(5, p.getStockOnHand());
             ps.setLong(6, p.getId());
+
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             throw new DaoException("Error actualizando producto id=" + p.getId(), e);
         }
     }
+
 
 
 
