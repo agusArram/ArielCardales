@@ -130,35 +130,29 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     @Override
     public boolean update(Producto p) {
         String sql = """
-            update producto
-               set etiqueta = ?,
-                   nombre = ?,
-                   descripcion = ?,
-                   categoriaId = ?,
-                   unidadId = ?,
-                   precio = ?,
-                   costo = ?,
-                   stockOnHand = ?,
-                   active = ?
-             where id = ?
-        """;
+        update producto
+           set nombre = ?,
+               descripcion = ?,
+               categoriaId = ?,
+               precio = ?,
+               stockOnHand = ?
+         where id = ?
+    """;
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, p.getEtiqueta());
-            ps.setString(2, p.getNombre());
-            ps.setString(3, p.getDescripcion());
-            ps.setLong(4, p.getCategoriaId());
-            ps.setLong(5, p.getUnidadId());
-            ps.setBigDecimal(6, p.getPrecio());
-            //ps.setBigDecimal(7, p.getCosto());
-            ps.setInt(8, p.getStockOnHand());
-            //ps.setBoolean(9, p.isActive());
-            ps.setLong(10, p.getId());
+            ps.setString(1, p.getNombre());
+            ps.setString(2, p.getDescripcion());
+            ps.setLong(3, p.getCategoriaId()); // 👈 importante
+            ps.setBigDecimal(4, p.getPrecio());
+            ps.setInt(5, p.getStockOnHand());
+            ps.setLong(6, p.getId());
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             throw new DaoException("Error actualizando producto id=" + p.getId(), e);
         }
     }
+
+
 
     @Override
     public boolean deleteById(Long id) {

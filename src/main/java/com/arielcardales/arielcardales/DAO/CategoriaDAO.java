@@ -6,6 +6,7 @@ import com.arielcardales.arielcardales.Util.Mapper;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class CategoriaDAO implements CrudDAO<Categoria, Long> {
@@ -108,4 +109,18 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
             throw new DaoException("Error eliminando categoría id=" + id, e);
         }
     }
+
+    public Map<String, Long> mapNombreId() {
+        String sql = "select id, nombre from categoria order by nombre";
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            Map<String, Long> out = new java.util.LinkedHashMap<>();
+            while (rs.next()) out.put(rs.getString("nombre"), rs.getLong("id"));
+            return out;
+        } catch (SQLException e) {
+            throw new DaoException("Error listando categorías", e);
+        }
+    }
+
 }

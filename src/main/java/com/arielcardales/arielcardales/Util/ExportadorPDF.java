@@ -32,7 +32,7 @@ public class ExportadorPDF {
             PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
             // Reducimos ID (8f) y damos más a Precio (11f)
-            table.setWidths(new float[]{7f, 25f, 33f, 13f, 16f, 5f});
+            table.setWidths(new float[]{7f, 25f, 31f, 13f, 16f, 7f});
 
             Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD);
             addHeaderCell(table, "ID", headerFont);

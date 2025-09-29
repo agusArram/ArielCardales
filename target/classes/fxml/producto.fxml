@@ -56,11 +56,11 @@
             </padding>
 
             <Button text="➕ Agregar producto" fx:id="btnAgregar"/>
-            <Button text="✏️ Editar producto" fx:id="btnEditar"/>
             <Button text="🗑️ Eliminar producto" fx:id="btnEliminar"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>
 
         </HBox>
     </bottom>
+
 </BorderPane>

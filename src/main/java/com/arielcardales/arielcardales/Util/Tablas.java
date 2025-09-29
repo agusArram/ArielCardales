@@ -22,6 +22,10 @@ public class Tablas {
             double minWidth = Double.parseDouble(colDef[3]);
 
             TableColumn<T, Object> col = new TableColumn<>(titulo);
+
+            // 🔑 clave: ID de la columna con el nombre de la propiedad
+            col.setId(propiedad);
+
             col.setCellValueFactory(new PropertyValueFactory<>(propiedad));
             col.setMinWidth(minWidth);
             col.setUserData(peso); // lo leemos luego en el controller

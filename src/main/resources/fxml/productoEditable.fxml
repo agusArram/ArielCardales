@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.arielcardales.arielcardales.controller.EditarProductoController"
+            prefHeight="400.0" prefWidth="600.0">
+
+    <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+          spacing="10" alignment="CENTER" style="-fx-padding:20;">
+        <Label text="Editar Producto" style="-fx-font-size:16px; -fx-font-weight:bold;"/>
+
+        <TextField fx:id="txtNombre" promptText="Nombre"/>
+        <TextArea fx:id="txtDescripcion" promptText="Descripción" prefRowCount="3"/>
+        <TextField fx:id="txtCategoria" promptText="Categoría"/>
+        <TextField fx:id="txtPrecio" promptText="Precio"/>
+        <TextField fx:id="txtStock" promptText="Stock"/>
+
+        <Button text="Guardar" onAction="#guardarCambios"/>
+    </VBox>
+
+
+</AnchorPane>
+
+
