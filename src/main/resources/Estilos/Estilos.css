@@ -133,6 +133,42 @@
     -fx-text-fill: white;
 }
 
+/* ====== ALERTAS ====== */
+.dialog-pane {
+    -fx-background-color: #fefefe; /* fondo claro */
+    -fx-font-size: 14px;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.dialog-pane .header-panel {
+    -fx-alignment: CENTER; /* centra el encabezado si existiera */
+}
+
+.dialog-pane .content {
+    -fx-alignment: CENTER;  /* centra el texto del contenido */
+    -fx-text-alignment: center;
+}
+
+/* ====== Botonera ====== */
+.dialog-pane .button-bar {
+    -fx-alignment: CENTER; /* centra los botones */
+}
+
+.dialog-pane .button {
+    -fx-font-size: 14px;
+    -fx-min-width: 100px;
+    -fx-font-weight: bold;
+}
+
+/* Botón rojo específico para "Eliminar" */
+.dialog-pane .button:default {
+    -fx-background-color: red;
+    -fx-text-fill: white;
+}
+
+.dialog-pane .button:default:hover {
+    -fx-background-color: darkred;
+}
 
 
 

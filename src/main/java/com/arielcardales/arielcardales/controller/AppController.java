@@ -11,12 +11,18 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.collections.ListChangeListener;
+
 import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
 import org.controlsfx.control.Notifications;
+import javafx.concurrent.Task;
+import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -94,9 +100,15 @@ public class AppController {
             tablaProductos.getColumns().add(col);
         });
 
-        // 2) Datos
-        listaProductos = FXCollections.observableArrayList(productoDAO.findAll());
+        // 2) Datos (arranca vacío, con spinner)
+        listaProductos = FXCollections.observableArrayList();
+
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.setPrefSize(40, 40); // tamaño
+        tablaProductos.setPlaceholder(spinner);
+
         FilteredList<Producto> filtrados = new FilteredList<>(listaProductos, p -> true);
+
 
         // 3) Búsqueda con heurística (p### = etiqueta)
         Runnable aplicarFiltro = () -> {
@@ -129,10 +141,20 @@ public class AppController {
         grupoBusqueda.selectToggle(btnNombre);
         grupoBusqueda.selectedToggleProperty().addListener((o, a, b) -> aplicarFiltro.run());
 
-        // 4) Orden + setItems
+// 4) Orden + setItems
         SortedList<Producto> ordenados = new SortedList<>(filtrados);
         ordenados.comparatorProperty().bind(tablaProductos.comparatorProperty());
         tablaProductos.setItems(ordenados);
+
+// 👇 escuchamos cambios en la lista filtrada
+        filtrados.addListener((ListChangeListener<Producto>) c -> {
+            if (listaProductos.isEmpty()) {
+                tablaProductos.setPlaceholder(new Label("⚠ No hay productos cargados"));
+            } else if (filtrados.isEmpty()) {
+                tablaProductos.setPlaceholder(new Label("🔍 No se encontraron resultados"));
+            }
+        });
+
 
         // 5) Edición inline
         configurarEdicionInline();
@@ -166,9 +188,42 @@ public class AppController {
                             .showInformation();
                 }
             });
+            // 🚀 Cargar productos sin bloquear la UI
+
+
             return row;
         });
+        cargarProductosAsync();
     }
+
+    private void cargarProductosAsync() {
+        Task<List<Producto>> task = new Task<>() {
+            @Override
+            protected List<Producto> call() {
+                return productoDAO.findAll();
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            listaProductos.setAll(task.getValue());
+
+            if (listaProductos.isEmpty()) {
+                tablaProductos.setPlaceholder(new Label("⚠ No hay productos cargados"));
+            } else {
+                tablaProductos.setPlaceholder(new Label("")); // vacío, se maneja con listener
+            }
+        });
+
+
+        task.setOnFailed(e -> {
+            tablaProductos.setPlaceholder(new Label("❌ Error al cargar productos"));
+            task.getException().printStackTrace();
+        });
+
+        new Thread(task).start();
+    }
+
+
 
     private void configurarEdicionInline() {
         tablaProductos.setEditable(true);
@@ -332,4 +387,55 @@ public class AppController {
     // Exportar
     @FXML private void exportarExcel() { ExportadorExcel.exportar(tablaProductos.getItems(), "productos.xlsx"); }
     @FXML private void exportarPDF()   { ExportadorPDF.exportar(tablaProductos.getItems(), "productos.pdf"); }
+
+    @FXML
+    private void eliminarProducto() {
+        Producto seleccionado = tablaProductos.getSelectionModel().getSelectedItem();
+
+        if (seleccionado == null) {
+            error("Selecciona un producto para eliminar.");
+            return;
+        }
+
+        // Botones "oficiales" de Alert
+        ButtonType btnEliminar = new ButtonType("Eliminar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        Alert alert = new Alert(Alert.AlertType.WARNING,
+                "¿Estás seguro de eliminar el producto?\n\n" + seleccionado.getNombre() + " ?",
+                btnEliminar, btnCancelar);
+
+        alert.setTitle("Confirmar eliminación");
+        alert.setHeaderText(null); // sacamos el encabezado feo
+        alert.getDialogPane().setMinWidth(400);
+
+        // --- Estilo personalizado SOLO al botón Eliminar ---
+        Button eliminarButton = (Button) alert.getDialogPane().lookupButton(btnEliminar);
+        eliminarButton.setStyle(
+                "-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-min-width: 120px;"
+        );
+
+        // Hover
+        eliminarButton.setOnMouseEntered(e -> eliminarButton.setStyle(
+                "-fx-background-color: darkred; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-min-width: 120px;"
+        ));
+        eliminarButton.setOnMouseExited(e -> eliminarButton.setStyle(
+                "-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-min-width: 120px;"
+        ));
+
+        // --- Mostrar y actuar ---
+        alert.showAndWait().ifPresent(res -> {
+            if (res == btnEliminar) {
+                try {
+                    productoDAO.deleteById(seleccionado.getId());
+                    listaProductos.remove(seleccionado);
+                    ok("Producto eliminado");
+                } catch (Exception e) {
+                    error("No se pudo eliminar: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+
 }

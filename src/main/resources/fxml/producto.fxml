@@ -30,24 +30,15 @@
                 <ToggleButton fx:id="btnCategoria" text="Categoría" toggleGroup="$grupoBusqueda"/>
                 <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" toggleGroup="$grupoBusqueda"/>
             </VBox>
-
-
-
-
-
         </VBox>
 
     </left>
-
     <!-- Centro: Tabla -->
     <center>
         <VBox spacing="10" style="-fx-padding: 0 20 0 0;">
             <TableView fx:id="tablaProductos" VBox.vgrow="ALWAYS" />
-
         </VBox>
-
     </center>
-
     <!-- Inferior: barra de acciones -->
     <bottom>
         <HBox spacing="15" alignment="CENTER" styleClass="footer">
@@ -56,7 +47,7 @@
             </padding>
 
             <Button text="➕ Agregar producto" fx:id="btnAgregar"/>
-            <Button text="🗑️ Eliminar producto" fx:id="btnEliminar"/>
+            <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>
 
