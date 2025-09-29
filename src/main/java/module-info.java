@@ -21,7 +21,11 @@ module com.arielcardales.arielcardales {
     //No lo se
     requires com.zaxxer.hikari; // Solo si usás pool de conexiones HikariCP.
 
-    requires org.slf4j; // Solo si usás logging con SLF4J.
+    requires org.slf4j;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
+    requires com.github.librepdf.openpdf;
+    requires java.desktop; // Solo si usás logging con SLF4J.
 
     // requires jdk.compiler; // ⚠️ Esto es para generar código dinámicamente (annotation processors, etc.)
 

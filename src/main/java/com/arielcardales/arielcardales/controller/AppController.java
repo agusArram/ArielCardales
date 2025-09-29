@@ -2,6 +2,8 @@ package com.arielcardales.arielcardales.controller;
 
 import com.arielcardales.arielcardales.DAO.ProductoDAO;
 import com.arielcardales.arielcardales.Entidades.Producto;
+import com.arielcardales.arielcardales.Util.ExportadorExcel;
+import com.arielcardales.arielcardales.Util.ExportadorPDF;
 import com.arielcardales.arielcardales.Util.Tablas;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -73,6 +75,13 @@ public class AppController {
             filtrados.setPredicate(prod -> {
                 if (filtro.isBlank()) return true;
 
+                // 🔎 Detectar si el filtro parece una etiqueta: empieza con "p" y números
+                boolean pareceEtiqueta = filtro.matches("p\\d+");
+
+                if (pareceEtiqueta) {
+                    return prod.getEtiqueta() != null && prod.getEtiqueta().toLowerCase().contains(filtro);
+                }
+
                 if (btnNombre.isSelected()) {
                     return prod.getNombre() != null && prod.getNombre().toLowerCase().contains(filtro);
                 } else if (btnCategoria.isSelected()) {
@@ -84,6 +93,7 @@ public class AppController {
                 }
             });
         };
+
 
         // Listener en el texto
         txtBuscarEtiqueta.textProperty().addListener((obs, oldVal, newVal) -> aplicarFiltro.run());
@@ -107,6 +117,17 @@ public class AppController {
                 }
             }
         });
+    }
+
+    //EXPORTAR COSAS
+    @FXML
+    private void exportarExcel() {
+        ExportadorExcel.exportar(tablaProductos.getItems(), "productos.xlsx");
+    }
+
+    @FXML
+    private void exportarPDF() {
+        ExportadorPDF.exportar(tablaProductos.getItems(), "productos.pdf");
     }
 
 }
