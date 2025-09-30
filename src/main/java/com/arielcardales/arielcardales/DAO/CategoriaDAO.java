@@ -82,6 +82,8 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
         }
     }
 
+
+
     @Override
     public boolean update(Categoria cat) {
         String sql = "update categoria set nombre = ?, parentId = ? where id = ?";

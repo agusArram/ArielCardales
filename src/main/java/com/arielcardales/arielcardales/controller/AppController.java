@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.controller;
 
 import com.arielcardales.arielcardales.DAO.CategoriaDAO;
 import com.arielcardales.arielcardales.DAO.ProductoDAO;
+import com.arielcardales.arielcardales.Entidades.Categoria;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import com.arielcardales.arielcardales.Util.ExportadorExcel;
 import com.arielcardales.arielcardales.Util.ExportadorPDF;
@@ -13,10 +14,15 @@ import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.collections.ListChangeListener;
 import javax.swing.filechooser.FileSystemView;
+
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
+import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import org.controlsfx.control.Notifications;
 import javafx.concurrent.Task;
@@ -452,6 +458,57 @@ public class AppController {
                 }
             }
         });
+    }
+
+    @FXML
+    private void agregarCategoria() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Nueva categoría");
+        dialog.setHeaderText("Agregar nueva categoría");
+        dialog.setContentText("Nombre de la categoría:");
+
+        dialog.showAndWait().ifPresent(nombre -> {
+            if (nombre == null || nombre.trim().isEmpty()) {
+                error("El nombre no puede estar vacío");
+                return;
+            }
+
+            try {
+                CategoriaDAO categoriaDAO = new CategoriaDAO();
+                Categoria cat = new Categoria();
+                cat.setNombre(nombre.trim());
+                cat.setParentId(null); // si querés jerarquía en el futuro
+
+                Long id = categoriaDAO.insert(cat);
+
+                // actualizar cache
+                categoriasNombreId.put(nombre.trim(), id);
+                categoriasNombres.add(nombre.trim());
+                FXCollections.sort(categoriasNombres);
+
+                ok("Categoría agregada: " + nombre);
+            } catch (Exception e) {
+                error("No se pudo agregar: " + e.getMessage());
+            }
+        });
+    }
+
+    @FXML
+    private void abrirAgregarProducto() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/agregarProducto.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Agregar Producto");
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+
+            // refrescar la tabla después de cerrar
+            cargarProductosAsync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

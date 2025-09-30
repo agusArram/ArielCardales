@@ -46,7 +46,8 @@
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
 
-            <Button text="➕ Agregar producto" fx:id="btnAgregar"/>
+            <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
+            <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
             <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>

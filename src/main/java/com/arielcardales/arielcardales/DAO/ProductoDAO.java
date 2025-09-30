@@ -41,9 +41,11 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             while (rs.next()) out.add(Mapper.getProducto(rs));
             return out;
 
-        } catch (SQLException e) {
-            throw new DaoException("Error listando productos", e);
+        }catch (SQLException e) {
+            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
+
     }
 
     // Búsqueda usando ilike + similarity (pg_trgm)
@@ -70,9 +72,11 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                 while (rs.next()) out.add(Mapper.getProducto(rs));
                 return out;
             }
-        } catch (SQLException e) {
-            throw new DaoException("Error buscando productos", e);
+        }catch (SQLException e) {
+            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
+
     }
 
     // ----- CRUD “real” contra tabla producto (para ABM) -----
@@ -95,8 +99,10 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                 return Optional.empty();
             }
         } catch (SQLException e) {
-            throw new DaoException("Error buscando producto id=" + id, e);
+            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
+
     }
 
     @Override
@@ -114,18 +120,23 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setLong(4, p.getCategoriaId());
             ps.setLong(5, p.getUnidadId());
             ps.setBigDecimal(6, p.getPrecio());
-            //ps.setBigDecimal(7, p.getCosto());
+            ps.setBigDecimal(7, p.getCosto());
             ps.setInt(8, p.getStockOnHand());
-            //ps.setBoolean(9, p.isActive());
+            ps.setBoolean(9, p.isActive());
 
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getLong(1);
             }
         } catch (SQLException e) {
-            throw new DaoException("Error insertando producto", e);
+            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
+
     }
+
+
+
 
     @Override
     public boolean update(Producto p) {
@@ -163,11 +174,42 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
-            throw new DaoException("Error actualizando producto id=" + p.getId(), e);
+            if (e.getSQLState().equals("23505")) { // unique_violation
+                throw new DaoException("Ya existe un producto con la etiqueta: " + p.getEtiqueta(), e);
+            }
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+        }
+
+
+    }
+
+    public boolean existsByEtiqueta(String etiqueta) {
+        String sql = "select 1 from producto where etiqueta = ?";
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, etiqueta);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new DaoException("Error verificando etiqueta", e);
         }
     }
 
+    public String getUltimaEtiqueta() {
+        String sql = "select etiqueta from producto order by id desc limit 1";
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
+            if (rs.next()) {
+                return rs.getString("etiqueta");
+            }
+            return null; // no hay productos todavía
+        } catch (SQLException e) {
+            throw new DaoException("Error obteniendo última etiqueta", e);
+        }
+    }
 
 
     @Override
@@ -178,7 +220,9 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setLong(1, id);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
-            throw new DaoException("Error eliminando producto id=" + id, e);
+            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
+
     }
 }
