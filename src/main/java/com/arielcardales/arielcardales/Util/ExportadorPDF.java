@@ -32,9 +32,9 @@ public class ExportadorPDF {
             PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
             // Reducimos ID (8f) y damos más a Precio (11f)
-            table.setWidths(new float[]{7f, 25f, 31f, 13f, 16f, 7f});
+            table.setWidths(new float[]{7f, 25f, 31f, 13f, 16f, 7f}); //tamanios con fr ( % ) de las coolumnas
 
-            Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD);
+            Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD); //tamanio y eso de la letra, abajo nombre de la columna
             addHeaderCell(table, "ID", headerFont);
             addHeaderCell(table, "Nombre", headerFont);
             addHeaderCell(table, "Descripción", headerFont);
@@ -54,10 +54,9 @@ public class ExportadorPDF {
                 addBodyCell(table, formatoMoneda.format(prod.getPrecio())); // <-- formateado
                 addBodyCell(table, String.valueOf(prod.getStockOnHand()));
             }
-
             document.add(table);
             document.close();
-            System.out.println("✅ Exportado a PDF en " + ruta);
+            System.out.println("✅ Exportado a PDF en " + ruta); //agregar mensaje dsp para que se vea en el .exe
         } catch (Exception e) {
             e.printStackTrace();
         }

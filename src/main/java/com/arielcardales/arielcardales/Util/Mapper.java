@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 public class Mapper {
-    // Vista vInventario
 // Vista vInventario
     public static Producto getProducto(ResultSet rs) throws SQLException {
         Producto p = new Producto();

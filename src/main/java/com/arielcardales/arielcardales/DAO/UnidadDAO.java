@@ -5,9 +5,6 @@ import com.arielcardales.arielcardales.Entidades.Unidad;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +41,10 @@ public class UnidadDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return unidades;
     }
 
-    // ⚡ Igual que CategoriaDAO: devuelve mapa {nombre -> id}
+    // Igual que CategoriaDAO: devuelve mapa {nombre -> id}
     public Map<String, Long> mapNombreId() {
         Map<String, Long> map = new HashMap<>();
         String sql = "SELECT id, nombre FROM unidad ORDER BY nombre";

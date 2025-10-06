@@ -10,7 +10,6 @@ module com.arielcardales.arielcardales {
     requires org.kordamp.ikonli.javafx;  // Íconos vectoriales (si no usás íconos, se puede borrar).
     requires org.kordamp.bootstrapfx.core; // Estilos tipo Bootstrap (si no lo aplicaste, se puede borrar).
 
-
     // JDBC
     requires java.sql;
 
@@ -25,11 +24,12 @@ module com.arielcardales.arielcardales {
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
     requires com.github.librepdf.openpdf;
-    requires java.desktop; // Solo si usás logging con SLF4J.
+    requires java.desktop;
+    //requires com.arielcardales.arielcardales;
+    requires javafx.graphics;
+    requires javafx.base; // Solo si usás logging con SLF4J.
 
     // requires jdk.compiler; // ⚠️ Esto es para generar código dinámicamente (annotation processors, etc.)
-
-
 
     // Exportar para que el FXML pueda acceder
     opens com.arielcardales.arielcardales.controller to javafx.fxml; // Necesario para FXML

@@ -10,16 +10,14 @@ import java.util.Optional;
 
 public class ProductoDAO implements CrudDAO<Producto, Long> {
 
-    // ----- Lectura desde la vista vInventario (recomendada para listar/pantalla) -----
-
+    // Lectura desde la vista vInventario
     // Espera que Mapper.getProducto(rs) lea estas columnas:
     // id, etiqueta, nombre, categoria (string), unidad (string), precio, costo, stockOnHand, active, updatedAt
-    private static final String BASE_SELECT_VISTA = """
+    private static final String sqlBase = """
     select p.id,
            p.etiqueta,
            p.nombre,
-           p.descripcion,   
-           p.categoria,
+           p.descripcion, p.categoria,
            p.unidad,
            p.precio,
            p.costo,
@@ -29,31 +27,29 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
       from vInventario p
     """;
 
-
     @Override
     public List<Producto> findAll() {
-        String sql = BASE_SELECT_VISTA + " order by p.nombre asc";
+        String sql = sqlBase + " order by p.nombre asc";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            List<Producto> out = new ArrayList<>();
-            while (rs.next()) out.add(Mapper.getProducto(rs));
-            return out;
+            List<Producto> resultado = new ArrayList<>();
+            while (rs.next()) resultado.add(Mapper.getProducto(rs));
+            return resultado;
 
         }catch (SQLException e) {
             e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
     }
 
-    // Búsqueda usando ilike + similarity (pg_trgm)
+    // Búsqueda usando ilike + similarity (pg_trgm), por ahora sin usos
     public List<Producto> search(String q, int limit) {
         String like = "%" + (q == null ? "" : q.trim()) + "%";
         int lim = (limit <= 0) ? 50 : limit;
 
-        String sql = BASE_SELECT_VISTA + """
+        String sql = sqlBase + """
             where p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?
             order by similarity(p.nombre, ?) desc, p.nombre asc
             limit ?
@@ -61,6 +57,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
+            //podria usar mapper aca, para los set
             ps.setString(1, like);
             ps.setString(2, like);
             ps.setString(3, like);
@@ -68,20 +65,16 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setInt(5, lim);
 
             try (ResultSet rs = ps.executeQuery()) {
-                List<Producto> out = new ArrayList<>();
-                while (rs.next()) out.add(Mapper.getProducto(rs));
-                return out;
+                List<Producto> resultado = new ArrayList<>();
+                while (rs.next()) resultado.add(Mapper.getProducto(rs));
+                return resultado;
             }
         }catch (SQLException e) {
-            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            e.printStackTrace(); // Esto imprime la causa real en consola
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
     }
-
     // ----- CRUD “real” contra tabla producto (para ABM) -----
-    // Asumo que tu Entidad Producto tiene además categoriaId y unidadId.
-
     @Override
     public Optional<Producto> findById(Long id) {
         String sql = """
@@ -99,10 +92,9 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                 return Optional.empty();
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            e.printStackTrace(); // Esto imprime la causa real
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
     }
 
     @Override
@@ -114,6 +106,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         """;
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
+
             ps.setString(1, p.getEtiqueta());
             ps.setString(2, p.getNombre());
             ps.setString(3, p.getDescripcion());
@@ -129,14 +122,10 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                 return rs.getLong(1);
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            e.printStackTrace(); // Esto imprime la causa real en consola
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
     }
-
-
-
 
     @Override
     public boolean update(Producto p) {
@@ -157,7 +146,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
             // Si categoriaId == 0 → dejarlo igual que en DB
             if (p.getCategoriaId() == 0) {
-                // Buscamos el original para conservar la categoría
+                // Busca el original para conservar la categoría
                 Optional<Producto> original = findById(p.getId());
                 if (original.isPresent()) {
                     ps.setLong(3, original.get().getCategoriaId());
@@ -179,8 +168,6 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             }
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
-
     }
 
     public boolean existsByEtiqueta(String etiqueta) {
@@ -211,7 +198,6 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         }
     }
 
-
     @Override
     public boolean deleteById(Long id) {
         String sql = "delete from producto where id = ?";
@@ -220,9 +206,26 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setLong(1, id);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
-            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            e.printStackTrace();
             throw new DaoException("Error insertando producto: " + e.getMessage(), e);
         }
-
     }
+
+    public boolean descontarStock(long idProducto, int cantidadVendida) {
+        String sql = "UPDATE producto SET stockOnHand = stockOnHand - ? WHERE id = ? AND stockOnHand >= ?";
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setInt(1, cantidadVendida);
+            ps.setLong(2, idProducto);
+            ps.setInt(3, cantidadVendida);
+
+            int filas = ps.executeUpdate();
+            return filas == 1; // devuelve true si se actualizó correctamente
+
+        } catch (SQLException e) {
+            throw new DaoException("Error al descontar stock del producto ID " + idProducto, e);
+        }
+    }
+
 }

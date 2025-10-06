@@ -22,7 +22,6 @@
             <Label text="Busqueda"/>
             <TextField fx:id="txtBuscarEtiqueta" promptText="Buscar..."/>
 
-
             <Label text="Buscar por:"/>
 
             <VBox spacing="10" alignment="CENTER">
@@ -46,6 +45,7 @@
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
 
+            <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
             <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
             <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
             <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>

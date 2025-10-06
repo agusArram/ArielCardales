@@ -18,7 +18,7 @@ public class ExportadorExcel {
             // Encabezado
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
+            headerFont.setBold(true);  //negrita
             headerStyle.setFont(headerFont);
             headerStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);

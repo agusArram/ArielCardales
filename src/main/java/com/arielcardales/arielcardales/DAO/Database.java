@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public final class Database {
+    //tengo que terminar de entender esto, se como se conecta la DB normal pero no entiendo a detalle con este metodo
     private static final HikariDataSource DS;
 
     static {
@@ -34,8 +35,7 @@ public final class Database {
         cfg.setIdleTimeout(60_000);
         cfg.setMaxLifetime(30 * 60_000);
 
-        // Si usás esquemas, podrías: cfg.setConnectionInitSql("set search_path to public");
-
+        // Si llego a usar esquemas, podria: cfg.setConnectionInitSql("set search_path to public");
         DS = new HikariDataSource(cfg);
     }
 

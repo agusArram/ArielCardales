@@ -1,19 +1,13 @@
 package com.arielcardales.arielcardales.controller;
 
 import com.arielcardales.arielcardales.DAO.*;
-import com.arielcardales.arielcardales.Entidades.Categoria;
 import com.arielcardales.arielcardales.Entidades.Producto;
-import com.arielcardales.arielcardales.Entidades.Unidad;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Map;
 
 public class AgregarProductoController {
@@ -40,20 +34,15 @@ public class AgregarProductoController {
         cmbCategoria.setItems(FXCollections.observableArrayList(categorias.keySet()));
         cmbUnidad.setItems(FXCollections.observableArrayList(unidades.keySet()));
 
-        // 👇 Nueva lógica para sugerir etiqueta
+        // lógica para sugerir etiqueta
         String ultima = productoDAO.getUltimaEtiqueta();
         if (ultima != null && ultima.matches("p\\d+")) {
             int num = Integer.parseInt(ultima.substring(1)); // saca el número
             String sugerida = "p" + String.format("%03d", num + 1); // ej: p043
             txtEtiqueta.setPromptText(sugerida);
-        } else {
-            txtEtiqueta.setPromptText("p001"); // si no hay productos aún
-        }
+
+        } else txtEtiqueta.setPromptText("p001"); // si no hay productos aún
     }
-
-
-
-
 
     @FXML
     private void guardar() {
@@ -67,7 +56,6 @@ public class AgregarProductoController {
                 new Alert(Alert.AlertType.ERROR, "La etiqueta ya existe: " + p.getEtiqueta()).showAndWait();
                 return;
             }
-
 
             // IDs seleccionados
             p.setCategoriaId(categorias.get(cmbCategoria.getValue()));
@@ -83,7 +71,6 @@ public class AgregarProductoController {
                 etiqueta = txtEtiqueta.getPromptText(); // usa sugerida
             }
             p.setEtiqueta(etiqueta);
-
 
             Long id = productoDAO.insert(p);
             System.out.println("✅ Producto agregado con ID: " + id);

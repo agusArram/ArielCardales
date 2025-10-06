@@ -4,18 +4,15 @@ import com.arielcardales.arielcardales.DAO.CategoriaDAO;
 import com.arielcardales.arielcardales.DAO.ProductoDAO;
 import com.arielcardales.arielcardales.Entidades.Categoria;
 import com.arielcardales.arielcardales.Entidades.Producto;
-import com.arielcardales.arielcardales.Util.ExportadorExcel;
-import com.arielcardales.arielcardales.Util.ExportadorPDF;
-import com.arielcardales.arielcardales.Util.Tablas;
+import com.arielcardales.arielcardales.Util.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.fxml.FXML;
 import javafx.collections.ListChangeListener;
-import javax.swing.filechooser.FileSystemView;
-
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javax.swing.filechooser.FileSystemView;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -32,15 +29,19 @@ import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.text.NumberFormat;
+import java.util.Locale;
+
 
 public class AppController {
-
     @FXML private TableView<Producto> tablaProductos;
     @FXML private TextField txtBuscarEtiqueta;
     @FXML private ToggleButton btnNombre;
     @FXML private ToggleButton btnCategoria;
     @FXML private ToggleButton btnEtiqueta;
     @FXML private ToggleGroup grupoBusqueda;
+    @FXML private Button btnNuevaVenta;
 
     private ObservableList<Producto> listaProductos;
     private final ProductoDAO productoDAO = new ProductoDAO();
@@ -112,26 +113,35 @@ public class AppController {
         FilteredList<Producto> filtrados = new FilteredList<>(listaProductos, p -> true);
 
 
-        // 3) Búsqueda con heurística (p### = etiqueta)
+    // 3) Búsqueda con heurística (p### = etiqueta)
         Runnable aplicarFiltro = () -> {
             String filtro = txtBuscarEtiqueta.getText() == null ? "" : txtBuscarEtiqueta.getText().trim().toLowerCase();
             filtrados.setPredicate(prod -> {
                 if (filtro.isBlank()) return true;
+
                 boolean pareceEtiqueta = filtro.matches("p\\d+");
                 if (pareceEtiqueta) {
                     return prod.getEtiqueta() != null && prod.getEtiqueta().toLowerCase().contains(filtro);
                 }
-                if (btnNombre.isSelected()) {
-                    return prod.getNombre() != null && prod.getNombre().toLowerCase().contains(filtro);
-                } else if (btnCategoria.isSelected()) {
-                    return prod.getCategoria() != null && prod.getCategoria().toLowerCase().contains(filtro);
-                } else if (btnEtiqueta.isSelected()) {
-                    return prod.getEtiqueta() != null && prod.getEtiqueta().toLowerCase().contains(filtro);
-                } else {
-                    return true;
+                // Detectar el tipo de búsqueda actual
+                String tipo = ((ToggleButton) grupoBusqueda.getSelectedToggle()).getText().toLowerCase(); //te da "Nombre", "Categoría" o "Etiqueta".
+                switch (tipo) {
+                    case "nombre" -> {
+                        return prod.getNombre() != null && prod.getNombre().toLowerCase().contains(filtro);
+                    }
+                    case "categoría", "categoria" -> {
+                        return prod.getCategoria() != null && prod.getCategoria().toLowerCase().contains(filtro);
+                    }
+                    case "etiqueta" -> {
+                        return prod.getEtiqueta() != null && prod.getEtiqueta().toLowerCase().contains(filtro);
+                    } //mejor este switch con lambda x si quiero agregar algo es solo sumar un case y listo
+                    default -> {
+                        return true;
+                    }
                 }
             });
         };
+
 
         grupoBusqueda = new ToggleGroup();
         btnNombre.setToggleGroup(grupoBusqueda);
@@ -148,20 +158,22 @@ public class AppController {
         ordenados.comparatorProperty().bind(tablaProductos.comparatorProperty());
         tablaProductos.setItems(ordenados);
 
-// 👇 escuchamos cambios en la lista filtrada
+// veo cambios en la lista filtrada
         filtrados.addListener((ListChangeListener<Producto>) c -> {
             if (listaProductos.isEmpty()) {
                 tablaProductos.setPlaceholder(new Label("⚠ No hay productos cargados"));
             } else if (filtrados.isEmpty()) {
-                tablaProductos.setPlaceholder(new Label("🔍 No se encontraron resultados"));
+                tablaProductos.setPlaceholder(new Label("No se encontraron resultados"));
             }
         });
-
 
         // 5) Edición inline
         configurarEdicionInline();
 
-        // 6) RowFactory unificado: doble-click inicia edición + marca low stock
+        //venta
+        btnNuevaVenta.setOnAction(e -> iniciarVenta());
+
+        // 6) RowFactory unificado: doble-click inicia edición + marca low stock (no esta andando stock)
         tablaProductos.setRowFactory(tv -> {
             TableRow<Producto> row = new TableRow<>() {
                 @Override protected void updateItem(Producto item, boolean empty) {
@@ -182,17 +194,16 @@ public class AppController {
                         TableColumn<Producto, ?> col = (TableColumn<Producto, ?>) pos.getTableColumn();
                         tablaProductos.edit(pos.getRow(), col);
                     }
-
+/* codigo que notifica que entro en modo edicion, resulta molesto
                     Notifications.create()
                             .text("Modo edición: escribí y presioná Enter para guardar (Esc: cancelar).")
                             .hideAfter(javafx.util.Duration.seconds(5))
                             .position(javafx.geometry.Pos.BOTTOM_RIGHT)
                             .showInformation();
+ */
                 }
             });
-            // 🚀 Cargar productos sin bloquear la UI
-
-
+            //  Cargar productos sin bloquear la UI
             return row;
         });
         cargarProductosAsync();
@@ -216,23 +227,19 @@ public class AppController {
             }
         });
 
-
         task.setOnFailed(e -> {
             tablaProductos.setPlaceholder(new Label("❌ Error al cargar productos"));
             task.getException().printStackTrace();
         });
-
         new Thread(task).start();
     }
 
-
-
     private void configurarEdicionInline() {
-        tablaProductos.setEditable(true);
+        tablaProductos.setEditable(true); //hacemos editables las columnas
 
         // --- obtener referencias a las columnas por id (asignadas en Tablas.crearColumnas) ---
         @SuppressWarnings("unchecked")
-        TableColumn<Producto, String> colNombre =
+        TableColumn<Producto, String> colNombre = //muestras tring, busca tipo de dato nombre
                 (TableColumn<Producto, String>) tablaProductos.getColumns().stream()
                         .filter(c -> "nombre".equals(c.getId())).findFirst().orElseThrow();
 
@@ -246,7 +253,6 @@ public class AppController {
                 (TableColumn<Producto, String>) tablaProductos.getColumns().stream()
                         .filter(c -> "categoria".equals(c.getId()))
                         .findFirst().orElseThrow();
-
 
         @SuppressWarnings("unchecked")
         TableColumn<Producto, BigDecimal> colPrecio =
@@ -312,7 +318,6 @@ public class AppController {
             }
         });
 
-
         // --- Precio: TextFieldTableCell con formateo $ ---
         colPrecio.setEditable(true);
         colPrecio.setCellFactory(TextFieldTableCell.forTableColumn(moneyConv));
@@ -362,7 +367,7 @@ public class AppController {
     // Guarda en DB y muestra toast
     private void guardarBasico(Producto p) {
         try {
-            // update() tuyo requiere categoriaId/unidadId: unidadId no la editamos, dejamos el valor actual del producto.
+            // update()  requiere categoriaId/unidadId: unidadId no la edito, dejamos el valor actual del producto.
             productoDAO.update(p);
             ok("Producto actualizado");
         } catch (Exception e) {
@@ -393,7 +398,6 @@ public class AppController {
         return new java.io.File(escritorio, nombreArchivo).getAbsolutePath();
     }
 
-
     @FXML
     private void exportarPDF() {
         String ruta = getRutaEscritorio("productos.pdf");
@@ -407,9 +411,6 @@ public class AppController {
         ExportadorExcel.exportar(tablaProductos.getItems(), ruta);
         ok("Excel exportado en: " + ruta);
     }
-
-
-
 
     @FXML
     private void eliminarProducto() {
@@ -511,6 +512,105 @@ public class AppController {
         }
     }
 
+    private void pedirCantidad(Producto producto) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Nueva venta");
+        dialog.setHeaderText("Producto: " + producto.getNombre());
+        dialog.setContentText("Cantidad vendida:");
+
+        Optional<String> resultado = dialog.showAndWait();
+
+        resultado.ifPresent(valor -> {
+            try {
+                int cantidad = Integer.parseInt(valor);
+                if (cantidad <= 0) throw new NumberFormatException();
+
+                BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
+                NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+                String totalFormateado = formato.format(total);
+
+
+                // Mostrar confirmación antes de procesar
+                Alert confirmar = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmar.setTitle("Confirmar venta");
+                confirmar.setHeaderText("Total: " + totalFormateado);
+                confirmar.setContentText(
+                        "Producto: " + producto.getNombre() + "\n" +
+                                "Cantidad: " + cantidad + "\n" +
+                                "Precio unitario: " + formato.format(producto.getPrecio()) + "\n\n" +
+                                "¿Desea confirmar la venta?"
+                );
+
+
+                // Botones personalizados
+                ButtonType btnConfirmar = new ButtonType("Confirmar", ButtonBar.ButtonData.OK_DONE);
+                ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirmar.getButtonTypes().setAll(btnConfirmar, btnCancelar);
+
+                Optional<ButtonType> decision = confirmar.showAndWait();
+
+                if (decision.isPresent() && decision.get() == btnConfirmar) {
+                    procesarVenta(producto, cantidad, total);
+                }
+
+            } catch (NumberFormatException e) {
+                new Alert(Alert.AlertType.ERROR, "Cantidad inválida.").showAndWait();
+            }
+        });
+    }
+
+
+    private void iniciarVenta() {
+        Producto seleccionado = tablaProductos.getSelectionModel().getSelectedItem();
+
+        if (seleccionado == null) {
+            Alert alerta = new Alert(Alert.AlertType.WARNING);
+            alerta.setHeaderText(null);
+            alerta.setContentText("Seleccioná un producto primero.");
+            alerta.showAndWait();
+            return;
+        }
+
+        long idProducto = seleccionado.getId();
+        System.out.println("Producto seleccionado ID: " + idProducto);
+
+        // Ahora usamos el DAO para traer los datos completos
+        ProductoDAO dao = new ProductoDAO();
+        Optional<Producto> prodOpt = dao.findById(idProducto);
+
+        if (prodOpt.isEmpty()) {
+            new Alert(Alert.AlertType.ERROR, "No se encontró el producto en base de datos.").showAndWait();
+            return;
+        }
+        Producto producto = prodOpt.get();
+        pedirCantidad(producto);
+    }
+
+    private void procesarVenta(Producto producto, int cantidad, BigDecimal total) {
+        ProductoDAO dao = new ProductoDAO();
+        boolean actualizado = dao.descontarStock(producto.getId(), cantidad);
+
+        // 🔹 Formatear total acá también
+        NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+        String totalFormateado = formato.format(total);
+
+        if (actualizado) {
+            new Alert(Alert.AlertType.INFORMATION,
+                    "Venta confirmada.\n" +
+                            "Producto: " + producto.getNombre() + "\n" +
+                            "Cantidad: " + cantidad + "\n" +
+                            "Total: " + totalFormateado)
+                    .showAndWait();
+
+            // Refrescar tabla para ver el nuevo stock
+            tablaProductos.setItems(FXCollections.observableArrayList(dao.findAll()));
+
+        } else {
+            new Alert(Alert.AlertType.WARNING,
+                    "No hay suficiente stock para completar la venta.")
+                    .showAndWait();
+        }
+    }
 
 }
 
