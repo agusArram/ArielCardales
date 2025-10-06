@@ -8,7 +8,7 @@ import javafx.stage.Stage;
 public class App extends Application {
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/producto.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/Principal.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1250, 700); //tamanio de la ventana
         stage.setTitle("Inventario Ariel");
         stage.setScene(scene);

@@ -2,13 +2,10 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-
-<?import javafx.collections.FXCollections?>
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.arielcardales.arielcardales.controller.AppController"
+            fx:controller="com.arielcardales.arielcardales.controller.ProductoController"
             prefWidth="1000" prefHeight="600"
             stylesheets="@../Estilos/Estilos.css">
 
@@ -29,6 +26,16 @@
                 <ToggleButton fx:id="btnCategoria" text="Categoría" toggleGroup="$grupoBusqueda"/>
                 <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" toggleGroup="$grupoBusqueda"/>
             </VBox>
+
+
+            <VBox spacing="10" alignment="CENTER" style="-fx-padding: 30 0 0 0;">
+                <Label text="Manejo de datos"/>
+                <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
+                <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
+                <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
+            </VBox>
+
+
         </VBox>
 
     </left>
@@ -46,9 +53,6 @@
             </padding>
 
             <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
-            <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
-            <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
-            <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>
 

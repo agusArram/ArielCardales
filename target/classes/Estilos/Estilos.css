@@ -170,5 +170,23 @@
     -fx-background-color: darkred;
 }
 
+/* Barra superior */
+.hbox {
+    -fx-background-color: #b88a52;
+    -fx-padding: 10;
+}
+
+/* Botones de navegación */
+.hbox .button {
+    -fx-background-color: #e6c89b;
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-background-radius: 6;
+}
+
+.hbox .button:hover {
+    -fx-background-color: #cfa971;
+}
 
 
