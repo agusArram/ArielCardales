@@ -51,7 +51,7 @@ public class ExportadorPDF {
                 addBodyCell(table, prod.getNombre());
                 addBodyCell(table, prod.getDescripcion());
                 addBodyCell(table, prod.getCategoria());
-                addBodyCell(table, formatoMoneda.format(prod.getPrecio())); // <-- formateado
+                addBodyCell(table, formatoMoneda.format(prod.getPrecio()));
                 addBodyCell(table, String.valueOf(prod.getStockOnHand()));
             }
             document.add(table);

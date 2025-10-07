@@ -3,11 +3,13 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
-<BorderPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.arielcardales.arielcardales.controller.ProductoController"
-            prefWidth="1000" prefHeight="600"
-            stylesheets="@../Estilos/Estilos.css">
+<BorderPane
+        xmlns="http://javafx.com/javafx"
+        xmlns:fx="http://javafx.com/fxml"
+        fx:controller="com.arielcardales.arielcardales.controller.ProductoController"
+        style="-fx-padding: 0;"
+        VBox.vgrow="ALWAYS"
+        HBox.hgrow="ALWAYS">
 
     <!-- Panel izquierdo: búsqueda -->
     <left>
@@ -27,17 +29,16 @@
                 <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" toggleGroup="$grupoBusqueda"/>
             </VBox>
 
-
-            <VBox spacing="10" alignment="CENTER" style="-fx-padding: 30 0 0 0;">
+            <VBox spacing="10" style="-fx-padding: 30 0 0 0;">
                 <Label text="Manejo de datos"/>
+            </VBox>
+
+            <VBox spacing="10" alignment="CENTER">
                 <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
                 <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
                 <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
             </VBox>
-
-
         </VBox>
-
     </left>
     <!-- Centro: Tabla -->
     <center>
@@ -55,7 +56,6 @@
             <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>
-
         </HBox>
     </bottom>
 

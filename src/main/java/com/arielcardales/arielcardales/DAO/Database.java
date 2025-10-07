@@ -2,7 +2,6 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -18,7 +17,6 @@ public final class Database {
                         "?sslmode=require&preferQueryMode=simple&reWriteBatchedInserts=true");
         String user = getEnv("PG_USER", "postgres.gybuxvjuhqhjmjmwkwyb");
         String pass = getEnv("PG_PASSWORD", "r$t13XR$^*R!U!@w");
-
 
         cfg.setJdbcUrl(url);
         cfg.setUsername(user);

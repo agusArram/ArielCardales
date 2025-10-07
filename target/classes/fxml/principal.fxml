@@ -9,7 +9,7 @@
 
     <!-- 🔹 BARRA SUPERIOR -->
     <top>
-        <HBox spacing="10" style="-fx-background-color: #b88a52; -fx-padding: 10;">
+        <HBox spacing="20" style="-fx-background-color: #b88a52; -fx-padding: 15;">
             <Label text="Inventario Ariel"
                    style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;" />
 

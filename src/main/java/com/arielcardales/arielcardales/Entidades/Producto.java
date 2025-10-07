@@ -22,7 +22,7 @@ public class Producto {
     private String categoria;  // nombre legible de categoría
     private String unidad;     // abreviatura/nombre de unidad
 
-    // ===== Getters y Setters =====
+    // getters y setters
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
 

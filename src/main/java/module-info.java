@@ -17,9 +17,10 @@ module com.arielcardales.arielcardales {
     opens com.arielcardales.arielcardales to javafx.fxml; // Necesario para App.java
     exports com.arielcardales.arielcardales; // Para exponer el paquete principal
 
-    //No lo se
+
     requires com.zaxxer.hikari; // Solo si usás pool de conexiones HikariCP.
 
+    
     requires org.slf4j;
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
