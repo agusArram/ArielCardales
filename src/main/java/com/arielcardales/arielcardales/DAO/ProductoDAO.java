@@ -228,4 +228,26 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         }
     }
 
+    public static List<Producto> getProductosBajoStock() {
+        List<Producto> productos = new ArrayList<>();
+
+        String sql = sqlBase + " WHERE p.stockOnHand BETWEEN 0 AND 2 ORDER BY p.stockOnHand ASC";
+
+        try (Connection conn = Database.get();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                productos.add(Mapper.getProducto(rs));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return productos;
+    }
+
+
+
 }

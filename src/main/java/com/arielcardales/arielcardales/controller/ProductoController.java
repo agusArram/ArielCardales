@@ -35,6 +35,7 @@ public class ProductoController {
     @FXML private ToggleGroup grupoBusqueda;
     @FXML private Button btnNuevaVenta;
 
+    private ObservableList<Producto> listaOriginal;
     private ObservableList<Producto> listaProductos;
     private final ProductoDAO productoDAO = new ProductoDAO();
 
@@ -135,9 +136,13 @@ public class ProductoController {
 
         task.setOnSucceeded(e -> {
             listaProductos.setAll(task.getValue());
+            // ✅ Guardar copia original
+            listaOriginal = FXCollections.observableArrayList(task.getValue());
+
             if (listaProductos.isEmpty())
                 tablaProductos.setPlaceholder(new Label("⚠ No hay productos cargados"));
         });
+
 
         task.setOnFailed(e -> {
             tablaProductos.setPlaceholder(new Label("❌ Error al cargar productos"));
@@ -350,18 +355,62 @@ public class ProductoController {
             // Refrescar tabla para ver el nuevo stock
             tablaProductos.setItems(FXCollections.observableArrayList(productoDAO.findAll()));
 
-            new Alert(Alert.AlertType.INFORMATION,
-                    "Venta confirmada.\n" +
+            Alert alerta = new Alert(Alert.AlertType.INFORMATION);
+            alerta.setTitle("Venta confirmada");
+            alerta.setHeaderText("Venta confirmada " + totalFormateado);
+            alerta.setContentText(
                             "Producto: " + producto.getNombre() + "\n" +
                             "Cantidad: " + cantidad + "\n" +
-                            "Total: " + totalFormateado)
-                    .showAndWait();
+                            "Etiqueta: " +  producto.getEtiqueta()
+            );
+            alerta.showAndWait();
+
         } else {
             new Alert(Alert.AlertType.WARNING,
                     "No hay suficiente stock para completar la venta.")
                     .showAndWait();
         }
     }
+
+    @FXML
+    private void mostrarBajoStock() {
+        try {
+            var productos = ProductoDAO.getProductosBajoStock();
+            if (productos.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Stock bajo");
+                alert.setHeaderText(null);
+                alert.setContentText("No hay productos con stock menor o igual a 2.");
+                alert.showAndWait();
+                return;
+            }
+
+            // ✅ Reemplaza el contenido sin romper el binding
+            listaProductos.setAll(productos);
+
+            // ⚡ Refresca la vista
+            tablaProductos.refresh();
+            System.out.println("Mostrando productos con bajo stock (0 a 2).");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Error al cargar bajo stock: " + e.getMessage()).showAndWait();
+        }
+    }
+
+    @FXML
+    void restaurarInventarioCompleto() {
+        if (listaOriginal == null || listaOriginal.isEmpty()) {
+            cargarProductosAsync();
+            return;
+        }
+
+        listaProductos.setAll(listaOriginal); // 🔥 mismo concepto
+        tablaProductos.refresh();
+        System.out.println("Inventario completo restaurado.");
+    }
+
+
 
     // Exportar
     @FXML

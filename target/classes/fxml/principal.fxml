@@ -7,11 +7,13 @@
             fx:controller="com.arielcardales.arielcardales.controller.AppController"
             stylesheets="@../Estilos/Estilos.css">
 
-    <!-- 🔹 BARRA SUPERIOR -->
+    <!--  BARRA SUPERIOR -->
     <top>
         <HBox spacing="20" style="-fx-background-color: #b88a52; -fx-padding: 15;">
-            <Label text="Inventario Ariel"
-                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;" />
+            <Button text="Inventario Ariel"
+                    onAction="#restaurarInventarioCompleto"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+
 
             <Region HBox.hgrow="ALWAYS"/>
 
@@ -24,7 +26,7 @@
         </HBox>
     </top>
 
-    <!-- 🔹 CONTENIDO CENTRAL (cambia dinámicamente) -->
+    <!--  CONTENIDO CENTRAL (cambia dinámicamente) -->
     <center>
         <VBox fx:id="contenedorPrincipal" alignment="CENTER">
             <Label text="Seleccioná una sección para comenzar"

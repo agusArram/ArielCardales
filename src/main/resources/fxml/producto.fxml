@@ -52,7 +52,7 @@
             <padding>
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
-
+            <Button text="stock bajo" onAction="#mostrarBajoStock"/>
             <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>

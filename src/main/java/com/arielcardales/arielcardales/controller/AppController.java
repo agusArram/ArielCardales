@@ -9,9 +9,10 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 
-import java.io.IOException;
 
 public class AppController {
+
+    private ProductoController productoController;
 
     @FXML
     private VBox contenedorPrincipal;
@@ -22,6 +23,7 @@ public class AppController {
         // Cargar el inventario (productos) directamente al iniciar la app
         mostrarProductos();
     }
+
 
     /** Método genérico: carga rápida de vistas simples (sin Task) **/
     private void cargarVista(String rutaFXML) {
@@ -34,12 +36,12 @@ public class AppController {
         }
     }
 
-    /** Carga la vista de productos con un spinner asincrónico **/
+    /** Carga asíncrona de la vista de productos **/
     @FXML
     private void mostrarProductos() {
         contenedorPrincipal.getChildren().clear();
 
-        // Indicador de carga visual
+        // Spinner de carga
         ProgressIndicator spinner = new ProgressIndicator();
         spinner.setPrefSize(50, 50);
         Label cargando = new Label("Cargando inventario...");
@@ -47,19 +49,20 @@ public class AppController {
         box.setStyle("-fx-alignment: center; -fx-padding: 50;");
         contenedorPrincipal.getChildren().add(box);
 
-        // Tarea en segundo plano para cargar el FXML
         Task<Parent> tareaCarga = new Task<>() {
             @Override
             protected Parent call() throws Exception {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/producto.fxml"));
-                return loader.load();
+                Parent vista = loader.load();
+                productoController = loader.getController(); // 🔗 Guardamos referencia
+                return vista;
             }
         };
 
         tareaCarga.setOnSucceeded(e -> {
-            Parent vista = tareaCarga.getValue();
-            VBox.setMargin(vista, new Insets(0));
-            contenedorPrincipal.getChildren().setAll(vista);
+            vistaProductos = tareaCarga.getValue();
+            VBox.setMargin(vistaProductos, new Insets(0));
+            contenedorPrincipal.getChildren().setAll(vistaProductos);
         });
 
         tareaCarga.setOnFailed(e -> {
@@ -71,6 +74,23 @@ public class AppController {
         new Thread(tareaCarga).start();
     }
 
+
+    /** 🔁 Restaurar inventario sin recargar toda la vista **/
+    @FXML
+    public  void restaurarInventarioCompleto() {
+        try {
+            if (productoController != null) {
+                productoController.restaurarInventarioCompleto();
+                System.out.println("Inventario restaurado desde AppController (sin recargar FXML).");
+            } else {
+                mostrarProductos(); // fallback, si todavía no está inicializado
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Label error = new Label("❌ Error al restaurar inventario");
+            contenedorPrincipal.getChildren().setAll(error);
+        }
+    }
     /** Futura vista de ventas **/
     @FXML
     private void mostrarVentas() {
