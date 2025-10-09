@@ -42,10 +42,11 @@
     </left>
     <!-- Centro: Tabla -->
     <center>
-        <VBox spacing="10" style="-fx-padding: 0 20 0 0;">
-            <TableView fx:id="tablaProductos" VBox.vgrow="ALWAYS" />
+        <VBox spacing="10" VBox.vgrow="ALWAYS" alignment="CENTER">
+            <TableView fx:id="tablaProductos" VBox.vgrow="ALWAYS" prefHeight="600.0"/>
         </VBox>
     </center>
+
     <!-- Inferior: barra de acciones -->
     <bottom>
         <HBox spacing="15" alignment="CENTER" styleClass="footer">

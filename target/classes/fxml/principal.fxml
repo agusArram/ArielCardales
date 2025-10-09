@@ -16,6 +16,7 @@
 
 
             <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Inventario (Tree Experimental)" onAction="#verInventarioTreeExperimental" />
 
             <Button text="Productos" onAction="#mostrarProductos"
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>

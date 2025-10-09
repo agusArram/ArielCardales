@@ -55,6 +55,15 @@ public class ProductoController {
 
         // Ejecuta el setup completo después de que JavaFX pinte la escena
         Platform.runLater(() -> inicializarEstructura());
+
+        Platform.runLater(() -> {
+            if (tablaProductos != null) {
+                System.out.println("✅ Tabla Productos cargada correctamente.");
+            } else {
+                System.err.println("⚠️ Tabla Productos es null.");
+            }
+        });
+
     }
 
     private void inicializarEstructura() {

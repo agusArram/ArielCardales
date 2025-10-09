@@ -1,6 +1,7 @@
 package com.arielcardales.arielcardales.Util;
 
 import com.arielcardales.arielcardales.Entidades.Categoria;
+import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,6 +22,31 @@ public class Mapper {
         return p;
     }
 
+    public static ItemInventario getItemInventarioBase(ResultSet rs) throws SQLException {
+        ItemInventario it = new ItemInventario();
+        it.productoIdProperty().set(rs.getLong("producto_id"));
+        it.varianteIdProperty().set(null);
+        it.etiquetaProductoProperty().set(rs.getString("producto_etiqueta"));
+        it.nombreProductoProperty().set(rs.getString("producto_nombre"));
+        it.categoriaProperty().set(rs.getString("categoria"));
+        it.unidadProperty().set(rs.getString("unidad"));
+        it.colorProperty().set(rs.getString("color"));  // vendrá "-" en la vista
+        it.talleProperty().set(rs.getString("talle"));  // vendrá "-" en la vista
+        it.precioProperty().set(rs.getBigDecimal("precio"));
+        it.costoProperty().set(rs.getBigDecimal("costo"));
+        it.stockOnHandProperty().set(rs.getInt("stockOnHand"));
+        it.activeProperty().set(rs.getBoolean("active"));
+        it.updatedAtProperty().set(rs.getTimestamp("updatedAt").toLocalDateTime());
+        it.setEsVariante(false);
+        return it;
+    }
+
+    public static ItemInventario getItemInventarioVariante(ResultSet rs) throws SQLException {
+        ItemInventario it = getItemInventarioBase(rs);
+        it.varianteIdProperty().set(rs.getLong("variante_id")); // no null aquí
+        it.setEsVariante(true);
+        return it;
+    }
 
     // Tabla producto (para ABM)
     public static Producto getProductoBasico(ResultSet rs) throws SQLException {
