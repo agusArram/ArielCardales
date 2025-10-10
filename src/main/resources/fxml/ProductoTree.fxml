@@ -24,9 +24,10 @@
             <Label text="Buscar por:"/>
 
             <VBox spacing="10" alignment="CENTER">
-                <ToggleButton fx:id="btnNombre" text="Nombre" toggleGroup="$grupoBusqueda"/>
-                <ToggleButton fx:id="btnCategoria" text="Categoría" toggleGroup="$grupoBusqueda"/>
-                <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" toggleGroup="$grupoBusqueda"/>
+                <ToggleButton fx:id="btnNombre" text="Nombre" onAction="#buscarPorNombre"/>
+                <ToggleButton fx:id="btnCategoria" text="Categoría" onAction="#buscarPorCategoria"/>
+                <ToggleButton fx:id="btnEtiqueta" text="Etiqueta" onAction="#buscarPorEtiqueta"/>
+
             </VBox>
 
             <VBox spacing="10" style="-fx-padding: 30 0 0 0;">
@@ -36,6 +37,7 @@
             <VBox spacing="10" alignment="CENTER">
                 <Button text="➕ Agregar producto" onAction="#abrirAgregarProducto"/>
                 <Button text="➕ Agregar categoría" onAction="#agregarCategoria"/>
+                <Button text="+ Agregar variante" onAction="#agregarVariante"/>
                 <Button text="🗑 Eliminar producto" onAction="#eliminarProducto"/>
             </VBox>
         </VBox>

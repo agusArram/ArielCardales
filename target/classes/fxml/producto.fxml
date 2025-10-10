@@ -6,7 +6,7 @@
 <BorderPane
         xmlns="http://javafx.com/javafx"
         xmlns:fx="http://javafx.com/fxml"
-        fx:controller="com.arielcardales.arielcardales.controller.ProductoController"
+        fx:controller="com.arielcardales.arielcardales.controller.ProductoTreeController"
         style="-fx-padding: 0;"
         VBox.vgrow="ALWAYS"
         HBox.hgrow="ALWAYS">
@@ -53,10 +53,12 @@
             <padding>
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
-            <Button text="stock bajo" onAction="#mostrarBajoStock"/>
             <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
+            <!--
+            <Button text="stock bajo" onAction="#mostrarBajoStock"/>
             <Button text="📄 Exportar Excel" onAction="#exportarExcel"/>
             <Button text="📑 Exportar PDF" onAction="#exportarPDF"/>
+            -->
         </HBox>
     </bottom>
 

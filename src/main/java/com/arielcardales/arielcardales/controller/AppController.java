@@ -85,8 +85,8 @@ public class AppController {
                 {"Nombre",   "nombreProducto"},
                 {"Color",    "color"},
                 {"Talle",    "talle"},
-                {"Unidad",   "unidad"},
                 {"Categoría","categoria"},
+                {"Costo",    "costo"},
                 {"Precio",   "precio"},
                 {"Stock",    "stockOnHand"}
         };

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.AgregarVarianteController"
+      spacing="12" alignment="CENTER"
+      stylesheets="@../Estilos/Estilos.css"
+      prefWidth="400" prefHeight="420">
+
+    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+    <Label text="Agregar Variante" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+    <GridPane hgap="12" vgap="10">
+        <Label text="Color:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtColor" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Talle:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtTalle" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="Precio:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtPrecio" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="Costo:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtCosto" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+        <Label text="Stock inicial:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtStock" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <HBox spacing="15" alignment="CENTER">
+        <Button text="Agregar" onAction="#guardarVariante"/>
+        <Button text="Cerrar" onAction="#cerrar"/>
+    </HBox>
+</VBox>

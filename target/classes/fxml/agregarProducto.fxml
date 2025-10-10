@@ -61,7 +61,7 @@
             <!-- Botones -->
             <HBox spacing="15" alignment="CENTER" GridPane.rowIndex="9" GridPane.columnIndex="0" GridPane.columnSpan="2">
                 <Button text="Guardar" onAction="#guardar"/>
-                <Button text="Cancelar" onAction="#cancelar"/>
+
             </HBox>
         </GridPane>
     </center>

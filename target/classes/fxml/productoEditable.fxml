@@ -20,8 +20,9 @@
         <TextField fx:id="txtCategoria" promptText="Categoría"/>
         <TextField fx:id="txtPrecio" promptText="Precio"/>
         <TextField fx:id="txtStock" promptText="Stock"/>
-
+<!--
         <Button text="Guardar" onAction="#guardarCambios"/>
+        -->
     </VBox>
 
 

@@ -5,7 +5,9 @@ import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public class Mapper {
 // Vista vInventario
@@ -65,16 +67,16 @@ public class Mapper {
         return p;
     }
 
-    // Categoría
+    // Categoria
     public static Categoria getCategoria(ResultSet rs) throws SQLException {
         Categoria c = new Categoria();
         c.setId(rs.getLong("id"));
         c.setNombre(rs.getString("nombre"));
         long parent = rs.getLong("parentId");
         c.setParentId(rs.wasNull() ? null : parent);
-        c.setCreatedAt(LocalDateTime.from(rs.getTimestamp("createdAt").toInstant()));
         return c;
     }
+
 
     public static Categoria getCategoriaConPadre(ResultSet rs) throws SQLException {
         Categoria c = getCategoria(rs);

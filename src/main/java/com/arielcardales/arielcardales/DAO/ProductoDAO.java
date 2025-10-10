@@ -248,6 +248,51 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         return productos;
     }
 
+    public boolean updateCampo(long idProducto, String campo, String valor) {
+        boolean actualizado = false;
+
+        try (Connection conn = Database.get()) {
+            campo = campo.trim().toLowerCase();
+            String sql;
+
+            // 🔧 Normaliza nombres de campos según la BD real
+            switch (campo) {
+                case "categoria", "categoría" ->
+                        sql = "UPDATE producto SET categoriaid = (SELECT id FROM categoria WHERE LOWER(nombre) = LOWER(?)) WHERE id = ?";
+                case "stock", "stockonhand" ->
+                        sql = "UPDATE producto SET stockonhand = ? WHERE id = ?";
+                case "precio" ->
+                        sql = "UPDATE producto SET precio = ? WHERE id = ?";
+                case "costo" ->
+                        sql = "UPDATE producto SET costo = ? WHERE id = ?";
+                default ->
+                        sql = "UPDATE producto SET " + campo + " = ? WHERE id = ?";
+            }
+
+            System.out.println("🔧 Ejecutando SQL: " + sql);
+            System.out.println("📦 Parámetros → valor='" + valor + "' | id=" + idProducto);
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, valor);
+                stmt.setLong(2, idProducto);
+                int filas = stmt.executeUpdate();
+                actualizado = filas > 0;
+            }
+
+            System.out.println("📊 Filas afectadas: " + (actualizado ? "1" : "0"));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return actualizado;
+    }
+
+
+
+
+
+
 
 
 }

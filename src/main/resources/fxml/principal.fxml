@@ -10,7 +10,7 @@
     <!--  BARRA SUPERIOR -->
     <top>
         <HBox spacing="20" style="-fx-background-color: #b88a52; -fx-padding: 15;">
-            <Button text="Inventario Ariel"
+            <Button text="Inventario"
                     onAction="#restaurarInventarioCompleto"
                     style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-cursor: hand;"/>
 
