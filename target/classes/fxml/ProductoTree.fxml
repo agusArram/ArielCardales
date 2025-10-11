@@ -13,7 +13,7 @@
 
     <!-- Panel izquierdo: búsqueda -->
     <left>
-        <VBox spacing="15" alignment="TOP_LEFT" styleClass="sidebar" prefWidth="200">
+        <VBox fx:id="panelLateral" spacing="15" alignment="TOP_LEFT" styleClass="sidebar" prefWidth="200">
             <padding>
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>

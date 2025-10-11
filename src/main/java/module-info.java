@@ -28,7 +28,8 @@ module com.arielcardales.arielcardales {
     requires java.desktop;
     //requires com.arielcardales.arielcardales;
     requires javafx.graphics;
-    requires javafx.base; // Solo si usás logging con SLF4J.
+    requires javafx.base;
+    requires java.prefs; // Solo si usás logging con SLF4J.
 
     // requires jdk.compiler; // ⚠️ Esto es para generar código dinámicamente (annotation processors, etc.)
 

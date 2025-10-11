@@ -6,6 +6,7 @@ import com.arielcardales.arielcardales.DAO.CategoriaDAO;
 import com.arielcardales.arielcardales.DAO.ProductoVarianteDAO;
 import com.arielcardales.arielcardales.Entidades.*;
 import com.arielcardales.arielcardales.Util.*;
+import com.arielcardales.arielcardales.service.InventarioService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,15 +20,16 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxTreeTableCell;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.controlsfx.control.Notifications;
-import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.control.TreeItem;
-import javafx.util.converter.DefaultStringConverter;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.prefs.Preferences;
+
 
 public class ProductoTreeController {
 
@@ -37,11 +39,15 @@ public class ProductoTreeController {
     @FXML private ToggleButton btnCategoria;
     @FXML private ToggleButton btnEtiqueta;
     @FXML private ToggleGroup grupoBusqueda;
+    @FXML private VBox panelLateral;
+
     private javafx.animation.PauseTransition pausaBusqueda = new javafx.animation.PauseTransition(javafx.util.Duration.millis(300));
     private TreeItem<ItemInventario> rootCompleto;
+    private final InventarioService inventarioService = new InventarioService();
+    private final Preferences prefs = Preferences.userNodeForPackage(ProductoTreeController.class);
+    private static final String PREF_EXPANDIR_NODOS = "expandir_nodos_hijos";
 
     private final ProductoDAO productoDAO = new ProductoDAO();
-    private ObservableList<Producto> listaProductos;
     private Map<String, Long> categoriasNombreId;
     private ObservableList<String> categoriasNombres;
 
@@ -64,16 +70,22 @@ public class ProductoTreeController {
 
         tablaInventarioTree.getColumns().clear();
 
-
         for (String[] c : columnas) {
-            TreeTableColumn<ItemInventario, Object> col = new TreeTableColumn<>(c[0]);
+            // ✅ Crear columnas con tipo correcto
+            TreeTableColumn<ItemInventario, ?> col;
+            switch (c[0].toLowerCase()) {
+                case "stock" -> col = new TreeTableColumn<ItemInventario, Integer>(c[0]);
+                case "precio", "costo" -> col = new TreeTableColumn<ItemInventario, BigDecimal>(c[0]);
+                default -> col = new TreeTableColumn<ItemInventario, String>(c[0]);
+            }
+
             col.setCellValueFactory(new TreeItemPropertyValueFactory<>(c[1]));
 
             // 🎨 Estilo especial para Color y Talle
             if (c[0].equalsIgnoreCase("Color") || c[0].equalsIgnoreCase("Talle")) {
-                col.setCellFactory(tc -> new TreeTableCell<>() {
+                ((TreeTableColumn<ItemInventario, String>) col).setCellFactory(tc -> new TreeTableCell<>() {
                     @Override
-                    protected void updateItem(Object item, boolean empty) {
+                    protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
                         if (empty) {
                             setText(null);
@@ -83,13 +95,13 @@ public class ProductoTreeController {
 
                         TreeItem<ItemInventario> treeItem = getTreeTableRow().getTreeItem();
                         if (treeItem == null || treeItem.getValue() == null) {
-                            setText(item == null ? "" : item.toString());
+                            setText(item == null ? "" : item);
                             setStyle("");
                             return;
                         }
 
                         ItemInventario data = treeItem.getValue();
-                        boolean esVariante = data.isEsVariante(); // ✅ usamos tu lógica actual de variantes
+                        boolean esVariante = data.isEsVariante();
 
                         if (!esVariante) {
                             // 🔸 Producto padre → guion claro y cursiva
@@ -97,7 +109,7 @@ public class ProductoTreeController {
                             setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
                         } else {
                             // 🔹 Variante → valor normal
-                            setText(item == null ? "" : item.toString());
+                            setText(item == null ? "" : item);
                             setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
                         }
                     }
@@ -106,19 +118,20 @@ public class ProductoTreeController {
 
             tablaInventarioTree.getColumns().add(col);
         }
-        ajustarAnchoColumnas(tablaInventarioTree);
 
+        ajustarAnchoColumnas(tablaInventarioTree);
         recargarArbol("");
 
         tablaInventarioTree.setShowRoot(false);
         tablaInventarioTree.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         tablaInventarioTree.setStyle("-fx-background-color: transparent;");
+        tablaInventarioTree.setEditable(true);
 
         rootCompleto = tablaInventarioTree.getRoot(); // guarda una copia inicial
 
-// ==============================
-// 🔍 NUEVA LÓGICA DE BÚSQUEDA
-// ==============================
+        // ==============================
+        // 🔍 NUEVA LÓGICA DE BÚSQUEDA
+        // ==============================
         grupoBusqueda = new ToggleGroup();
         btnNombre.setToggleGroup(grupoBusqueda);
         btnCategoria.setToggleGroup(grupoBusqueda);
@@ -134,43 +147,37 @@ public class ProductoTreeController {
 
             Toggle selected = grupoBusqueda.getSelectedToggle();
             if (selected == null) {
-                // Si no hay botón seleccionado, forzamos "nombre" por defecto
                 grupoBusqueda.selectToggle(btnNombre);
                 selected = btnNombre;
             }
 
             String tipo = ((ToggleButton) selected).getText().toLowerCase();
-
             switch (tipo) {
                 case "nombre" -> recargarArbolPorCampo("nombre", filtro);
                 case "categoría", "categoria" -> recargarArbolPorCampo("categoria", filtro);
                 case "etiqueta" -> recargarArbolPorCampo("etiqueta", filtro);
                 default -> recargarArbol("");
             }
-
         };
 
-
-    // 🔁 Escuchar cambios en campo y tipo de búsqueda
-    // 🕐 Debounce: evita ejecutar el filtro en cada tecla
+        // 🔁 Escuchar cambios en campo y tipo de búsqueda
         txtBuscarEtiqueta.textProperty().addListener((o, a, b) -> {
             pausaBusqueda.setOnFinished(e -> aplicarFiltro.run());
             pausaBusqueda.playFromStart();
         });
 
-    // Si cambia el tipo de búsqueda (nombre, categoría, etiqueta), aplicar de inmediato
         grupoBusqueda.selectedToggleProperty().addListener((o, a, b) -> aplicarFiltro.run());
 
+        // 🧩 Activar edición
 
-        editGeneral();
         aplicarRendererColorTalle();
+        editGeneral();
 
-
+        // 🎨 Estilos CSS
         tablaInventarioTree.getStylesheets().add(
                 getClass().getResource("/Estilos/estilos.css").toExternalForm()
         );
-
-        // --- Doble clic para editar (evita flechita) ---
+// --- Doble clic para editar (evita flechita) ---
         tablaInventarioTree.setRowFactory(tv -> {
             TreeTableRow<ItemInventario> row = new TreeTableRow<>();
 
@@ -180,25 +187,62 @@ public class ProductoTreeController {
                 row.pseudoClassStateChanged(PseudoClass.getPseudoClass("hijo"), esHijo);
             });
 
-            // 🖱️ Doble clic para editar (evita la flechita de expansión)
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    Node nodoClic = event.getPickResult().getIntersectedNode();
-                    while (nodoClic != null && nodoClic != row && !(nodoClic instanceof TreeTableRow)) {
-                        if (nodoClic.getStyleClass().contains("tree-disclosure-node")) {
-                            return; // si tocó la flecha, no editar
+                    Node nodo = event.getPickResult().getIntersectedNode();
+
+                    // ❌ Si tocó la flecha, no editar
+                    while (nodo != null && nodo != row && !(nodo instanceof TreeTableRow)) {
+                        if (nodo.getStyleClass().contains("tree-disclosure-node")) {
+                            return;
                         }
-                        nodoClic = nodoClic.getParent();
+                        nodo = nodo.getParent();
                     }
-                    int colIndex = tablaInventarioTree.getSelectionModel().getSelectedCells().get(0).getColumn();
+
+                    // ✅ Selecciona la celda clickeada si no lo estaba
+                    TreeTablePosition<ItemInventario, ?> pos = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
+                            ? null
+                            : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0);
+
+                    if (pos == null || pos.getRow() != row.getIndex()) {
+                        tablaInventarioTree.getSelectionModel().clearAndSelect(row.getIndex());
+                    }
+
+                    // ✅ Forzar foco antes de editar
+                    tablaInventarioTree.requestFocus();
+
+                    // ✅ Obtener columna correcta y activar edición
+                    int colIndex = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
+                            ? 0
+                            : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0).getColumn();
+
                     tablaInventarioTree.edit(row.getIndex(), tablaInventarioTree.getColumns().get(colIndex));
                 }
             });
 
             return row;
         });
+        // ⚙️ Checkbox de preferencia persistente
+        CheckBox chkExpandir = new CheckBox("Expandir auto");
+        chkExpandir.setSelected(prefs.getBoolean(PREF_EXPANDIR_NODOS, false)); // carga preferencia guardada
+
+        chkExpandir.setOnAction(e -> {
+            prefs.putBoolean(PREF_EXPANDIR_NODOS, chkExpandir.isSelected());
+            recargarArbol(txtBuscarEtiqueta.getText()); // recarga vista para aplicar el cambio
+        });
+
+        chkExpandir.setStyle("-fx-padding: 10 0 0 4; -fx-font-size: 13px; -fx-margin: 10 2 2 2;");
+
+        // ✅ Insertar al final del panel lateral
+        if (panelLateral != null) {
+            panelLateral.getChildren().add(chkExpandir);
+        } else {
+            System.err.println("⚠ No se encontró el panel lateral para insertar el checkbox.");
+        }
+
 
     }
+
 
 
     private void editGeneral() {
@@ -240,7 +284,7 @@ public class ProductoTreeController {
             if (item.isEsVariante()) {
                 okDB = InventarioDAO.updateVarianteCampo(item.getVarianteId(), campo, valor);
             } else {
-                okDB = productoDAO.updateCampo(item.getProductoId(), campo, valor);
+                okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, valor);
             }
 
             if (okDB)
@@ -258,7 +302,7 @@ public class ProductoTreeController {
 
     private void recargarArbol(String filtro) {
         try {
-            tablaInventarioTree.setRoot(InventarioDAO.cargarArbol(filtro));
+            tablaInventarioTree.setRoot(inventarioService.cargarArbol(filtro));
             tablaInventarioTree.setShowRoot(false);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -398,7 +442,7 @@ public class ProductoTreeController {
         alert.showAndWait().ifPresent(res -> {
             if (res == eliminar) {
                 try {
-                    productoDAO.deleteById(item.getProductoId());
+                    inventarioService.eliminarProducto(item.getProductoId());
                     ok("Producto eliminado");
                     recargarArbol(txtBuscarEtiqueta.getText());
                 } catch (Exception e) {
@@ -573,21 +617,12 @@ public class ProductoTreeController {
             String nuevo = event.getNewValue();
             String anterior = event.getOldValue();
 
-            boolean okDB = false;
             try {
-                // 🚫 Bloqueo si el campo no aplica
-                if (!item.isEsVariante() && (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle"))) {
-                    error("Este producto no tiene variantes, por lo que no puede editar " + campo + ".");
-                    item.setNombreProducto(item.getNombreProducto()); // fuerza refresh visual
-                    tablaInventarioTree.refresh();
-                    return;
-                }
-
-                // ✅ Intentar guardar
+                boolean okDB;
                 if (item.isEsVariante()) {
-                    okDB = InventarioDAO.updateVarianteCampo(item.getVarianteId(), campo, nuevo);
+                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo);
                 } else {
-                    okDB = productoDAO.updateCampo(item.getProductoId(), campo, nuevo);
+                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo);
                 }
 
                 if (okDB) {
@@ -598,27 +633,15 @@ public class ProductoTreeController {
                         case "talle" -> item.setTalle(nuevo);
                     }
                 } else {
-                    // ❌ Revertir cambio visual
-                    switch (campo.toLowerCase()) {
-                        case "nombre" -> item.setNombreProducto(anterior);
-                        case "color" -> item.setColor(anterior);
-                        case "talle" -> item.setTalle(anterior);
-                    }
                     error("⚠ No se pudo actualizar el campo " + campo);
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
-                // ❌ Revertir ante error
-                switch (campo.toLowerCase()) {
-                    case "nombre" -> item.setNombreProducto(anterior);
-                    case "color" -> item.setColor(anterior);
-                    case "talle" -> item.setTalle(anterior);
-                }
                 error("❌ Error al guardar " + campo + ": " + e.getMessage());
             } finally {
                 tablaInventarioTree.refresh();
             }
+
         });
     }
 
@@ -669,9 +692,9 @@ public class ProductoTreeController {
             try {
                 boolean okDB;
                 if (item.isEsVariante()) {
-                    okDB = InventarioDAO.updateVarianteCampo(item.getVarianteId(), campo, nuevo.toPlainString());
+                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo.toPlainString());
                 } else {
-                    okDB = productoDAO.updateCampo(item.getProductoId(), campo, nuevo.toPlainString());
+                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo.toPlainString());
                 }
 
                 if (okDB) {
@@ -681,23 +704,15 @@ public class ProductoTreeController {
                     else
                         item.setCosto(nuevo);
                 } else {
-                    if (campo.equalsIgnoreCase("precio"))
-                        item.setPrecio(anterior);
-                    else
-                        item.setCosto(anterior);
                     error("⚠ No se pudo actualizar el campo " + campo);
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
-                if (campo.equalsIgnoreCase("precio"))
-                    item.setPrecio(anterior);
-                else
-                    item.setCosto(anterior);
                 error("❌ Error al actualizar " + campo + ": " + e.getMessage());
             } finally {
                 tablaInventarioTree.refresh();
             }
+
         });
     }
 
@@ -738,26 +753,24 @@ public class ProductoTreeController {
             try {
                 boolean okDB;
                 if (item.isEsVariante()) {
-                    okDB = InventarioDAO.updateVarianteCampo(item.getVarianteId(), campo, nuevo.toString());
+                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo.toString());
                 } else {
-                    okDB = productoDAO.updateCampo(item.getProductoId(), campo, nuevo.toString());
+                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo.toString());
                 }
 
                 if (okDB) {
                     ok("✔ Stock actualizado correctamente");
                     item.setStockOnHand(nuevo);
                 } else {
-                    item.setStockOnHand(anterior);
                     error("⚠ No se pudo actualizar el campo " + campo);
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
-                item.setStockOnHand(anterior);
                 error("❌ Error al actualizar " + campo + ": " + e.getMessage());
             } finally {
                 tablaInventarioTree.refresh();
             }
+
         });
     }
 
@@ -840,16 +853,26 @@ public class ProductoTreeController {
         for (TreeTableColumn<ItemInventario, ?> anyCol : tablaInventarioTree.getColumns()) {
             String header = anyCol.getText().toLowerCase();
 
-            // Columnas que solo aplican a variantes o productos con variantes
-            if (!List.of("color", "talle", "costo", "precio", "stock").contains(header))
+            // ✅ Solo aplica a "color" y "talle"
+            if (!List.of("color", "talle").contains(header))
                 continue;
 
             TreeTableColumn<ItemInventario, Object> col = (TreeTableColumn<ItemInventario, Object>) anyCol;
 
-            col.setCellFactory(tc -> new TreeTableCell<>() {
+            col.setCellFactory(tc -> new TextFieldTreeTableCell<>(new javafx.util.StringConverter<Object>() {
+                @Override
+                public String toString(Object value) {
+                    if (value == null) return "";
+                    return value.toString();
+                }
 
                 @Override
-                protected void updateItem(Object item, boolean empty) {
+                public Object fromString(String s) {
+                    return (s == null || s.isBlank()) ? null : s.trim();
+                }
+            }) {
+                @Override
+                public void updateItem(Object item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty) {
                         setText(null);
@@ -858,40 +881,25 @@ public class ProductoTreeController {
                     }
 
                     TreeItem<ItemInventario> ti = getTreeTableRow() == null ? null : getTreeTableRow().getTreeItem();
-                    if (ti == null || ti.getValue() == null) {
-                        setText(item == null ? "" : item.toString());
-                        return;
-                    }
+                    if (ti == null || ti.getValue() == null) return;
 
                     ItemInventario data = ti.getValue();
                     boolean esVariante = data.isEsVariante();
-                    boolean tieneHijos = ti.getChildren() != null && !ti.getChildren().isEmpty();
 
-                    // 🔸 Mostrar “—” SOLO si es un padre con hijos (producto con variantes)
-                    if (!esVariante && tieneHijos) {
+                    // 🔸 Producto base → muestra guion gris
+                    if (!esVariante) {
                         setText("—");
                         setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
-                        return;
-                    }
-
-                    // 🔹 Mostrar valor normal si es variante o producto sin hijos
-                    if (item == null) {
-                        setText("");
-                    } else if (item instanceof BigDecimal bd) {
-                        setText(String.format("$ %,.2f", bd));
                     } else {
-                        setText(item.toString());
+                        setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
                     }
-
-                    setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
                 }
 
                 @Override
                 public void startEdit() {
-                    // Bloquea edición solo en padres
                     TreeItem<ItemInventario> ti = getTreeTableRow() == null ? null : getTreeTableRow().getTreeItem();
-                    ItemInventario data = (ti == null) ? null : ti.getValue();
-                    if (data != null && !data.isEsVariante()) {
+                    if (ti != null && ti.getValue() != null && !ti.getValue().isEsVariante()) {
+                        // 🔒 No permitir editar color/talle en producto base
                         return;
                     }
                     super.startEdit();
@@ -899,6 +907,8 @@ public class ProductoTreeController {
             });
         }
     }
+
+
 
     @FXML
     private void buscarPorNombre() { grupoBusqueda.selectToggle(btnNombre); }

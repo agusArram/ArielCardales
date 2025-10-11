@@ -9,7 +9,7 @@ public class App extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/principal.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 1250, 700); //tamanio de la ventana
+        Scene scene = new Scene(fxmlLoader.load(), 1450, 830); //tamanio de la ventana
         stage.setTitle("Inventario Ariel");
         stage.setScene(scene);
         stage.show();
