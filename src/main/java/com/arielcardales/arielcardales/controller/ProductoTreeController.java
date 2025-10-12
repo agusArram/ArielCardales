@@ -21,6 +21,7 @@ import javafx.scene.control.cell.ComboBoxTreeTableCell;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.control.Notifications;
 import javafx.scene.control.TreeItem;
@@ -54,6 +55,8 @@ public class ProductoTreeController {
     @FXML
     public void initialize() {
         Platform.runLater(this::configurarVistaCompleta);
+        System.out.println(Font.getFamilies());
+
     }
 
     private void configurarVistaCompleta() {
