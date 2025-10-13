@@ -1,80 +1,172 @@
 package com.arielcardales.arielcardales.Util;
 
+import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.pdf.*;
 
 import java.awt.*;
 import java.io.FileOutputStream;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
 import java.util.Locale;
 
 public class ExportadorPDF {
 
-    public static void exportar(List<Producto> productos, String ruta) {
-        try {
-            Document document = new Document();
-            PdfWriter.getInstance(document, new FileOutputStream(ruta));
-            document.open();
+    private static final Font FONT_TITLE  = new Font(Font.HELVETICA, 18, Font.BOLD, Color.DARK_GRAY);
+    private static final Font FONT_HEADER = new Font(Font.HELVETICA, 11, Font.BOLD, Color.BLACK);
+    private static final Font FONT_CELL   = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.BLACK);
+    private static final Color ZEBRA_1    = new Color(0xFA, 0xF1, 0xE1);
+    private static final Color ZEBRA_2    = new Color(0xF1, 0xE1, 0xCA);
+    private static final NumberFormat MONEDA_AR = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
 
-            // Título
-            Paragraph titulo = new Paragraph("Inventario de Productos",
-                    new Font(Font.HELVETICA, 18, Font.BOLD));
-            titulo.setAlignment(Element.ALIGN_CENTER);
-            document.add(titulo);
-            document.add(new Paragraph("\n")); // Espacio
+    /** ========= Exporta lista plana de Producto ========= */
+    public static void exportarProductos(List<Producto> productos, String ruta) {
+        try (FileOutputStream out = new FileOutputStream(ruta)) {
+            Document doc = new Document(PageSize.A4.rotate(), 24, 24, 50, 36);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
+            agregarHeaderFooter(writer);
+            doc.open();
 
-            // Tabla con 6 columnas
+            agregarTitulo(doc, "Inventario de Productos");
             PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
-            // Reducimos ID (8f) y damos más a Precio (11f)
-            table.setWidths(new float[]{7f, 25f, 31f, 13f, 16f, 7f}); //tamanios con fr ( % ) de las coolumnas
+            table.setWidths(new float[]{8f, 24f, 30f, 16f, 12f, 8f});
 
-            Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD); //tamanio y eso de la letra, abajo nombre de la columna
-            addHeaderCell(table, "ID", headerFont);
-            addHeaderCell(table, "Nombre", headerFont);
-            addHeaderCell(table, "Descripción", headerFont);
-            addHeaderCell(table, "Categoría", headerFont);
-            addHeaderCell(table, "Precio", headerFont);
-            addHeaderCell(table, "#", headerFont);
+            addHeader(table, "Etiqueta");
+            addHeader(table, "Nombre");
+            addHeader(table, "Descripción");
+            addHeader(table, "Categoría");
+            addHeader(table, "Precio");
+            addHeader(table, "Stock");
 
-            // Formateador de moneda
-            NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-
-            // Filas
-            for (Producto prod : productos) {
-                addBodyCell(table, prod.getEtiqueta());
-                addBodyCell(table, prod.getNombre());
-                addBodyCell(table, prod.getDescripcion());
-                addBodyCell(table, prod.getCategoria());
-                addBodyCell(table, formatoMoneda.format(prod.getPrecio()));
-                addBodyCell(table, String.valueOf(prod.getStockOnHand()));
+            int row = 0;
+            for (Producto p : productos) {
+                Color bg = (row++ % 2 == 0) ? ZEBRA_1 : ZEBRA_2;
+                addCell(table, safe(p.getEtiqueta()), bg, Element.ALIGN_CENTER);
+                addCell(table, safe(p.getNombre()),   bg, Element.ALIGN_LEFT);
+                addCell(table, safe(p.getDescripcion()), bg, Element.ALIGN_LEFT);
+                addCell(table, safe(p.getCategoria()), bg, Element.ALIGN_LEFT);
+                addCell(table, p.getPrecio()!=null ? MONEDA_AR.format(p.getPrecio()) : "-", bg, Element.ALIGN_RIGHT);
+                addCell(table, String.valueOf(p.getStockOnHand()), bg, Element.ALIGN_CENTER);
             }
-            document.add(table);
-            document.close();
-            System.out.println("✅ Exportado a PDF en " + ruta); //agregar mensaje dsp para que se vea en el .exe
+
+            doc.add(table);
+            doc.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error exportando PDF: " + e.getMessage(), e);
         }
     }
 
-    // Encabezados con fondo gris y padding
-    private static void addHeaderCell(PdfPTable table, String text, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        cell.setPadding(5f);
-        table.addCell(cell);
+    /** ========= Exporta el árbol visible (productos + variantes) ========= */
+    public static void exportarInventarioTree(ItemInventario rootValue,
+                                              List<ItemInventario> inOrderFlat,
+                                              String ruta) {
+        try (FileOutputStream out = new FileOutputStream(ruta)) {
+            Document doc = new Document(PageSize.A4.rotate(), 24, 24, 50, 36);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
+            agregarHeaderFooter(writer);
+            doc.open();
+
+            agregarTitulo(doc, "Inventario (vista actual)");
+            Paragraph sub = new Paragraph(
+                    "Generado: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) +
+                            "  •  Moneda: ARS",
+                    new Font(Font.HELVETICA, 9, Font.ITALIC, Color.DARK_GRAY)
+            );
+            sub.setSpacingAfter(10f);
+            doc.add(sub);
+
+            PdfPTable table = new PdfPTable(8);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{10f, 28f, 10f, 10f, 18f, 10f, 10f, 6f});
+
+            addHeader(table, "Etiqueta");
+            addHeader(table, "Nombre / Variante");
+            addHeader(table, "Color");
+            addHeader(table, "Talle");
+            addHeader(table, "Categoría");
+            addHeader(table, "Costo");
+            addHeader(table, "Precio");
+            addHeader(table, "Stock");
+
+            int row = 0;
+            for (ItemInventario it : inOrderFlat) {
+                Color bg = (row++ % 2 == 0) ? ZEBRA_1 : ZEBRA_2;
+
+                String etiqueta = safe(it.getEtiquetaProducto());
+                String nombre   = safe(it.getNombreProducto());
+                String categoria= safe(it.getCategoria());
+                String color    = it.isEsVariante() ? safe(it.getColor()) : "—";
+                String talle    = it.isEsVariante() ? safe(it.getTalle()) : "—";
+                String costo    = it.getCosto()!=null ? MONEDA_AR.format(it.getCosto()) : "—";
+                String precio   = it.getPrecio()!=null ? MONEDA_AR.format(it.getPrecio()) : "—";
+                String stock    = String.valueOf(it.getStockOnHand());
+
+                String nombreCol = it.isEsVariante() ? "• " + nombre : nombre;
+
+                addCell(table, etiqueta, bg, Element.ALIGN_CENTER);
+                addCell(table, nombreCol, bg, Element.ALIGN_LEFT);
+                addCell(table, color,    bg, Element.ALIGN_CENTER);
+                addCell(table, talle,    bg, Element.ALIGN_CENTER);
+                addCell(table, categoria,bg, Element.ALIGN_LEFT);
+                addCell(table, costo,    bg, Element.ALIGN_RIGHT);
+                addCell(table, precio,   bg, Element.ALIGN_RIGHT);
+                addCell(table, stock,    bg, Element.ALIGN_CENTER);
+            }
+
+            doc.add(table);
+            doc.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Error exportando PDF: " + e.getMessage(), e);
+        }
     }
 
-    // Celdas normales con padding
-    private static void addBodyCell(PdfPTable table, String text) {
-        PdfPCell cell = new PdfPCell(new Phrase(text));
-        cell.setPadding(4f);
-        table.addCell(cell);
+    // ---------------- helpers PDF ----------------
+    private static void agregarTitulo(Document doc, String text) throws DocumentException {
+        Paragraph titulo = new Paragraph(text, FONT_TITLE);
+        titulo.setAlignment(Element.ALIGN_CENTER);
+        titulo.setSpacingAfter(12f);
+        doc.add(titulo);
+    }
+
+    private static void addHeader(PdfPTable t, String text) {
+        PdfPCell c = new PdfPCell(new Phrase(text, FONT_HEADER));
+        c.setBackgroundColor(new Color(0xCF, 0xA9, 0x71)); // tono cuero cabecera
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setPadding(6f);
+        t.addCell(c);
+    }
+
+    private static void addCell(PdfPTable t, String text, Color bg, int align) {
+        PdfPCell c = new PdfPCell(new Phrase(text, FONT_CELL));
+        c.setBackgroundColor(bg);
+        c.setHorizontalAlignment(align);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setPadding(5f);
+        c.setNoWrap(false);
+        t.addCell(c);
+    }
+
+    private static String safe(String s) {
+        return (s == null || s.isBlank()) ? "—" : s;
+    }
+
+    private static void agregarHeaderFooter(PdfWriter writer) {
+        writer.setPageEvent(new PdfPageEventHelper() {
+            final Font f = new Font(Font.HELVETICA, 8, Font.ITALIC, Color.GRAY);
+            @Override
+            public void onEndPage(PdfWriter w, Document d) {
+                PdfContentByte cb = w.getDirectContent();
+                Phrase left = new Phrase("Inventario Ariel", f);
+                Phrase right = new Phrase("Página " + w.getPageNumber(), f);
+                ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,  left,  d.left(),  d.bottom() - 10, 0);
+                ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, right, d.right(), d.bottom() - 10, 0);
+            }
+        });
     }
 }

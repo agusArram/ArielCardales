@@ -42,19 +42,17 @@ public class AgregarProductoController {
         cmbCategoria.setItems(FXCollections.observableArrayList(categorias.keySet()));
         cmbUnidad.setItems(FXCollections.observableArrayList(unidades.keySet()));
 
-        // lógica para sugerir etiqueta
+        // 🔹 Generar automáticamente la etiqueta sugerida
         String ultima = productoDAO.getUltimaEtiqueta();
         if (ultima != null && ultima.matches("p\\d+")) {
             int num = Integer.parseInt(ultima.substring(1)); // saca el número
             String sugerida = "p" + String.format("%03d", num + 1); // ej: p043
-            txtEtiqueta.setPromptText(sugerida);
+            txtEtiqueta.setText(sugerida); // ✅ ahora se muestra directamente
         } else {
-            txtEtiqueta.setPromptText("p001"); // si no hay productos aún
+            txtEtiqueta.setText("p001");
         }
-
-        // Ocultar campos de variantes hasta que se marque el checkbox
-
     }
+
 
 
     // Guarda producto base (padre)
@@ -103,7 +101,16 @@ public class AgregarProductoController {
     }
 
 
+    private void generarEtiqueta() {
+        // Simula la lógica que tengas (podés reemplazar por la de la BD o DAO)
+        String proximoCodigo = "p" + String.format("%03d", obtenerSiguienteNumero());
+        txtEtiqueta.setText(proximoCodigo);
+    }
 
+    private int obtenerSiguienteNumero() {
+        // Ejemplo fijo (cambiar por el método real que consulte tu BD o DAO)
+        return 52;
+    }
 
     // Finalizar carga (cerrar ventana)
     @FXML
@@ -111,7 +118,7 @@ public class AgregarProductoController {
         cerrar();
     }
 
-
+    @FXML
     private void cerrar() {
         Stage stage = (Stage) txtNombre.getScene().getWindow();
         stage.close();

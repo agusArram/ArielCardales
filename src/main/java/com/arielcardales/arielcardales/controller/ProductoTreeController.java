@@ -1,9 +1,6 @@
 package com.arielcardales.arielcardales.controller;
 
-import com.arielcardales.arielcardales.DAO.InventarioDAO;
-import com.arielcardales.arielcardales.DAO.ProductoDAO;
-import com.arielcardales.arielcardales.DAO.CategoriaDAO;
-import com.arielcardales.arielcardales.DAO.ProductoVarianteDAO;
+import com.arielcardales.arielcardales.DAO.*;
 import com.arielcardales.arielcardales.Entidades.*;
 import com.arielcardales.arielcardales.Util.*;
 import com.arielcardales.arielcardales.service.InventarioService;
@@ -14,6 +11,7 @@ import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.concurrent.Task;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -650,12 +648,17 @@ public class ProductoTreeController {
         pedirCantidad(producto, null);
     }
 
-
     private void pedirCantidad(Producto producto, Long idVariante) {
+        // === 1️⃣ Diálogo de cantidad ===
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Nueva venta");
         dialog.setHeaderText("Producto: " + producto.getNombre());
         dialog.setContentText("Cantidad vendida:");
+
+        // Aplica estilo cuero (solo vía CSS)
+        DialogPane pane1 = dialog.getDialogPane();
+        pane1.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
+        pane1.getStyleClass().add("dialog-cuero");
 
         dialog.showAndWait().ifPresent(valor -> {
             try {
@@ -666,28 +669,94 @@ public class ProductoTreeController {
                 NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
                 String totalFormateado = formato.format(total);
 
-                Alert confirmar = new Alert(Alert.AlertType.CONFIRMATION);
+                // === 2️⃣ Diálogo de confirmación ===
+                Dialog<ButtonType> confirmar = new Dialog<>();
                 confirmar.setTitle("Confirmar venta");
-                confirmar.setHeaderText("Total: " + totalFormateado);
-                confirmar.setContentText(
-                        "Producto: " + producto.getNombre() + "\n" +
-                                "Cantidad: " + cantidad + "\n" +
-                                "Precio unitario: " + formato.format(producto.getPrecio())
-                );
 
+                // Aplica el mismo CSS cuero
+                DialogPane pane2 = confirmar.getDialogPane();
+                pane2.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
+                pane2.getStyleClass().add("dialog-cuero");
+
+                // Header personalizado con texto simple (sin inline style)
+                Label header = new Label("💰 Total: " + totalFormateado);
+                header.getStyleClass().add("dialog-header");
+                pane2.setHeader(header);
+
+                // Botones
                 ButtonType ok = new ButtonType("Confirmar", ButtonBar.ButtonData.OK_DONE);
                 ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-                confirmar.getButtonTypes().setAll(ok, cancel);
+                pane2.getButtonTypes().addAll(ok, cancel);
 
+                // Contenido
+                Label lblProducto = new Label("Producto: " + producto.getNombre());
+                Label lblCantidad = new Label("Cantidad: " + cantidad);
+                Label lblPrecio = new Label("Precio unitario: " + formato.format(producto.getPrecio()));
+                Label lblMedio = new Label("Medio de pago:");
+
+                ComboBox<String> comboPago = new ComboBox<>();
+                comboPago.getItems().addAll("Efectivo", "Tarjeta", "Transferencia", "MercadoPago");
+                comboPago.setValue("Efectivo");
+
+                VBox content = new VBox(lblProducto, lblCantidad, lblPrecio, lblMedio, comboPago);
+                content.getStyleClass().add("dialog-content");
+                pane2.setContent(content);
+
+                // Mostrar y procesar
                 Optional<ButtonType> res = confirmar.showAndWait();
                 if (res.isPresent() && res.get() == ok) {
-                    procesarVenta(producto, cantidad, total, idVariante);
+                    String medioPago = comboPago.getValue();
+                    registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante);
                 }
 
             } catch (NumberFormatException e) {
                 error("Cantidad inválida.");
             }
         });
+    }
+
+    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
+        try {
+            VentaDAO ventaDAO = new VentaDAO();
+
+            // 🧾 1. Crear venta
+            Venta venta = new Venta();
+            venta.setClienteNombre(null); // opcional, si querés después pedirlo
+            venta.setMedioPago(medioPago);
+            venta.setTotal(total);
+
+            long ventaId = ventaDAO.registrarVenta(venta);
+
+            // 🧮 2. Crear detalle
+            VentaItem item = new VentaItem();
+            item.setVentaId(ventaId);
+            item.setProductoId(producto.getId());
+            item.setCantidad(cantidad);
+            item.setPrecioUnit(producto.getPrecio());
+
+            ventaDAO.registrarItem(item);
+
+            // 🏷️ 3. Actualizar stock
+            boolean actualizado;
+            if (idVariante != null) {
+                actualizado = new ProductoVarianteDAO().descontarStock(idVariante, cantidad);
+            } else {
+                actualizado = new ProductoDAO().descontarStock(producto.getId(), cantidad);
+            }
+
+            if (!actualizado) {
+                error("⚠ No hay suficiente stock.");
+                return;
+            }
+
+            // 🔁 4. Refrescar y notificar
+            recargarArbol(txtBuscarEtiqueta.getText());
+            ok("✅ Venta registrada. Total: " + NumberFormat.getCurrencyInstance(new Locale("es", "AR")).format(total));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            error("❌ Error al registrar venta: " + e.getMessage());
+        }
     }
 
 
@@ -711,7 +780,6 @@ public class ProductoTreeController {
         ok("Venta confirmada: " + totalFormateado);
         recargarArbol(txtBuscarEtiqueta.getText());
     }
-
 
     // -------------------------------------------------------------------
     // Helpers
@@ -1138,6 +1206,61 @@ public class ProductoTreeController {
 
         return algunHijoVisible;
     }
+    // === dentro de ProductoTreeController ===
 
+    // Convierte el TreeTableView visible en una lista plana en orden
+    private List<ItemInventario> flattenVisible() {
+        List<ItemInventario> out = new ArrayList<>();
+        TreeItem<ItemInventario> root = tablaInventarioTree.getRoot();
+        if (root == null) return out;
+
+        Deque<TreeItem<ItemInventario>> stack = new ArrayDeque<>(root.getChildren());
+
+        while (!stack.isEmpty()) {
+            TreeItem<ItemInventario> it = stack.removeFirst();
+            if (it.getValue() != null) out.add(it.getValue());
+
+            // mantener orden de la UI (preorden)
+            if (!it.getChildren().isEmpty()) {
+                List<TreeItem<ItemInventario>> hijos = new ArrayList<>(it.getChildren());
+                Collections.reverse(hijos); // para que mantenga el orden
+                for (TreeItem<ItemInventario> h : hijos) {
+                    stack.addFirst(h);
+                }
+            }
+        }
+        return out;
+    }
+
+
+    @FXML
+    private void exportarVistaPDF() {
+        try {
+            List<ItemInventario> flat = flattenVisible();
+            if (flat.isEmpty()) {
+                error("No hay datos para exportar.");
+                return;
+            }
+            ExportarController.exportarInventarioTreePDF(flat, tablaInventarioTree.getScene().getWindow());
+        } catch (Exception e) {
+            e.printStackTrace();
+            error("Error exportando PDF: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void exportarVistaExcel() {
+        try {
+            List<ItemInventario> flat = flattenVisible();
+            if (flat.isEmpty()) {
+                error("No hay datos para exportar.");
+                return;
+            }
+            ExportarController.exportarInventarioTreeExcel(flat, tablaInventarioTree.getScene().getWindow());
+        } catch (Exception e) {
+            e.printStackTrace();
+            error("Error exportando Excel: " + e.getMessage());
+        }
+    }
 
 }

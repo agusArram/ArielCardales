@@ -1,65 +1,78 @@
 package com.arielcardales.arielcardales.controller;
 
+import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import com.arielcardales.arielcardales.Util.ExportadorExcel;
 import com.arielcardales.arielcardales.Util.ExportadorPDF;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.util.List;
 
-/**
- * Controlador utilitario encargado de exportar datos a PDF o Excel.
- * Centraliza toda la lógica de exportación para que ProductoController
- * solo llame a estos métodos.
- */
 public class ExportarController {
 
-    /**
-     * Obtiene la ruta del escritorio (compatible con OneDrive).
-     */
-    private static String getRutaEscritorio(String nombreArchivo) {
-        File escritorio = FileSystemView.getFileSystemView().getHomeDirectory();
-        return new File(escritorio, nombreArchivo).getAbsolutePath();
+    private static File escritorio() {
+        return FileSystemView.getFileSystemView().getHomeDirectory();
     }
 
-    /**
-     * Exporta una lista de productos a PDF.
-     */
-    public static void exportarPDF(ObservableList<Producto> productos) {
+    private static void ok(String m){ alerta(m, Alert.AlertType.INFORMATION); }
+    private static void error(String m){ alerta(m, Alert.AlertType.ERROR); }
+    private static void alerta(String m, Alert.AlertType t){
+        Alert a = new Alert(t);
+        a.setTitle("Exportación");
+        a.setHeaderText(null);
+        a.setContentText(m);
+        a.showAndWait();
+    }
+
+    // --------- Lista plana de Producto (compat) ---------
+    public static void exportarProductosPDF(ObservableList<Producto> productos, Window owner) {
+        File f = fileChooser(owner, "PDF", "*.pdf", new File(escritorio(), "productos.pdf"));
+        if (f == null) return;
         try {
-            String ruta = getRutaEscritorio("productos.pdf");
-            ExportadorPDF.exportar(productos, ruta);
-            mostrarMensaje("PDF exportado correctamente en:\n" + ruta, Alert.AlertType.INFORMATION);
-        } catch (Exception e) {
-            mostrarMensaje("Error al exportar PDF:\n" + e.getMessage(), Alert.AlertType.ERROR);
-            e.printStackTrace();
-        }
+            ExportadorPDF.exportarProductos(productos, f.getAbsolutePath());
+            ok("PDF exportado en:\n" + f.getAbsolutePath());
+        } catch (Exception e) { error("Error al exportar PDF:\n" + e.getMessage()); }
     }
 
-    /**
-     * Exporta una lista de productos a Excel.
-     */
-    public static void exportarExcel(ObservableList<Producto> productos) {
+    public static void exportarProductosExcel(ObservableList<Producto> productos, Window owner) {
+        File f = fileChooser(owner, "Excel", "*.xlsx", new File(escritorio(), "productos.xlsx"));
+        if (f == null) return;
         try {
-            String ruta = getRutaEscritorio("productos.xlsx");
-            ExportadorExcel.exportar(productos, ruta);
-            mostrarMensaje("Excel exportado correctamente en:\n" + ruta, Alert.AlertType.INFORMATION);
-        } catch (Exception e) {
-            mostrarMensaje("Error al exportar Excel:\n" + e.getMessage(), Alert.AlertType.ERROR);
-            e.printStackTrace();
-        }
+            ExportadorExcel.exportarProductos(productos, f.getAbsolutePath());
+            ok("Excel exportado en:\n" + f.getAbsolutePath());
+        } catch (Exception e) { error("Error al exportar Excel:\n" + e.getMessage()); }
     }
 
-    /**
-     * Muestra una alerta simple para notificar al usuario.
-     */
-    private static void mostrarMensaje(String mensaje, Alert.AlertType tipo) {
-        Alert alert = new Alert(tipo);
-        alert.setTitle("Exportación");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    // --------- Árbol visible (ItemInventario) ---------
+    public static void exportarInventarioTreePDF(List<ItemInventario> flat, Window owner) {
+        File f = fileChooser(owner, "PDF", "*.pdf", new File(escritorio(), "inventario.pdf"));
+        if (f == null) return;
+        try {
+            ItemInventario root = flat.isEmpty() ? null : flat.get(0);
+            ExportadorPDF.exportarInventarioTree(root, flat, f.getAbsolutePath());
+            ok("PDF exportado en:\n" + f.getAbsolutePath());
+        } catch (Exception e) { error("Error al exportar PDF:\n" + e.getMessage()); }
+    }
+
+    public static void exportarInventarioTreeExcel(List<ItemInventario> flat, Window owner) {
+        File f = fileChooser(owner, "Excel", "*.xlsx", new File(escritorio(), "inventario.xlsx"));
+        if (f == null) return;
+        try {
+            ExportadorExcel.exportarInventarioTree(flat, f.getAbsolutePath());
+            ok("Excel exportado en:\n" + f.getAbsolutePath());
+        } catch (Exception e) { error("Error al exportar Excel:\n" + e.getMessage()); }
+    }
+
+    private static File fileChooser(Window owner, String desc, String pattern, File suggested) {
+        FileChooser fc = new FileChooser();
+        fc.setInitialDirectory(escritorio());
+        fc.setInitialFileName(suggested.getName());
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter(desc, pattern));
+        return fc.showSaveDialog(owner);
     }
 }

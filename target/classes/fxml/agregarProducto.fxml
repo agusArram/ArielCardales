@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
@@ -7,63 +6,64 @@
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.arielcardales.arielcardales.controller.AgregarProductoController"
-            prefWidth="600" prefHeight="600"
+            prefWidth="380" prefHeight="500"
+            styleClass="form-cuero"
             stylesheets="@../Estilos/Estilos.css">
 
     <center>
-        <GridPane hgap="15" vgap="15">
+        <VBox spacing="14" alignment="CENTER">
+            <Label text="Agregar Producto"
+                   style="-fx-font-size: 17px; -fx-font-weight: bold;"
+                   alignment="CENTER"/>
 
-        <padding>
-            <Insets top="20" right="20" bottom="20" left="20"/>
-        </padding>
+            <GridPane hgap="12" vgap="10" alignment="CENTER">
+                <columnConstraints>
+                    <ColumnConstraints halignment="RIGHT" minWidth="100"/>
+                    <ColumnConstraints halignment="LEFT" prefWidth="220" maxWidth="220"/>
+                </columnConstraints>
 
-            <columnConstraints>
-                <ColumnConstraints halignment="RIGHT" minWidth="120"/>
-                <ColumnConstraints halignment="LEFT" hgrow="ALWAYS"/>
-            </columnConstraints>
+                <Label text="Etiqueta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="txtEtiqueta"
+                           promptText="(auto-generada)"
+                           editable="true"
+                           GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-            <!-- Etiqueta -->
-            <Label text="Etiqueta:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtEtiqueta" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-            <!-- Nombre -->
-            <Label text="Nombre:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtNombre" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-            <!-- Descripción -->
-            <Label text="Descripción:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-            <TextArea fx:id="txtDescripcion" GridPane.rowIndex="2" GridPane.columnIndex="1" prefRowCount="3"/>
+                <Label text="Nombre:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="txtNombre" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-            <!-- Categoría -->
-            <Label text="Categoría:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-            <ComboBox fx:id="cmbCategoria" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                <Label text="Descripción:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <TextArea fx:id="txtDescripcion"
+                          promptText="(opcional)"
+                          prefRowCount="3"
+                          wrapText="true"
+                          prefWidth="220" maxWidth="220"
+                          GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-            <!-- Unidad -->
-            <Label text="Unidad:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-            <ComboBox fx:id="cmbUnidad" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                <Label text="Categoría:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="cmbCategoria" prefWidth="220" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-            <!-- Precio -->
-            <Label text="Precio:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtPrecio" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                <Label text="Unidad:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="cmbUnidad" prefWidth="220" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-            <!-- Costo -->
-            <Label text="Costo:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtCosto" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+                <Label text="Precio:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                <TextField fx:id="txtPrecio" prefWidth="220" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
-            <!-- Stock -->
-            <Label text="Stock inicial:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtStock" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+                <Label text="Costo:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                <TextField fx:id="txtCosto" prefWidth="220" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
 
-            <!-- Activo -->
-            <Label text="Activo:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-            <CheckBox fx:id="chkActivo" selected="true" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+                <Label text="Stock inicial:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                <TextField fx:id="txtStock" prefWidth="220" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
 
-            <!-- Botones -->
-            <HBox spacing="15" alignment="CENTER" GridPane.rowIndex="9" GridPane.columnIndex="0" GridPane.columnSpan="2">
+                <Label text="Activo:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+                <CheckBox fx:id="chkActivo" selected="true" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <HBox spacing="30" alignment="CENTER">
+                <Button text="Cerrar" onAction="#cerrar"/>
                 <Button text="Guardar" onAction="#guardar"/>
-
             </HBox>
-        </GridPane>
+        </VBox>
     </center>
-
 </BorderPane>

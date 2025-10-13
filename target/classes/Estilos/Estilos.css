@@ -1,9 +1,8 @@
 
 /* Fondo general */
 .root {
-    -fx-background-color: #d2b48c; /* fondo cuero */
-    -fx-font-family: "Segoe UI", sans-serif;
-    -fx-font-size: 14px;
+    -fx-background-color: #e5cba1; /* cuero más claro */
+    -fx-font-family: "Lora";    -fx-font-size: 14px;
     -fx-text-fill: #2b2b2b;
 }
 
@@ -339,13 +338,6 @@
     src: url("/Fuentes/static/Lora-Bold.ttf");
 }
 
-.root {
-    -fx-font-family: "Lora";
-    -fx-text-fill: #2b2b2b;
-    -fx-background-color: #e5cba1; /* cuero más claro */
-}
-
-
 
 .label {
     -fx-font-family: "Lora Bold";
@@ -416,4 +408,230 @@
 /* Agrega un poco de padding alrededor de la flechita para que sea más clickeable */
 .tree-table-view .tree-disclosure-node {
     -fx-padding: 8; /* más área de clic */
+}
+
+/* ======================================================
+   DIÁLOGO DE CONFIRMACIÓN - ESTILO CUERO FINO Y COMPACTO
+   ====================================================== */
+
+.dialog-cuero {
+    -fx-background-color: #d8b075;  /* cuero claro */
+    -fx-border-color: #a67b4a;
+    -fx-border-width: 1.3;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-font-family: "Lora";
+    -fx-font-size: 13.5px;
+    -fx-pref-width: 320;
+}
+
+/* Header (💰 Total) */
+.dialog-cuero .header-panel {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+    -fx-font-family: "Lora Bold";
+    -fx-font-size: 14px;             /* ✅ tamaño tipo h2 */
+    -fx-font-weight: bold;
+    -fx-alignment: center-left;
+    -fx-padding: 10 12;              /* ✅ más padding interno */
+    -fx-background-radius: 10 10 0 0;
+    -fx-border-color: rgba(0,0,0,0.1);
+    -fx-border-width: 0 0 1 0;       /* línea sutil debajo */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 6, 0.2, 0, 2);
+}
+
+/* Etiqueta de texto dentro del header */
+.dialog-cuero .header-panel .label {
+    -fx-text-fill: #fff8f0;
+    -fx-font-size: 14px;             /* igual tamaño que el header */
+    -fx-font-weight: bold;
+    -fx-font-family: "Lora Bold";
+    -fx-padding: 8 0 8 14;
+}
+
+
+/* Cuerpo */
+.dialog-cuero .content {
+    -fx-padding: 10 14;          /* ✅ menos padding */
+    -fx-spacing: 6;              /* menos separación */
+    -fx-alignment: top-left;     /* ✅ texto totalmente a la izquierda */
+    -fx-background-color: #e4c79a;
+    -fx-background-radius: 0 0 10 10;
+}
+
+/* Etiquetas */
+.dialog-cuero .label {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-alignment: center-left;  /* ✅ texto alineado izquierda */
+}
+.dialog-cuero .dialog-header{
+    -fx-font-size: 16px;
+
+}
+
+.dialog-header{
+    -fx-padding: 12 10;
+}
+
+/* ComboBox */
+.dialog-cuero .combo-box {
+    -fx-background-color: #f3d8ad;
+    -fx-border-color: #b88a52;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 3 0 3 14;
+    -fx-pref-width: 200;
+    -fx-alignment: center-left;
+}
+
+/* Botones */
+.dialog-cuero .button-bar {
+    -fx-alignment: center-left; /* ✅ botones alineados a la izquierda */
+    -fx-padding: 4 0 4 14;
+}
+
+.dialog-cuero .button {
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+    -fx-padding: 6 12;
+    -fx-font-family: "Lora";
+}
+
+/* Confirmar */
+.dialog-cuero .button:default {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+}
+.dialog-cuero .button:default:hover {
+    -fx-background-color: #a67b4a;
+}
+
+/* Cancelar */
+.dialog-cuero .button:cancel {
+    -fx-background-color: #e6c89b;
+    -fx-text-fill: #2b2b2b;
+}
+.dialog-cuero .button:cancel:hover {
+    -fx-background-color: #d7b47a;
+}
+
+/* ======================================================
+   FORMULARIOS MODALES: Agregar Producto / Variante
+   ====================================================== */
+
+.form-cuero {
+    -fx-background-color: #d8b075;       /* cuero medio */
+    -fx-border-color: #a67b4a;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-font-family: "Lora";
+    -fx-font-size: 14px;
+    -fx-padding: 20;
+}
+
+/* Títulos de los formularios */
+.form-cuero .label {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+}
+
+/* Campos de texto */
+.form-cuero .text-field,
+.form-cuero .text-area,
+.form-cuero .combo-box {
+    -fx-background-color: #f3d8ad;
+    -fx-border-color: #b88a52;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-text-fill: #2b2b2b;
+    -fx-padding: 4 6;
+    -fx-font-size: 13px;
+}
+
+/* Botones dentro del formulario */
+.form-cuero .button {
+    -fx-background-color: #cfa971;
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.form-cuero .button:hover {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+}
+
+/* Ventanas más pequeñas */
+.form-cuero {
+    -fx-pref-width: 420;
+    -fx-pref-height: 460;
+}
+
+/* ======================================================
+   FORMULARIOS MODALES: Agregar Producto / Variante
+   ====================================================== */
+
+.form-cuero {
+    -fx-background-color: #d8b075;       /* cuero medio */
+    -fx-border-color: #a67b4a;
+
+}
+
+/* Títulos de los formularios */
+.form-cuero .label {
+    -fx-text-fill: #2b2b2b;
+}
+
+/* Campos de texto */
+.form-cuero .text-field,
+.form-cuero .text-area,
+.form-cuero .combo-box {
+    -fx-background-color: #f3d8ad;
+    -fx-border-color: #b88a52;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-text-fill: #2b2b2b;
+    -fx-font-size: 13px;
+}
+
+/* Botones dentro del formulario */
+.form-cuero .button {
+    -fx-background-color: #cfa971;
+    -fx-text-fill: #2b2b2b;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.form-cuero .button:hover {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+}
+
+
+/* Ajustes visuales para formularios chicos */
+.form-cuero {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 10, 0.3, 0, 3);
+}
+
+.form-cuero .label:first-child {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+.form-cuero .text-area .text {
+    -fx-fill: #2b2b2b; /* color del texto normal */
+}
+
+.form-cuero .text-area:empty .text {
+    -fx-fill: #7a7a7a; /* color del placeholder */
+    -fx-font-style: italic;
 }

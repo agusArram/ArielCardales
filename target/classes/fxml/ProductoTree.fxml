@@ -54,10 +54,13 @@
             <padding>
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
+
             <Button fx:id="btnNuevaVenta" text="Nueva venta" onAction="#iniciarVenta"/>
             <Button fx:id="btnStockBajo" text="Stock bajo" onAction="#mostrarBajoStock"/>
+            <Button fx:id="btnExportarPDF" text="📄 Exportar PDF" onAction="#exportarVistaPDF"/>
         </HBox>
     </bottom>
+
 
 
 </BorderPane>
