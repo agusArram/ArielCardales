@@ -1,0 +1,233 @@
+
+    private void configurarVistaCompleta() {
+        String[][] columnas = {
+                {"Etiqueta", "etiquetaProducto"},
+                {"Nombre",   "nombreProducto"},
+                {"Color",    "color"},
+                {"Talle",    "talle"},
+                {"Categoría","categoria"},
+                {"Costo",    "costo"},
+                {"Precio",   "precio"},
+                {"Stock",    "stockOnHand"}
+        };
+
+        tablaInventarioTree.getColumns().clear();
+
+        for (String[] c : columnas) {
+            // ✅ Crear columnas con tipo correcto
+            TreeTableColumn<ItemInventario, ?> col;
+            switch (c[0].toLowerCase()) {
+                case "stock" -> col = new TreeTableColumn<ItemInventario, Integer>(c[0]);
+                case "precio", "costo" -> col = new TreeTableColumn<ItemInventario, BigDecimal>(c[0]);
+                default -> col = new TreeTableColumn<ItemInventario, String>(c[0]);
+            }
+
+            col.setCellValueFactory(new TreeItemPropertyValueFactory<>(c[1]));
+
+            // 🎨 Estilo especial para Color y Talle
+            if (c[0].equalsIgnoreCase("Color") || c[0].equalsIgnoreCase("Talle")) {
+                ((TreeTableColumn<ItemInventario, String>) col).setCellFactory(tc -> new TreeTableCell<>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty) {
+                            setText(null);
+                            setStyle("");
+                            return;
+                        }
+
+                        TreeItem<ItemInventario> treeItem = getTreeTableRow().getTreeItem();
+                        if (treeItem == null || treeItem.getValue() == null) {
+                            setText(item == null ? "" : item);
+                            setStyle("");
+                            return;
+                        }
+
+                        ItemInventario data = treeItem.getValue();
+                        boolean esVariante = data.isEsVariante();
+
+                        if (!esVariante) {
+                            // 🔸 Producto padre → guion claro y cursiva
+                            setText("—");
+                            setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
+                        } else {
+                            // 🔹 Variante → valor normal
+                            setText(item == null ? "" : item);
+                            setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
+                        }
+                    }
+                });
+            }
+
+            tablaInventarioTree.getColumns().add(col);
+        }
+
+        ajustarAnchoColumnas(tablaInventarioTree);
+        recargarArbol("");
+
+        tablaInventarioTree.setShowRoot(false);
+        tablaInventarioTree.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        tablaInventarioTree.setStyle("-fx-background-color: transparent;");
+        tablaInventarioTree.setEditable(true);
+
+        rootCompleto = tablaInventarioTree.getRoot(); // guarda una copia inicial
+
+        // ==============================
+        // 🔍 NUEVA LÓGICA DE BÚSQUEDA
+        // ==============================
+        grupoBusqueda = new ToggleGroup();
+        btnNombre.setToggleGroup(grupoBusqueda);
+        btnCategoria.setToggleGroup(grupoBusqueda);
+        btnEtiqueta.setToggleGroup(grupoBusqueda);
+        grupoBusqueda.selectToggle(btnNombre); // por defecto busca por nombre
+
+        Runnable aplicarFiltro = () -> {
+            String filtro = txtBuscarEtiqueta.getText() == null ? "" : txtBuscarEtiqueta.getText().trim().toLowerCase();
+            if (filtro.isBlank()) {
+                recargarArbol("");
+                return;
+            }
+
+            Toggle selected = grupoBusqueda.getSelectedToggle();
+            if (selected == null) {
+                grupoBusqueda.selectToggle(btnNombre);
+                selected = btnNombre;
+            }
+
+            String tipo = ((ToggleButton) selected).getText().toLowerCase();
+            switch (tipo) {
+                case "nombre" -> recargarArbolPorCampo("nombre", filtro);
+                case "categoría", "categoria" -> recargarArbolPorCampo("categoria", filtro);
+                case "etiqueta" -> recargarArbolPorCampo("etiqueta", filtro);
+                default -> recargarArbol("");
+            }
+        };
+
+        // 🔁 Escuchar cambios en campo y tipo de búsqueda
+        txtBuscarEtiqueta.textProperty().addListener((o, a, b) -> {
+            pausaBusqueda.setOnFinished(e -> aplicarFiltro.run());
+            pausaBusqueda.playFromStart();
+        });
+
+        grupoBusqueda.selectedToggleProperty().addListener((o, a, b) -> aplicarFiltro.run());
+
+        // 🧩 Activar edición
+
+        aplicarRendererColorTalle();
+        editGeneral();
+
+        // 🎨 Estilos CSS
+        tablaInventarioTree.getStylesheets().add(
+                getClass().getResource("/Estilos/estilos.css").toExternalForm()
+        );
+// --- Doble clic para editar (evita flechita) ---
+        tablaInventarioTree.setRowFactory(tv -> {
+            TreeTableRow<ItemInventario> row = new TreeTableRow<>();
+
+            // 🌳 Pseudo-clase para diferenciar hijos (nivel > 0)
+            row.treeItemProperty().addListener((obs, oldItem, newItem) -> {
+                boolean esHijo = newItem != null && newItem.getParent() != null && newItem.getParent().getParent() != null;
+                row.pseudoClassStateChanged(PseudoClass.getPseudoClass("hijo"), esHijo);
+            });
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    Node nodo = event.getPickResult().getIntersectedNode();
+
+                    // ❌ Si tocó la flecha, no editar
+                    while (nodo != null && nodo != row && !(nodo instanceof TreeTableRow)) {
+                        if (nodo.getStyleClass().contains("tree-disclosure-node")) {
+                            return;
+                        }
+                        nodo = nodo.getParent();
+                    }
+
+                    // ✅ Selecciona la celda clickeada si no lo estaba
+                    TreeTablePosition<ItemInventario, ?> pos = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
+                            ? null
+                            : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0);
+
+                    if (pos == null || pos.getRow() != row.getIndex()) {
+                        tablaInventarioTree.getSelectionModel().clearAndSelect(row.getIndex());
+                    }
+
+                    // ✅ Forzar foco antes de editar
+                    tablaInventarioTree.requestFocus();
+
+                    // ✅ Obtener columna correcta y activar edición
+                    int colIndex = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
+                            ? 0
+                            : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0).getColumn();
+
+                    tablaInventarioTree.edit(row.getIndex(), tablaInventarioTree.getColumns().get(colIndex));
+                }
+            });
+
+            return row;
+        });
+        // ⚙️ Checkbox de preferencia persistente
+        CheckBox chkExpandir = new CheckBox("Expandir auto");
+        chkExpandir.setSelected(prefs.getBoolean(PREF_EXPANDIR_NODOS, false)); // carga preferencia guardada
+
+        chkExpandir.setOnAction(e -> {
+            prefs.putBoolean(PREF_EXPANDIR_NODOS, chkExpandir.isSelected());
+            recargarArbol(txtBuscarEtiqueta.getText()); // recarga vista para aplicar el cambio
+        });
+
+        chkExpandir.setStyle("-fx-padding: 10 0 0 4; -fx-font-size: 13px; -fx-margin: 10 2 2 2;");
+
+        // ✅ Insertar al final del panel lateral
+        if (panelLateral != null) {
+            panelLateral.getChildren().add(chkExpandir);
+        } else {
+            System.err.println("⚠ No se encontró el panel lateral para insertar el checkbox.");
+        }
+
+
+    }
+
+    private void cargarVistaAsync() {
+        Platform.runLater(() -> {
+            tablaInventarioTree.setPlaceholder(new Label("⏳ Preparando vista..."));
+        });
+
+        Task<Void> tarea = new Task<>() {
+            @Override
+            protected Void call() {
+                try {
+                    // ⚙️ Configurar columnas, búsqueda y listeners
+                    Platform.runLater(() -> {
+                        configurarVistaCompleta();
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+
+        tarea.setOnRunning(e -> {
+            Platform.runLater(() -> {
+                ProgressIndicator spinner = new ProgressIndicator();
+                spinner.setPrefSize(40, 40);
+                tablaInventarioTree.setPlaceholder(spinner);
+            });
+        });
+
+        tarea.setOnSucceeded(e -> {
+            Platform.runLater(() -> {
+                tablaInventarioTree.setPlaceholder(new Label("✅ Inventario listo"));
+            });
+        });
+
+        tarea.setOnFailed(e -> {
+            Platform.runLater(() -> {
+                tablaInventarioTree.setPlaceholder(new Label("❌ Error al cargar inventario"));
+            });
+            tarea.getException().printStackTrace();
+        });
+
+        Thread hilo = new Thread(tarea);
+        hilo.setDaemon(true);
+        hilo.start();
+    }

@@ -240,7 +240,7 @@
 .tree-table-cell {
     -fx-padding: 2 14 2 14;
     -fx-text-fill: #2b2b2b;
-    -fx-font-size: 14px;
+    -fx-font-size: 15px;
     -fx-border-color: transparent;
 }
 
@@ -313,12 +313,13 @@
 }
 
 .button {
-    -fx-background-color: #e6c89b;
+    -fx-background-color: #d8b075;
     -fx-text-fill: #2b2b2b;
     -fx-font-weight: bold;
     -fx-padding: 6 12;
     -fx-background-radius: 6;
     -fx-cursor: hand;
+
 }
 .button:hover {
     -fx-background-color: #cfa971;
@@ -340,9 +341,10 @@
 
 .root {
     -fx-font-family: "Lora";
-    -fx-font-size: 14px;
     -fx-text-fill: #2b2b2b;
+    -fx-background-color: #e5cba1; /* cuero más claro */
 }
+
 
 
 .label {
@@ -356,21 +358,18 @@
     -fx-font-size: 14px;
 }
 
-.root {
-    -fx-background-color: #e5cba1; /* cuero más claro */
-}
+
 
 .sidebar, .footer {
     -fx-background-color: #c2955b; /* más saturado, más moderno */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0.3, 0, 2);
+
 }
 
 .button {
-    -fx-background-color: #d8b075;
+
 }
 
-.sidebar, .footer {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0.3, 0, 2);
-}
 
 .tree-table-cell {
     -fx-padding: 4 10 4 10;
@@ -381,7 +380,7 @@
 }
 
 .tree-table-row-cell:hijo .tree-table-cell {
-    -fx-font-size: 13px;
+    -fx-font-size: 15px;
     -fx-opacity: 0.95;
 }
 
@@ -391,3 +390,30 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0.3, 0, 2);
 }
 
+/* Fila hija (variante) con leve tinte */
+.tree-table-row-cell:hijo {
+    -fx-background-color: rgba(0,0,0,0.035);
+}
+
+/* Hover consistente */
+.tree-table-row-cell:hijo:hover {
+    -fx-background-color: rgba(0,0,0,0.08);
+}
+
+/* Alineación de números (si no lo hacés por-columna) */
+.tree-table-cell.numeric {
+    -fx-alignment: CENTER-RIGHT;
+}
+
+/* === Personaliza el tamaño y margen de la flechita del TreeTableView === */
+.tree-table-view .tree-disclosure-node > .arrow {
+    -fx-background-color: #5a4633; /* color del ícono, podés cambiarlo */
+    -fx-shape: "M 0 0 L 6 5 L 0 10 z"; /* triángulo más grande */
+    -fx-scale-x: 1.4; /* Permite ajustar tamanio del tringulo */
+    -fx-scale-y: 1.4;
+}
+
+/* Agrega un poco de padding alrededor de la flechita para que sea más clickeable */
+.tree-table-view .tree-disclosure-node {
+    -fx-padding: 8; /* más área de clic */
+}

@@ -37,5 +37,28 @@ public class ProductoVarianteDAO {
             ps.executeUpdate();
         }
     }
+
+    public boolean descontarStock(long idVariante, int cantidad) {
+        String sql = """
+        UPDATE producto_variante
+        SET stock = stock - ?
+        WHERE id = ? AND stock >= ?
+    """;
+
+        try (Connection conn = Database.get();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cantidad);
+            ps.setLong(2, idVariante);
+            ps.setInt(3, cantidad);
+
+            int filas = ps.executeUpdate();
+            return filas > 0; // true si se actualizó correctamente
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
 

@@ -16,8 +16,7 @@ import java.sql.SQLException;
 
 public class AppController {
 
-    private ProductoController productoController;
-
+    private ProductoTreeController productoController;
     @FXML
     private VBox contenedorPrincipal;
     private Parent vistaProductos;
@@ -57,9 +56,9 @@ public class AppController {
         Task<Parent> tareaCarga = new Task<>() {
             @Override
             protected Parent call() throws Exception {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/producto.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProductoTree.fxml"));
                 Parent vista = loader.load();
-                productoController = loader.getController(); // 🔗 Guardamos referencia
+                productoController = loader.getController(); // ahora tipo ProductoTreeController
                 return vista;
             }
         };
@@ -78,6 +77,7 @@ public class AppController {
 
         new Thread(tareaCarga).start();
     }
+
     @FXML
     public void verInventarioTree() {
         String[][] columnas = {

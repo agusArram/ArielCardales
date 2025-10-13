@@ -70,7 +70,7 @@ public class InventarioDAO {
         for (TreeItem<ItemInventario> padre : padres.values()) {
             if (padre.getChildren().isEmpty()) {
                 ItemInventario base = padre.getValue();
-                base.setColor("  — — —");
+                base.setColor("-");
                 base.setTalle("-");
             }
         }
@@ -78,43 +78,32 @@ public class InventarioDAO {
         return root;
     }
 
-    public static boolean updateVarianteCampo(long idVariante, String campo, String valor) {
-        String sql;
+    public static boolean updateVarianteCampo(Long idVariante, String campo, String valor) {
+        String columna = campo;
 
-        try (Connection conn = Database.get()) {
-            if (campo.equalsIgnoreCase("categoria")) {
-                // 🔄 Obtener el producto padre y actualizarle la categoría
-                String sqlPadre = """
-                UPDATE producto
-                   SET categoriaid = (
-                       SELECT id FROM categoria
-                        WHERE TRIM(LOWER(nombre)) = TRIM(LOWER(?))
-                   )
-                 WHERE id = (
-                     SELECT producto_id FROM producto_variante WHERE id = ?
-                 )
-            """;
+        // 🔄 Mapear nombres del modelo Java a columnas reales de la BD
+        if (campo.equalsIgnoreCase("stockOnHand")) columna = "stock";
+        if (campo.equalsIgnoreCase("nombreProducto")) columna = "nombre";
+        if (campo.equalsIgnoreCase("precio")) columna = "precio";
+        if (campo.equalsIgnoreCase("costo")) columna = "costo";
 
-                try (PreparedStatement ps = conn.prepareStatement(sqlPadre)) {
-                    ps.setString(1, valor.trim());
-                    ps.setLong(2, idVariante);
-                    return ps.executeUpdate() > 0;
-                }
-            }
+        String sql = "UPDATE producto_variante SET " + columna + " = ? WHERE id = ?";
 
-            // Campos normales
-            sql = "UPDATE producto_variante SET " + campo + " = ? WHERE id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, valor);
-                ps.setLong(2, idVariante);
-                return ps.executeUpdate() > 0;
-            }
+        try (Connection conn = Database.get();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, valor);
+            stmt.setLong(2, idVariante);
+            int filas = stmt.executeUpdate();
+            return filas > 0;
 
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
+
+
 
 
 

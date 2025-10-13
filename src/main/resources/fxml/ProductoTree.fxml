@@ -46,9 +46,6 @@
     <center>
         <VBox spacing="10" style="-fx-padding: 0 20 0 0;">
             <TreeTableView fx:id="tablaInventarioTree" prefHeight="600.0" VBox.vgrow="ALWAYS" />
-            <TableView fx:id="tablaProductos" visible="false" managed="false"/>
-
-
         </VBox>
     </center>
     <!-- Inferior: barra de acciones -->
@@ -57,8 +54,10 @@
             <padding>
                 <Insets top="15" right="15" bottom="15" left="15"/>
             </padding>
-            <Button fx:id="btnNuevaVenta" text="Nueva venta"/>
+            <Button fx:id="btnNuevaVenta" text="Nueva venta" onAction="#iniciarVenta"/>
+            <Button fx:id="btnStockBajo" text="Stock bajo" onAction="#mostrarBajoStock"/>
         </HBox>
     </bottom>
+
 
 </BorderPane>
