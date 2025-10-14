@@ -22,8 +22,37 @@
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
             <!-- <Button text="Clientes" onAction="#mostrarClientes"
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/> -->
+
+            <MenuBar>
+                <!-- Tus menús existentes -->
+
+                <!-- Nuevo menú de Ayuda -->
+                <Menu text="Ayuda">
+                    <MenuItem text="Buscar actualizaciones" onAction="#onBuscarActualizaciones">
+                        <graphic>
+                            <Label text="🔄" />
+                        </graphic>
+                    </MenuItem>
+
+                    <SeparatorMenuItem />
+
+                    <MenuItem text="Acerca de" onAction="#onAcercaDe">
+                        <graphic>
+                            <Label text="ℹ️" />
+                        </graphic>
+                    </MenuItem>
+
+                    <MenuItem text="Reportar problema" onAction="#onReportarProblema">
+                        <graphic>
+                            <Label text="🐛" />
+                        </graphic>
+                    </MenuItem>
+                </Menu>
+            </MenuBar>
         </HBox>
     </top>
+
+
 
     <!--  CONTENIDO CENTRAL (cambia dinámicamente) -->
     <center>

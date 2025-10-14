@@ -6,6 +6,18 @@
   <name>ArielCardales</name>
   <version>1.0.0</version>
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.fxml</include>
+          <include>**/*.css</include>
+          <include>**/*.png</include>
+          <include>**/*.jpg</include>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -69,6 +81,25 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.panteleyev</groupId>
+        <artifactId>jpackage-maven-plugin</artifactId>
+        <version>1.6.0</version>
+        <configuration>
+          <name>ArielCardales</name>
+          <appVersion>1.0.0</appVersion>
+          <vendor>Ariel Cardales</vendor>
+          <destination>target/dist</destination>
+          <module>com.arielcardales.arielcardales/com.arielcardales.arielcardales.Launcher</module>
+          <runtimeImage>target/java-runtime</runtimeImage>
+          <javaOptions>
+            <option>--enable-preview</option>
+          </javaOptions>
+          <type>APP_IMAGE</type>
+          <winMenu>true</winMenu>
+          <winShortcut>true</winShortcut>
+        </configuration>
       </plugin>
     </plugins>
   </build>

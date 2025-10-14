@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 import org.controlsfx.control.Notifications;
 import javafx.scene.control.TreeItem;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.*;
@@ -139,9 +140,12 @@ public class ProductoTreeController {
         tablaInventarioTree.setEditable(true);                          // Permite edición de celdas
         tablaInventarioTree.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY); // Ajusta ancho
         tablaInventarioTree.setStyle("-fx-background-color: transparent;");
-        tablaInventarioTree.getStylesheets().add(
-                getClass().getResource("/Estilos/estilos.css").toExternalForm()
-        );
+        URL cssUrl = getClass().getResource("/Estilos/Estilos.css");
+        if (cssUrl != null) {
+            tablaInventarioTree.getStylesheets().add(cssUrl.toExternalForm());
+        } else {
+            System.err.println("⚠️ Advertencia: No se encontró estilos.css, usando estilos por defecto");
+        }
 
         // 🌀 Placeholder inicial mientras carga datos
         ProgressIndicator pi = new ProgressIndicator();
