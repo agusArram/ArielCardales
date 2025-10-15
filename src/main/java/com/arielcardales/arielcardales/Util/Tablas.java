@@ -38,12 +38,9 @@ public class Tablas {
             col.setMinWidth(minWidth);
             col.setUserData(peso); // lo leemos luego en el controller
 
-            //esto es para asignar signo $, si es stock muestra numero entero
-            if (propiedad.equalsIgnoreCase("precio")) {
-                col.setCellFactory(formatearMoneda());
-            } else if (propiedad.toLowerCase().contains("stock")) {
-                col.setCellFactory(formatearEntero());
-            }
+            // 🎨 Aplicar formato según el tipo de columna
+            aplicarFormato(col, propiedad);
+
             // Alineación por CSS
             if (propiedad.equals("descripcion")) col.getStyleClass().add("col-left");
             else col.getStyleClass().add("col-center");
@@ -56,6 +53,26 @@ public class Tablas {
     // ==========================
     // FORMATO DE MONEDA ($)
     // ==========================
+
+    /**
+     * Aplica el formato correcto según el nombre de la propiedad
+     */
+    private static <T> void aplicarFormato(TableColumn<T, Object> col, String propiedad) {
+        String propLower = propiedad.toLowerCase();
+
+        // Detectar columnas de precio/dinero
+        if (propLower.contains("precio") || propLower.contains("total") ||
+                propLower.contains("costo") || propLower.contains("subtotal") ||
+                propLower.contains("monto")) {
+            col.setCellFactory(formatearMoneda());
+        }
+        // Detectar columnas de stock/cantidad entera
+        else if (propLower.contains("stock") || propLower.equals("qty") ||
+                propLower.equals("cantidad")) {
+            col.setCellFactory(formatearEntero());
+        }
+    }
+
     private static <T> Callback<TableColumn<T, Object>, javafx.scene.control.TableCell<T, Object>> formatearMoneda() {
 
         // Devuelve una "fábrica" de celdas personalizadas
@@ -74,8 +91,15 @@ public class Tablas {
 
                 // Formatea el número como moneda argentina
                 NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-                // Ejemplo: 1200.5 → $ 1.200,50
-                setText(formato.format((BigDecimal) item));
+
+                // Manejar tanto BigDecimal como otros tipos numéricos
+                if (item instanceof BigDecimal) {
+                    setText(formato.format((BigDecimal) item));
+                } else if (item instanceof Number) {
+                    setText(formato.format(((Number) item).doubleValue()));
+                } else {
+                    setText(item.toString());
+                }
             }
         };
     }
@@ -93,10 +117,11 @@ public class Tablas {
 
                 if (empty || item == null) {
                     setText(null);
-                } else {
+                } else if (item instanceof Number) {
                     // Convierte el número a entero sin decimales
-                    setText(String.format("%d", item));
-                    // Ejemplo: 5 → "5"
+                    setText(String.format("%d", ((Number) item).intValue()));
+                } else {
+                    setText(item.toString());
                 }
             }
         };

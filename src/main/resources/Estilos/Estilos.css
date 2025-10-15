@@ -574,64 +574,85 @@
     -fx-pref-height: 460;
 }
 
-/* ======================================================
-   FORMULARIOS MODALES: Agregar Producto / Variante
-   ====================================================== */
+/* ========================================
+   PANEL LATERAL - PRODUCTOS MÁS VENDIDOS
+   (Agregar al final de tu Estilos.css)
+   ======================================== */
 
-.form-cuero {
-    -fx-background-color: #d8b075;       /* cuero medio */
-    -fx-border-color: #a67b4a;
-
+/* Panel con colores de tu paleta cuero */
+#panelLateralMasVendidos {
+    -fx-background-color: #e5cba1;
+    -fx-border-color: #cfa971;
+    -fx-border-width: 0 0 0 2;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 10, 0.3, -3, 0);
 }
 
-/* Títulos de los formularios */
-.form-cuero .label {
-    -fx-text-fill: #2b2b2b;
+/* Tabla interna del panel */
+#tablaMasVendidos {
+    -fx-background-color: #f5e5d0;
+    -fx-control-inner-background: #f5e5d0;
+    -fx-control-inner-background-alt: #eddcc4;
 }
 
-/* Campos de texto */
-.form-cuero .text-field,
-.form-cuero .text-area,
-.form-cuero .combo-box {
-    -fx-background-color: #f3d8ad;
-    -fx-border-color: #b88a52;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
-    -fx-text-fill: #2b2b2b;
-    -fx-font-size: 13px;
-}
-
-/* Botones dentro del formulario */
-.form-cuero .button {
+#tablaMasVendidos .column-header {
     -fx-background-color: #cfa971;
     -fx-text-fill: #2b2b2b;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+#tablaMasVendidos .table-row-cell:hover {
+    -fx-background-color: #dec097;
     -fx-cursor: hand;
 }
 
-.form-cuero .button:hover {
+#tablaMasVendidos .table-row-cell:selected {
     -fx-background-color: #b88a52;
+}
+
+#tablaMasVendidos .table-row-cell:selected .label {
     -fx-text-fill: white;
 }
 
-
-/* Ajustes visuales para formularios chicos */
-.form-cuero {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 10, 0.3, 0, 3);
+/* Progress Bar mini en tabla (paleta cuero) */
+#tablaMasVendidos .progress-bar {
+    -fx-background-color: #eddcc4;
 }
 
-.form-cuero .label:first-child {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-alignment: center;
+#tablaMasVendidos .progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #b88a52, #cfa971);
+    -fx-background-radius: 3;
+    -fx-padding: 2;
 }
 
-.form-cuero .text-area .text {
-    -fx-fill: #2b2b2b; /* color del texto normal */
+/* Toggle button activo */
+#btnMasVendidos:selected {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
 }
 
-.form-cuero .text-area:empty .text {
-    -fx-fill: #7a7a7a; /* color del placeholder */
-    -fx-font-style: italic;
+/* Separadores internos del panel */
+#panelLateralMasVendidos .separator .line {
+    -fx-border-color: #cfa971;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Labels del panel */
+#panelLateralMasVendidos .label {
+    -fx-text-fill: #2b2b2b;
+}
+
+/* Spinner de carga sobre tabla */
+#vboxLoading {
+    -fx-background-color: rgba(229, 203, 161, 0.85);
+}
+
+#progressIndicator {
+    -fx-progress-color: #b88a52;
+}
+
+#progressIndicator .percentage {
+    -fx-fill: #2b2b2b;
 }

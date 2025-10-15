@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.SQLException;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.prefs.Preferences;
 
@@ -630,14 +631,14 @@ public class ProductoTreeController {
             }
 
             Producto base = baseOpt.get();
-            // Creamos un producto temporal con datos combinados (para mostrar en el diálogo)
             Producto producto = new Producto();
             producto.setId(base.getId());
+            producto.setEtiqueta(base.getEtiqueta());
             producto.setNombre(base.getNombre() + " (" + item.getColor() + " " + item.getTalle() + ")");
             producto.setPrecio(item.getPrecio());
             producto.setStockOnHand(item.getStockOnHand());
 
-            pedirCantidad(producto, item.isEsVariante() ? item.getVarianteId() : null);
+            pedirCantidad(producto, item.getVarianteId());
             return;
         }
 
@@ -653,13 +654,11 @@ public class ProductoTreeController {
     }
 
     private void pedirCantidad(Producto producto, Long idVariante) {
-        // === 1️⃣ Diálogo de cantidad ===
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Nueva venta");
         dialog.setHeaderText("Producto: " + producto.getNombre());
-        dialog.setContentText("Cantidad vendida:");
+        dialog.setContentText("Cantidad:");
 
-        // Aplica estilo cuero (solo vía CSS)
         DialogPane pane1 = dialog.getDialogPane();
         pane1.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
         pane1.getStyleClass().add("dialog-cuero");
@@ -673,26 +672,22 @@ public class ProductoTreeController {
                 NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
                 String totalFormateado = formato.format(total);
 
-                // === 2️⃣ Diálogo de confirmación ===
+                // === Diálogo de confirmación ===
                 Dialog<ButtonType> confirmar = new Dialog<>();
                 confirmar.setTitle("Confirmar venta");
 
-                // Aplica el mismo CSS cuero
                 DialogPane pane2 = confirmar.getDialogPane();
                 pane2.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
                 pane2.getStyleClass().add("dialog-cuero");
 
-                // Header personalizado con texto simple (sin inline style)
                 Label header = new Label("💰 Total: " + totalFormateado);
                 header.getStyleClass().add("dialog-header");
                 pane2.setHeader(header);
 
-                // Botones
                 ButtonType ok = new ButtonType("Confirmar", ButtonBar.ButtonData.OK_DONE);
                 ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
                 pane2.getButtonTypes().addAll(ok, cancel);
 
-                // Contenido
                 Label lblProducto = new Label("Producto: " + producto.getNombre());
                 Label lblCantidad = new Label("Cantidad: " + cantidad);
                 Label lblPrecio = new Label("Precio unitario: " + formato.format(producto.getPrecio()));
@@ -706,11 +701,10 @@ public class ProductoTreeController {
                 content.getStyleClass().add("dialog-content");
                 pane2.setContent(content);
 
-                // Mostrar y procesar
                 Optional<ButtonType> res = confirmar.showAndWait();
                 if (res.isPresent() && res.get() == ok) {
                     String medioPago = comboPago.getValue();
-                    registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante);
+                    procesarVenta(producto, cantidad, total, medioPago, idVariante);
                 }
 
             } catch (NumberFormatException e) {
@@ -719,33 +713,39 @@ public class ProductoTreeController {
         });
     }
 
+    private void procesarVenta(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
+        try {
+            registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante);
+        } catch (Exception e) {
+            e.printStackTrace();
+            error("❌ Error al procesar la venta: " + e.getMessage());
+        }
+    }
+
     private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
         try {
-            VentaDAO ventaDAO = new VentaDAO();
-
-            // 🧾 1. Crear venta
             Venta venta = new Venta();
-            venta.setClienteNombre(null); // opcional, si querés después pedirlo
+            venta.setClienteNombre(null);
             venta.setMedioPago(medioPago);
-            venta.setTotal(total);
+            venta.setFecha(LocalDateTime.now());
 
-            long ventaId = ventaDAO.registrarVenta(venta);
-
-            // 🧮 2. Crear detalle
-            VentaItem item = new VentaItem();
-            item.setVentaId(ventaId);
+            Venta.VentaItem item = new Venta.VentaItem();
             item.setProductoId(producto.getId());
-            item.setCantidad(cantidad);
+            item.setProductoNombre(producto.getNombre());
+            item.setProductoEtiqueta(producto.getEtiqueta());
+            item.setQty(cantidad);
             item.setPrecioUnit(producto.getPrecio());
 
-            ventaDAO.registrarItem(item);
+            venta.addItem(item);
+            venta.calcularTotal();
 
-            // 🏷️ 3. Actualizar stock
+            VentaDAO.registrarVentaCompleta(venta);
+
             boolean actualizado;
             if (idVariante != null) {
                 actualizado = new ProductoVarianteDAO().descontarStock(idVariante, cantidad);
             } else {
-                actualizado = new ProductoDAO().descontarStock(producto.getId(), cantidad);
+                actualizado = productoDAO.descontarStock(producto.getId(), cantidad);
             }
 
             if (!actualizado) {
@@ -753,36 +753,14 @@ public class ProductoTreeController {
                 return;
             }
 
-            // 🔁 4. Refrescar y notificar
             recargarArbol(txtBuscarEtiqueta.getText());
-            ok("✅ Venta registrada. Total: " + NumberFormat.getCurrencyInstance(new Locale("es", "AR")).format(total));
+            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+            ok("✅ Venta registrada. Total: " + formato.format(total));
 
         } catch (Exception e) {
             e.printStackTrace();
             error("❌ Error al registrar venta: " + e.getMessage());
         }
-    }
-
-
-    private void procesarVenta(Producto producto, int cantidad, BigDecimal total, Long idVariante) {
-        boolean actualizado;
-
-        if (idVariante != null) {
-            actualizado = new ProductoVarianteDAO().descontarStock(idVariante, cantidad);
-        } else {
-            actualizado = productoDAO.descontarStock(producto.getId(), cantidad);
-        }
-
-        if (!actualizado) {
-            error("No hay suficiente stock para completar la venta.");
-            return;
-        }
-
-        NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-        String totalFormateado = formato.format(total);
-
-        ok("Venta confirmada: " + totalFormateado);
-        recargarArbol(txtBuscarEtiqueta.getText());
     }
 
     // -------------------------------------------------------------------
