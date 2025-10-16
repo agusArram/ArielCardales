@@ -396,4 +396,17 @@ public class VentaDAO {
         return ventas;
     }
 
+    public static int contarVentas() throws SQLException {
+        String sql = "SELECT COUNT(*) FROM venta";
+        try (Connection conn = Database.get();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+        return 0;
+    }
+
+
 }

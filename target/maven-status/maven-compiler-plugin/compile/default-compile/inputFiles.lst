@@ -5,6 +5,7 @@ C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\controller\AppCon
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\controller\EditarProductoController.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\controller\ExportarController.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\controller\ProductoTreeController.java
+C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\controller\VentasController.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\DAO\CategoriaDAO.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\DAO\CrudDAO.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\DAO\DaoException.java
@@ -20,9 +21,9 @@ C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Entidades\Product
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Entidades\ProductoVariante.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Entidades\Unidad.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Entidades\Venta.java
-C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Entidades\VentaItem.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Launcher.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\service\InventarioService.java
+C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\service\VentanaProducto.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateChecker.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateConfig.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateDialog.java
@@ -35,7 +36,9 @@ C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateTes
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\Arboles.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorExcel.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorPDF.java
+C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorVentas.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\Mapper.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\Tablas.java
+C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\Util\TablasDialog.java
 C:\ArielCardales\src\main\java\com\arielcardales\arielcardales\View\VentanaProducto.java
 C:\ArielCardales\src\main\java\module-info.java

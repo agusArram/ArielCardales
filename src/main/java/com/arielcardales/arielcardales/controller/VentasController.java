@@ -5,53 +5,27 @@ import com.arielcardales.arielcardales.DAO.ProductoDAO;
 import com.arielcardales.arielcardales.DAO.ProductoVarianteDAO;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
-import com.arielcardales.arielcardales.Entidades.Producto;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Pos;
 import org.controlsfx.control.Notifications;
-
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
-import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.animation.TranslateTransition;
-import javafx.util.Duration;
-import org.controlsfx.control.Notifications;
-
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 import java.text.NumberFormat;
 
 public class VentasController {
@@ -62,12 +36,12 @@ public class VentasController {
     @FXML private Button btnFiltrar;
     @FXML private Button btnLimpiar;
     @FXML private Button btnNuevaVenta;
-    @FXML private ToggleButton btnMasVendidos; // ⭐ NUEVO
+    @FXML private ToggleButton btnMasVendidos;
 
     @FXML private TableView<Venta> tablaVentas;
 
     @FXML private StackPane contenedorPrincipal;
-    @FXML private VBox contenedorTabla; // ⭐ Contenedor de la tabla
+    @FXML private VBox contenedorTabla; //  Contenedor de la tabla
     @FXML private VBox panelLateralMasVendidos;
     @FXML private TableView<VentaDAO.ProductoVendido> tablaMasVendidos;
     @FXML private Label lblPeriodoPanel;
@@ -90,6 +64,8 @@ public class VentasController {
     private int currentOffset = 0;
     private int totalVentas = 0;
 
+    private boolean cargandoPagina = false;
+
 
     private boolean panelVisible = false;
 
@@ -98,7 +74,7 @@ public class VentasController {
         configurarTablaVentasUnificada();
         configurarTablaMasVendidos();
         configurarFiltros();
-        cargarVentas();
+        cargarVentasInicial();
 
         // ⭐ Panel oculto inicialmente (sin animación, solo hidden)
         panelLateralMasVendidos.setVisible(false);
@@ -224,12 +200,12 @@ public class VentasController {
             if (newVal != null && newVal.length() > 2) {
                 buscarPorCliente(newVal);
             } else if (newVal == null || newVal.isEmpty()) {
-                cargarVentas();
+                cargarVentasCompleta();
             }
         });
     }
 
-    private void cargarVentas() {
+    private void cargarVentasCompleta() {
         mostrarLoading(true);
 
         Task<List<Venta>> task = new Task<>() {
@@ -263,6 +239,152 @@ public class VentasController {
 
         new Thread(task).start();
     }
+
+
+    private void cargarVentasInicial() {
+        ventasData.clear();
+        currentOffset = 0;
+        mostrarLoading(true);
+
+        Task<List<com.arielcardales.arielcardales.Entidades.Venta>> task = new Task<>() {
+            @Override
+            protected List<com.arielcardales.arielcardales.Entidades.Venta> call() throws Exception {
+                totalVentas = VentaDAO.contarVentas(); // nuevo método en DAO
+                return VentaDAO.obtenerVentasPaginadas(currentOffset, PAGE_SIZE);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            List<com.arielcardales.arielcardales.Entidades.Venta> primeras = task.getValue();
+            ventasData.addAll(primeras);
+            mostrarLoading(false);
+
+            // Cargar items en segundo plano para las ventas que ya mostramos
+            cargarItemsEnSegundoPlano(primeras);
+
+            // Instalar listener del scroll (una sola vez)
+            Platform.runLater(this::instalarScrollListener);
+        });
+
+        task.setOnFailed(e -> {
+            mostrarError("Error al cargar ventas", task.getException().getMessage());
+            task.getException().printStackTrace();
+            mostrarLoading(false);
+        });
+
+        new Thread(task).start();
+    }
+
+    /**
+     * Carga la siguiente página (si hay más) — evita llamadas simultáneas con cargandoPagina.
+     */
+    private void cargarMasVentas() {
+        if (cargandoPagina) return;
+        if (ventasData.size() >= totalVentas) return;
+
+        cargandoPagina = true;
+        currentOffset += PAGE_SIZE;
+
+        Task<List<com.arielcardales.arielcardales.Entidades.Venta>> task = new Task<>() {
+            @Override
+            protected List<com.arielcardales.arielcardales.Entidades.Venta> call() throws Exception {
+                return VentaDAO.obtenerVentasPaginadas(currentOffset, PAGE_SIZE);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            List<com.arielcardales.arielcardales.Entidades.Venta> nuevas = task.getValue();
+            ventasData.addAll(nuevas);
+            cargarItemsEnSegundoPlano(nuevas);
+            cargandoPagina = false;
+            actualizarEstadoPie(); // opcional (ver abajo)
+        });
+
+        task.setOnFailed(e -> {
+            task.getException().printStackTrace();
+            cargandoPagina = false;
+        });
+
+        new Thread(task).start();
+    }
+
+    /**
+     * Cargar los items de las ventas en segundo plano (no bloquea la UI).
+     */
+    private void cargarItemsEnSegundoPlano(List<com.arielcardales.arielcardales.Entidades.Venta> ventas) {
+        if (ventas == null || ventas.isEmpty()) return;
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                for (com.arielcardales.arielcardales.Entidades.Venta v : ventas) {
+                    try {
+                        v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                return null;
+            }
+        };
+
+        // Cuando terminen de cargar items podemos forzar actualización visual (si hace falta)
+        task.setOnSucceeded(e -> {
+            // Forzar refresh de la tabla para que las celdas custom muestren tooltips/textos actualizados
+            Platform.runLater(() -> {
+                // simple refresh: re-asignar items a la tabla (no recrea objetos)
+                tablaVentas.getItems().setAll(ventasData);
+                actualizarEstadoPie();
+            });
+        });
+
+        new Thread(task).start();
+    }
+
+    /**
+     * Listener seguro: detecta el scrollbar vertical y carga más cuando llega al final.
+     * Se instala una sola vez (se invoca desde cargarVentasInicial() con Platform.runLater).
+     */
+    private void instalarScrollListener() {
+        tablaVentas.skinProperty().addListener((obs, oldSkin, newSkin) -> {
+            if (newSkin != null) {
+                ScrollBar vBar = null;
+                for (Node n : tablaVentas.lookupAll(".scroll-bar")) {
+                    if (n instanceof ScrollBar sb && sb.getOrientation() == Orientation.VERTICAL) {
+                        vBar = sb;
+                        break;
+                    }
+                }
+
+                if (vBar != null) {
+                    ScrollBar finalVBar = vBar;
+                    vBar.valueProperty().addListener((o, oldV, newV) -> {
+                        // Detecta el final del scroll con margen
+                        if (newV.doubleValue() >= 0.9) {
+                            if (!cargandoPagina && ventasData.size() < totalVentas) {
+                                cargarMasVentas();
+                            }
+                        }
+                    });
+                    System.out.println("✅ Scroll listener instalado correctamente (max=" + finalVBar.getMax() + ")");
+                } else {
+                    System.out.println("⚠️ ScrollBar vertical no encontrada todavía, reintentando...");
+                    Platform.runLater(this::instalarScrollListener);
+                }
+            }
+        });
+    }
+
+
+    /**
+     * Opcional: actualizar label o pie inferior con estado: "Mostrando X de Y ventas"
+     */
+    private void actualizarEstadoPie() {
+        // Si tenés un Label para estado, actualizalo. Si no, podés crear uno.
+        // Ejemplo (si agregás Label lblEstado en FXML):
+        // lblEstado.setText(String.format("Mostrando %d de %d ventas", ventasData.size(), totalVentas));
+    }
+
 
     @FXML
     private void filtrarPorFechas() {
@@ -341,7 +463,7 @@ public class VentasController {
         txtBuscarCliente.clear();
         dpFechaInicio.setValue(LocalDate.now().minusMonths(1));
         dpFechaFin.setValue(LocalDate.now());
-        cargarVentas();
+        cargarVentasInicial();
     }
 
     private void actualizarEstadisticas() {
@@ -510,7 +632,7 @@ public class VentasController {
         panelLateralMasVendidos.setVisible(false);
         panelLateralMasVendidos.setManaged(false); // ⭐ La tabla recupera espacio
         btnMasVendidos.setSelected(false);
-        cargarVentas(); // Restaurar ventas completas
+        cargarVentasInicial(); // Restaurar ventas completas
     }
 
     // ⭐ CARGA ASÍNCRONA DE PRODUCTOS MÁS VENDIDOS
