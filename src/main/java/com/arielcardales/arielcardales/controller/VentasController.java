@@ -811,40 +811,6 @@ public class VentasController {
         new Thread(task).start();
     }
 
-    // ⭐ FILTRAR VENTAS POR PRODUCTO SELECCIONADO
-    private void filtrarVentasPorProducto(String etiqueta) {
-        Task<List<Venta>> task = new Task<>() {
-            @Override
-            protected List<Venta> call() throws Exception {
-                LocalDate inicio = dpFechaInicio.getValue();
-                LocalDate fin = dpFechaFin.getValue();
-                List<Venta> ventas = VentaDAO.obtenerVentasPorFecha(inicio, fin);
-
-                // Filtrar solo ventas que contengan este producto
-                return ventas.stream()
-                        .peek(v -> {
-                            try {
-                                v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
-                            } catch (SQLException ex) {
-                                ex.printStackTrace();
-                            }
-                        })
-                        .filter(v -> v.getItems().stream()
-                                .anyMatch(item -> item.getProductoEtiqueta().equals(etiqueta)))
-                        .toList();
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            ventasData.setAll(task.getValue());
-            ok("📌 Mostrando ventas de: " + etiqueta);
-        });
-
-        task.setOnFailed(e -> error("Error al filtrar ventas"));
-
-        new Thread(task).start();
-    }
-
     // ===============================================
 // REEMPLAZAR instalarScrollListener() POR ESTA VERSIÓN ÚNICA
 // Borra cualquier otro método con este nombre
@@ -913,5 +879,56 @@ public class VentasController {
             lblCargando.setText("✅ " + totalVentas + " ventas");
             lblCargando.setStyle("-fx-font-size: 12px; -fx-text-fill: #5D9C5D; -fx-font-weight: bold; -fx-padding: 5 10;");
         }
+    }
+
+    // Agregar este método en VentasController.java
+
+    private void filtrarVentasPorProducto(String etiqueta) {
+        if (etiqueta == null || etiqueta.trim().isEmpty()) {
+            mostrarError("Error", "Etiqueta de producto inválida");
+            return;
+        }
+
+        mostrarLoading(true);
+
+        Task<List<Venta>> task = new Task<>() {
+            @Override
+            protected List<Venta> call() throws Exception {
+                // ⚡ Consulta SQL optimizada - solo trae las ventas necesarias
+                List<Venta> ventas = VentaDAO.obtenerVentasPorProducto(etiqueta);
+
+                // Cargar items solo para las ventas filtradas
+                for (Venta v : ventas) {
+                    v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
+                }
+
+                return ventas;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            try {
+                List<Venta> resultado = task.getValue();
+                ventasData.setAll(resultado);
+                actualizarEstadisticas();
+
+                // Notificación abajo a la derecha
+                Notifications.create()
+                        .title("Filtro aplicado")
+                        .text("Mostrando " + resultado.size() + " venta(s) del producto: " + etiqueta)
+                        .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                        .showInformation();
+            } finally {
+                mostrarLoading(false);
+            }
+        });
+
+        task.setOnFailed(e -> {
+            mostrarError("Error al filtrar", task.getException().getMessage());
+            task.getException().printStackTrace();
+            mostrarLoading(false);
+        });
+
+        new Thread(task).start();
     }
 }

@@ -408,5 +408,47 @@ public class VentaDAO {
         return 0;
     }
 
+// Agregar este método en VentaDAO.java
 
+    /**
+     * Obtiene ventas que contienen un producto específico (optimizado)
+     */
+    public static List<Venta> obtenerVentasPorProducto(String etiqueta) throws SQLException {
+        String sql = """
+        SELECT DISTINCT
+            v.id,
+            v.clienteNombre,
+            v.fecha,
+            v.medioPago,
+            v.total
+        FROM venta v
+        INNER JOIN ventaItem vi ON vi.ventaId = v.id
+        INNER JOIN producto p ON p.id = vi.productoId
+        WHERE p.etiqueta = ?
+        ORDER BY v.fecha DESC
+    """;
+
+        List<Venta> ventas = new ArrayList<>();
+
+        try (Connection conn = Database.get();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, etiqueta);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Venta venta = new Venta(
+                            rs.getLong("id"),
+                            rs.getString("clienteNombre"),
+                            rs.getTimestamp("fecha").toLocalDateTime(),
+                            rs.getString("medioPago"),
+                            rs.getBigDecimal("total")
+                    );
+                    ventas.add(venta);
+                }
+            }
+        }
+
+        return ventas;
+    }
 }
