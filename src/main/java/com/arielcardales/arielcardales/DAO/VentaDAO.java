@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
+import com.arielcardales.arielcardales.Util.Mapper;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -188,18 +189,18 @@ public class VentaDAO {
 
     /**
      * Registra una venta completa con sus items en una transacción
+     * ⚠️ Si falla cualquier paso, hace rollback automático
      */
     public static Long registrarVentaCompleta(Venta venta) throws SQLException {
-        Connection conn = null;
-        try {
-            conn = Database.get();
+        // ✅ CRÍTICO: Usar try-with-resources para cerrar la conexión automáticamente
+        try (Connection conn = Database.get()) {
             conn.setAutoCommit(false);
 
-            // 1. Insertar venta
+            // 1️⃣ Insertar venta
             String sqlVenta = """
-                INSERT INTO venta (clienteNombre, fecha, medioPago, total)
-                VALUES (?, ?, ?, ?)
-            """;
+            INSERT INTO venta (clienteNombre, fecha, medioPago, total)
+            VALUES (?, ?, ?, ?)
+        """;
 
             long ventaId;
             try (PreparedStatement ps = conn.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS)) {
@@ -207,7 +208,12 @@ public class VentaDAO {
                 ps.setTimestamp(2, Timestamp.valueOf(venta.getFecha()));
                 ps.setString(3, venta.getMedioPago());
                 ps.setBigDecimal(4, venta.getTotal());
-                ps.executeUpdate();
+
+                int affectedRows = ps.executeUpdate();
+
+                if (affectedRows == 0) {
+                    throw new SQLException("Insertar venta falló, no se afectaron filas.");
+                }
 
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
@@ -218,44 +224,55 @@ public class VentaDAO {
                 }
             }
 
-            // 2. Insertar items
+            // 2️⃣ Insertar items (aquí puede fallar el trigger de stock)
             String sqlItem = """
-                INSERT INTO ventaItem (ventaId, productoId, qty, precioUnit)
-                VALUES (?, ?, ?, ?)
-            """;
+            INSERT INTO ventaItem (ventaId, productoId, variante_id, qty, precioUnit)
+            VALUES (?, ?, ?, ?, ?)
+        """;
+
+            // ✅ DEBUG: Imprimir cuántos items se van a insertar
+            System.out.println("🔍 DEBUG: Items en la venta: " + venta.getItems().size());
 
             try (PreparedStatement ps = conn.prepareStatement(sqlItem)) {
                 for (VentaItem item : venta.getItems()) {
+                    // ✅ DEBUG: Imprimir cada item antes de agregarlo al batch
+                    System.out.println("📦 Item → productoId=" + item.getProductoId() +
+                            ", varianteId=" + item.getVarianteId() +
+                            ", qty=" + item.getQty());
+
                     ps.setLong(1, ventaId);
                     ps.setLong(2, item.getProductoId());
-                    ps.setInt(3, item.getQty());
-                    ps.setBigDecimal(4, item.getPrecioUnit());
+
+                    // ✅ Insertar varianteId si existe
+                    if (item.getVarianteId() != null) {
+                        ps.setLong(3, item.getVarianteId());
+                    } else {
+                        ps.setNull(3, Types.BIGINT);
+                    }
+
+                    ps.setInt(4, item.getQty());
+                    ps.setBigDecimal(5, item.getPrecioUnit());
+
+                    // ✅ CRÍTICO: Agregar UNA SOLA VEZ al batch
                     ps.addBatch();
                 }
-                ps.executeBatch();
+
+                // ✅ Ejecutar batch UNA SOLA VEZ
+                int[] results = ps.executeBatch();
+                System.out.println("✅ Batch ejecutado. Filas insertadas: " + results.length);
             }
 
+            // ✅ Solo hacer commit si TODO salió bien
             conn.commit();
+            System.out.println("✅ Commit exitoso para venta ID: " + ventaId);
             return ventaId;
 
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            // ❌ El rollback se hace automáticamente porque conn está en try-with-resources
+            System.err.println("⚠️ Error en transacción de venta: " + e.getMessage());
             throw e;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
+        // ✅ La conexión se cierra automáticamente aquí gracias a try-with-resources
     }
 
     public static class VentaEstadisticas {
@@ -357,4 +374,26 @@ public class VentaDAO {
         public int getTotalVendido() { return totalVendido; }
         public BigDecimal getTotalIngresos() { return totalIngresos; }
     }
+
+    public static List<Venta> obtenerVentasPaginadas(int offset, int limit) throws SQLException {
+        List<Venta> ventas = new ArrayList<>();
+        String sql = "SELECT * FROM venta ORDER BY fecha DESC OFFSET ? LIMIT ?";
+
+        try (Connection conn =Database.get();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, offset);
+            stmt.setInt(2, limit);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Venta v = Mapper.getVenta(rs);
+                    ventas.add(v);
+                }
+            }
+        }
+
+        return ventas;
+    }
+
 }

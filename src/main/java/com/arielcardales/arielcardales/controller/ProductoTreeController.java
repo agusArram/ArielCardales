@@ -611,7 +611,6 @@ public class ProductoTreeController {
             error("Error al abrir ventana de producto: " + e.getMessage());
         }
     }
-
     @FXML
     private void iniciarVenta() {
         Optional<ItemInventario> sel = getSeleccionInventario();
@@ -622,27 +621,40 @@ public class ProductoTreeController {
 
         ItemInventario item = sel.get();
 
-        // 🧩 Si es variante → traer info desde ProductoVarianteDAO
+        // 🧩 Si es variante → cargar datos DIRECTAMENTE desde ProductoVarianteDAO
         if (item.isEsVariante()) {
-            Optional<Producto> baseOpt = productoDAO.findById(item.getProductoId());
+            Optional<ProductoVariante> varOpt = new ProductoVarianteDAO().findById(item.getVarianteId());
+
+            if (varOpt.isEmpty()) {
+                error("No se encontró la variante en la base de datos.");
+                return;
+            }
+
+            ProductoVariante variante = varOpt.get();
+
+            // Obtener info del producto base solo para nombre/etiqueta
+            Optional<Producto> baseOpt = productoDAO.findById(variante.getProductoId());
             if (baseOpt.isEmpty()) {
                 error("No se encontró el producto base.");
                 return;
             }
 
             Producto base = baseOpt.get();
-            Producto producto = new Producto();
-            producto.setId(base.getId());
-            producto.setEtiqueta(base.getEtiqueta());
-            producto.setNombre(base.getNombre() + " (" + item.getColor() + " " + item.getTalle() + ")");
-            producto.setPrecio(item.getPrecio());
-            producto.setStockOnHand(item.getStockOnHand());
 
-            pedirCantidad(producto, item.getVarianteId());
+            // 🔹 Crear objeto temporal con TODOS los datos de la variante
+            Producto productoVenta = new Producto();
+            productoVenta.setId(variante.getProductoId());  // ✅ ID del padre (para ventaItem)
+            productoVenta.setEtiqueta(variante.getEtiqueta()); // ✅ Etiqueta de la variante
+            productoVenta.setNombre(base.getNombre() + " - " + variante.getColor() + " " + variante.getTalle());
+            productoVenta.setPrecio(variante.getPrecio());     // ✅ Precio de la variante
+            productoVenta.setStockOnHand(variante.getStock()); // ✅ Stock REAL de la variante desde BD
+
+            // ⚠️ CRÍTICO: Pasar el ID de la variante para que registrarVentaEnBD() descuente correctamente
+            pedirCantidad(productoVenta, item.getVarianteId());
             return;
         }
 
-        // 🧩 Si es producto base
+        // 🧩 Si es producto base (sin variantes)
         Optional<Producto> opt = productoDAO.findById(item.getProductoId());
         if (opt.isEmpty()) {
             error("No se encontró el producto en base de datos.");
@@ -650,7 +662,110 @@ public class ProductoTreeController {
         }
 
         Producto producto = opt.get();
+
+        // ✅ Pasar null como idVariante porque es producto base
         pedirCantidad(producto, null);
+    }
+
+    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
+        try {
+            // 🔹 PASO 1: Validar stock ANTES de iniciar transacción
+            int stockActual;
+            Long productoIdParaVenta; // ID que va en ventaItem.productoId (siempre del padre)
+
+            if (idVariante != null) {
+                // ✅ Validar stock de la VARIANTE
+                Optional<ProductoVariante> varOpt = new ProductoVarianteDAO().findById(idVariante);
+
+                if (varOpt.isEmpty()) {
+                    error("⚠ Variante no encontrada en base de datos.");
+                    return;
+                }
+
+                ProductoVariante variante = varOpt.get();
+                stockActual = variante.getStock();
+                productoIdParaVenta = variante.getProductoId(); // ✅ ID del producto PADRE
+
+            } else {
+                // ✅ Validar stock del PRODUCTO BASE
+                Optional<Producto> prodOpt = productoDAO.findById(producto.getId());
+                if (prodOpt.isEmpty()) {
+                    error("⚠ Producto no encontrado en base de datos.");
+                    return;
+                }
+                stockActual = prodOpt.get().getStockOnHand();
+                productoIdParaVenta = producto.getId();
+            }
+
+            // 🔹 PASO 2: Verificar que hay suficiente stock
+            if (stockActual < cantidad) {
+                error(String.format("⚠ Stock insuficiente.\nDisponible: %d | Solicitado: %d",
+                        stockActual, cantidad));
+                return;
+            }
+
+            // 🔹 PASO 3: Crear objeto venta
+            Venta venta = new Venta();
+            venta.setClienteNombre(null);
+            venta.setMedioPago(medioPago);
+            venta.setFecha(LocalDateTime.now());
+
+            Venta.VentaItem item = new Venta.VentaItem();
+            item.setProductoId(productoIdParaVenta); // ✅ SIEMPRE el ID del producto padre
+            item.setProductoNombre(producto.getNombre());
+            item.setProductoEtiqueta(producto.getEtiqueta());
+            item.setQty(cantidad);
+            item.setPrecioUnit(producto.getPrecio());
+
+            // ✅ Si es variante, guardar el ID en el campo variante_id
+            if (idVariante != null) {
+                item.setVarianteId(idVariante);
+            }
+
+            venta.addItem(item);
+            venta.calcularTotal();
+
+            // 🔹 PASO 4: Registrar venta (el trigger descuenta stock automáticamente)
+            Long ventaId;
+            try {
+                ventaId = VentaDAO.registrarVentaCompleta(venta);
+            } catch (SQLException e) {
+                // 🔴 El trigger de PostgreSQL rechazó la venta por stock insuficiente
+                if (e.getMessage() != null && e.getMessage().contains("Stock insuficiente")) {
+                    error("⚠ Stock insuficiente. La venta no se completó.");
+                    return;
+                }
+                throw e;
+            }
+
+            if (ventaId == null || ventaId <= 0) {
+                error("❌ Error al registrar venta en base de datos.");
+                return;
+            }
+
+            // ✅✅✅ CRÍTICO: NO DESCONTAR STOCK AQUÍ ✅✅✅
+            // El trigger de PostgreSQL YA descontó el stock automáticamente
+            // Si descuentas aquí, resta el doble
+
+            // ✅ PASO 5: Recargar UI y confirmar
+            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+            ok("✅ Venta registrada correctamente. Total: " + formato.format(total));
+
+            Platform.runLater(() -> {
+                recargarArbol(txtBuscarEtiqueta.getText());
+            });
+
+        } catch (SQLException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Stock insuficiente")) {
+                error("⚠ Stock insuficiente para completar la venta.");
+            } else {
+                error("❌ Error al registrar venta: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            error("❌ Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void pedirCantidad(Producto producto, Long idVariante) {
@@ -716,52 +831,13 @@ public class ProductoTreeController {
     private void procesarVenta(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
         try {
             registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante);
+            // ❌ NO DEBE HABER NADA MÁS AQUÍ
         } catch (Exception e) {
             e.printStackTrace();
             error("❌ Error al procesar la venta: " + e.getMessage());
         }
     }
 
-    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
-        try {
-            Venta venta = new Venta();
-            venta.setClienteNombre(null);
-            venta.setMedioPago(medioPago);
-            venta.setFecha(LocalDateTime.now());
-
-            Venta.VentaItem item = new Venta.VentaItem();
-            item.setProductoId(producto.getId());
-            item.setProductoNombre(producto.getNombre());
-            item.setProductoEtiqueta(producto.getEtiqueta());
-            item.setQty(cantidad);
-            item.setPrecioUnit(producto.getPrecio());
-
-            venta.addItem(item);
-            venta.calcularTotal();
-
-            VentaDAO.registrarVentaCompleta(venta);
-
-            boolean actualizado;
-            if (idVariante != null) {
-                actualizado = new ProductoVarianteDAO().descontarStock(idVariante, cantidad);
-            } else {
-                actualizado = productoDAO.descontarStock(producto.getId(), cantidad);
-            }
-
-            if (!actualizado) {
-                error("⚠ No hay suficiente stock.");
-                return;
-            }
-
-            recargarArbol(txtBuscarEtiqueta.getText());
-            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-            ok("✅ Venta registrada. Total: " + formato.format(total));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            error("❌ Error al registrar venta: " + e.getMessage());
-        }
-    }
 
     // -------------------------------------------------------------------
     // Helpers

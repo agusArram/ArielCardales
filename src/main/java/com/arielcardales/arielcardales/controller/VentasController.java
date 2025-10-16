@@ -15,6 +15,27 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.geometry.Pos;
+import org.controlsfx.control.Notifications;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Insets;
@@ -46,9 +67,10 @@ public class VentasController {
     @FXML private TableView<Venta> tablaVentas;
 
     @FXML private StackPane contenedorPrincipal;
+    @FXML private VBox contenedorTabla; // ⭐ Contenedor de la tabla
     @FXML private VBox panelLateralMasVendidos;
     @FXML private TableView<VentaDAO.ProductoVendido> tablaMasVendidos;
-    @FXML private Label lblPeriodoPanel; // ⭐ Label dinámico del período
+    @FXML private Label lblPeriodoPanel;
 
     @FXML private Label lblTotalVentas;
     @FXML private Label lblTotalMonto;
@@ -64,205 +86,23 @@ public class VentasController {
     private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private ProductoDAO productoDAO = new ProductoDAO();
     private ProductoVarianteDAO varianteDAO = new ProductoVarianteDAO();
+    private static final int PAGE_SIZE = 10;
+    private int currentOffset = 0;
+    private int totalVentas = 0;
+
 
     private boolean panelVisible = false;
 
     @FXML
     public void initialize() {
         configurarTablaVentasUnificada();
-        configurarTablaMasVendidos(); // ⭐ NUEVO
+        configurarTablaMasVendidos();
         configurarFiltros();
         cargarVentas();
 
-        // 🎨 Panel oculto inicialmente
-        panelLateralMasVendidos.setTranslateX(320); // Ancho del panel
+        // ⭐ Panel oculto inicialmente (sin animación, solo hidden)
         panelLateralMasVendidos.setVisible(false);
-    }
-
-    // ⭐ NUEVA TABLA DE PRODUCTOS MÁS VENDIDOS
-    private void configurarTablaMasVendidos() {
-        // Columnas optimizadas para panel lateral
-        TableColumn<VentaDAO.ProductoVendido, Integer> colPos = new TableColumn<>("#");
-        colPos.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
-                cd.getValue().getPosicion()).asObject());
-        colPos.setPrefWidth(35);
-        colPos.setStyle("-fx-alignment: CENTER;");
-
-        TableColumn<VentaDAO.ProductoVendido, String> colEtiqueta = new TableColumn<>("Etiq.");
-        colEtiqueta.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEtiqueta()));
-        colEtiqueta.setPrefWidth(60);
-        colEtiqueta.setStyle("-fx-alignment: CENTER;");
-
-        TableColumn<VentaDAO.ProductoVendido, String> colNombre = new TableColumn<>("Producto");
-        colNombre.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getNombre()));
-        colNombre.setPrefWidth(150);
-
-        TableColumn<VentaDAO.ProductoVendido, Integer> colCantidad = new TableColumn<>("Cant.");
-        colCantidad.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
-                cd.getValue().getTotalVendido()).asObject());
-        colCantidad.setPrefWidth(50);
-        colCantidad.setStyle("-fx-alignment: CENTER;");
-
-        // 📊 Barra visual inline (con colores de tu paleta)
-        colCantidad.setCellFactory(col -> new TableCell<VentaDAO.ProductoVendido, Integer>() {
-            @Override
-            protected void updateItem(Integer item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    return;
-                }
-
-                int max = masVendidosData.isEmpty() ? 1 :
-                        masVendidosData.stream()
-                                .mapToInt(VentaDAO.ProductoVendido::getTotalVendido)
-                                .max().orElse(1);
-
-                double porcentaje = (double) item / max;
-
-                ProgressBar bar = new ProgressBar(porcentaje);
-                bar.setPrefWidth(40);
-                bar.setMaxHeight(8);
-                bar.setStyle("-fx-accent: #b88a52;"); // ⭐ Tu color
-
-                Label lbl = new Label(String.valueOf(item));
-                lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2b2b2b;");
-
-                HBox box = new HBox(5, bar, lbl);
-                box.setAlignment(Pos.CENTER);
-                setGraphic(box);
-            }
-        });
-
-        tablaMasVendidos.getColumns().addAll(colPos, colEtiqueta, colNombre, colCantidad);
-        tablaMasVendidos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        masVendidosData = FXCollections.observableArrayList();
-        tablaMasVendidos.setItems(masVendidosData);
-
-        // 🖱️ Click en producto → filtrar ventas
-        tablaMasVendidos.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 1) {
-                VentaDAO.ProductoVendido selected = tablaMasVendidos.getSelectionModel().getSelectedItem();
-                if (selected != null) {
-                    filtrarVentasPorProducto(selected.getEtiqueta());
-                }
-            }
-        });
-    }
-
-    // ⭐ TOGGLE DEL PANEL LATERAL
-    @FXML
-    private void toggleMasVendidos() {
-        if (!panelVisible) {
-            mostrarPanelMasVendidos();
-        } else {
-            ocultarPanelMasVendidos();
-        }
-    }
-
-    private void mostrarPanelMasVendidos() {
-        panelVisible = true;
-        panelLateralMasVendidos.setVisible(true);
-        btnMasVendidos.setSelected(true);
-
-        // 🎬 Animación de deslizamiento
-        TranslateTransition slide = new TranslateTransition(Duration.millis(250), panelLateralMasVendidos);
-        slide.setFromX(320);
-        slide.setToX(0);
-        slide.play();
-
-        // Cargar datos
-        cargarProductosMasVendidos();
-    }
-
-    private void ocultarPanelMasVendidos() {
-        panelVisible = false;
-        btnMasVendidos.setSelected(false);
-
-        TranslateTransition slide = new TranslateTransition(Duration.millis(250), panelLateralMasVendidos);
-        slide.setFromX(0);
-        slide.setToX(320);
-        slide.setOnFinished(e -> panelLateralMasVendidos.setVisible(false));
-        slide.play();
-
-        // Restaurar filtros
-        cargarVentas();
-    }
-
-    // ⭐ CARGA ASÍNCRONA DE PRODUCTOS MÁS VENDIDOS
-    private void cargarProductosMasVendidos() {
-        LocalDate inicio = dpFechaInicio.getValue();
-        LocalDate fin = dpFechaFin.getValue();
-
-        if (inicio == null || fin == null) {
-            inicio = LocalDate.now().minusMonths(1);
-            fin = LocalDate.now();
-        }
-
-        // ⭐ Actualizar label del período
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        lblPeriodoPanel.setText(String.format("Período: %s a %s",
-                inicio.format(fmt), fin.format(fmt)));
-
-        LocalDate finalInicio = inicio;
-        LocalDate finalFin = fin;
-
-        Task<List<VentaDAO.ProductoVendido>> task = new Task<>() {
-            @Override
-            protected List<VentaDAO.ProductoVendido> call() throws Exception {
-                return VentaDAO.obtenerProductosMasVendidos(finalInicio, finalFin, 10);
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            List<VentaDAO.ProductoVendido> productos = task.getValue();
-            masVendidosData.setAll(productos);
-
-            if (productos.isEmpty()) {
-                tablaMasVendidos.setPlaceholder(new Label("Sin ventas en el período"));
-            }
-        });
-
-        task.setOnFailed(e -> {
-            error("Error al cargar productos más vendidos");
-            e.getSource().getException().printStackTrace();
-        });
-
-        new Thread(task).start();
-    }
-
-    // ⭐ FILTRAR VENTAS POR PRODUCTO SELECCIONADO
-    private void filtrarVentasPorProducto(String etiqueta) {
-        Task<List<Venta>> task = new Task<>() {
-            @Override
-            protected List<Venta> call() throws Exception {
-                LocalDate inicio = dpFechaInicio.getValue();
-                LocalDate fin = dpFechaFin.getValue();
-                List<Venta> ventas = VentaDAO.obtenerVentasPorFecha(inicio, fin);
-
-                // Filtrar solo ventas que contengan este producto
-                return ventas.stream()
-                        .peek(v -> {
-                            try {
-                                v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
-                            } catch (SQLException ex) {
-                                ex.printStackTrace();
-                            }
-                        })
-                        .filter(v -> v.getItems().stream()
-                                .anyMatch(item -> item.getProductoEtiqueta().equals(etiqueta)))
-                        .toList();
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            ventasData.setAll(task.getValue());
-            ok("📌 Mostrando ventas de: " + etiqueta);
-        });
-
-        task.setOnFailed(e -> error("Error al filtrar ventas"));
-
-        new Thread(task).start();
+        panelLateralMasVendidos.setManaged(false);
     }
 
     // ========== MÉTODOS ORIGINALES (sin cambios) ==========
@@ -322,6 +162,8 @@ public class VentasController {
                 @Override
                 protected void updateItem(Object item, boolean empty) {
                     super.updateItem(item, empty);
+
+                    // ✅ Validación robusta para evitar errores de formato
                     if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                         setText(null);
                         setTooltip(null);
@@ -329,28 +171,42 @@ public class VentasController {
                     }
 
                     Venta venta = getTableRow().getItem();
-                    if (venta.getItems() != null && !venta.getItems().isEmpty()) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < venta.getItems().size(); i++) {
-                            VentaItem vi = venta.getItems().get(i);
-                            if (i > 0) sb.append(", ");
-                            sb.append(vi.getProductoNombre());
-                        }
-                        setText(sb.toString());
 
-                        StringBuilder tooltip = new StringBuilder();
-                        NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-                        for (VentaItem vi : venta.getItems()) {
-                            tooltip.append(String.format("%s - %s (x%d) = %s\n",
-                                    vi.getProductoEtiqueta(),
-                                    vi.getProductoNombre(),
-                                    vi.getQty(),
-                                    formato.format(vi.getSubtotal())));
-                        }
-                        setTooltip(new Tooltip(tooltip.toString()));
-                    } else {
+                    // ✅ Verificar que la venta tiene items cargados
+                    if (venta.getItems() == null || venta.getItems().isEmpty()) {
                         setText("-");
+                        setTooltip(null);
+                        return;
                     }
+
+                    // ✅ Construir texto de productos
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < venta.getItems().size(); i++) {
+                        VentaItem vi = venta.getItems().get(i);
+                        if (i > 0) sb.append(", ");
+                        sb.append(vi.getProductoNombre());
+                    }
+                    setText(sb.toString());
+
+                    // ✅ Construir tooltip con detalles
+                    StringBuilder tooltip = new StringBuilder();
+                    NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+                    for (VentaItem vi : venta.getItems()) {
+                        // 🔥 Fix crítico: validar que subtotal no sea null antes de formatear
+                        BigDecimal subtotal = vi.getSubtotal();
+                        String subtotalStr = (subtotal != null)
+                                ? formato.format(subtotal)
+                                : "$0,00";
+
+                        tooltip.append(String.format("%s - %s (x%d) = %s\n",
+                                vi.getProductoEtiqueta(),
+                                vi.getProductoNombre(),
+                                vi.getQty(),
+                                subtotalStr));
+                    }
+
+                    setTooltip(new Tooltip(tooltip.toString()));
                 }
             });
         }
@@ -558,4 +414,179 @@ public class VentasController {
                 .hideAfter(javafx.util.Duration.seconds(5))
                 .showError();
     }
+
+
+    // ⭐ NUEVA TABLA DE PRODUCTOS MÁS VENDIDOS
+    private void configurarTablaMasVendidos() {
+        // Columnas optimizadas para panel lateral
+        TableColumn<VentaDAO.ProductoVendido, Integer> colPos = new TableColumn<>("#");
+        colPos.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
+                cd.getValue().getPosicion()).asObject());
+        colPos.setPrefWidth(35);
+        colPos.setStyle("-fx-alignment: CENTER;");
+
+        TableColumn<VentaDAO.ProductoVendido, String> colEtiqueta = new TableColumn<>("Etiq.");
+        colEtiqueta.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEtiqueta()));
+        colEtiqueta.setPrefWidth(60);
+        colEtiqueta.setStyle("-fx-alignment: CENTER;");
+
+        TableColumn<VentaDAO.ProductoVendido, String> colNombre = new TableColumn<>("Producto");
+        colNombre.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getNombre()));
+        colNombre.setPrefWidth(150);
+
+        TableColumn<VentaDAO.ProductoVendido, Integer> colCantidad = new TableColumn<>("Cant.");
+        colCantidad.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
+                cd.getValue().getTotalVendido()).asObject());
+        colCantidad.setPrefWidth(50);
+        colCantidad.setStyle("-fx-alignment: CENTER;");
+
+        // 📊 Barra visual inline (con colores de tu paleta)
+        colCantidad.setCellFactory(col -> new TableCell<VentaDAO.ProductoVendido, Integer>() {
+            @Override
+            protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                int max = masVendidosData.isEmpty() ? 1 :
+                        masVendidosData.stream()
+                                .mapToInt(VentaDAO.ProductoVendido::getTotalVendido)
+                                .max().orElse(1);
+
+                double porcentaje = (double) item / max;
+
+                ProgressBar bar = new ProgressBar(porcentaje);
+                bar.setPrefWidth(40);
+                bar.setMaxHeight(8);
+                bar.setStyle("-fx-accent: #b88a52;"); // ⭐ Tu color
+
+                Label lbl = new Label(String.valueOf(item));
+                lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2b2b2b;");
+
+                HBox box = new HBox(5, bar, lbl);
+                box.setAlignment(Pos.CENTER);
+                setGraphic(box);
+            }
+        });
+
+        tablaMasVendidos.getColumns().addAll(colPos, colEtiqueta, colNombre, colCantidad);
+        tablaMasVendidos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        masVendidosData = FXCollections.observableArrayList();
+        tablaMasVendidos.setItems(masVendidosData);
+
+        // 🖱️ Click en producto → filtrar ventas
+        tablaMasVendidos.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 1) {
+                VentaDAO.ProductoVendido selected = tablaMasVendidos.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    filtrarVentasPorProducto(selected.getEtiqueta());
+                }
+            }
+        });
+    }
+
+    // ⭐ TOGGLE DEL PANEL LATERAL (sin animación, instantáneo)
+    @FXML
+    private void toggleMasVendidos() {
+        if (!panelVisible) {
+            mostrarPanelMasVendidos();
+        } else {
+            ocultarPanelMasVendidos();
+        }
+    }
+
+    private void mostrarPanelMasVendidos() {
+        panelVisible = true;
+        panelLateralMasVendidos.setVisible(true);
+        panelLateralMasVendidos.setManaged(true); // ⭐ La tabla se achica automáticamente
+        btnMasVendidos.setSelected(true);
+        cargarProductosMasVendidos();
+    }
+
+    private void ocultarPanelMasVendidos() {
+        panelVisible = false;
+        panelLateralMasVendidos.setVisible(false);
+        panelLateralMasVendidos.setManaged(false); // ⭐ La tabla recupera espacio
+        btnMasVendidos.setSelected(false);
+        cargarVentas(); // Restaurar ventas completas
+    }
+
+    // ⭐ CARGA ASÍNCRONA DE PRODUCTOS MÁS VENDIDOS
+    private void cargarProductosMasVendidos() {
+        LocalDate inicio = dpFechaInicio.getValue();
+        LocalDate fin = dpFechaFin.getValue();
+
+        if (inicio == null || fin == null) {
+            inicio = LocalDate.now().minusMonths(1);
+            fin = LocalDate.now();
+        }
+
+        // ⭐ Actualizar label del período
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        lblPeriodoPanel.setText(String.format("Período: %s a %s",
+                inicio.format(fmt), fin.format(fmt)));
+
+        LocalDate finalInicio = inicio;
+        LocalDate finalFin = fin;
+
+        Task<List<VentaDAO.ProductoVendido>> task = new Task<>() {
+            @Override
+            protected List<VentaDAO.ProductoVendido> call() throws Exception {
+                return VentaDAO.obtenerProductosMasVendidos(finalInicio, finalFin, 10);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            List<VentaDAO.ProductoVendido> productos = task.getValue();
+            masVendidosData.setAll(productos);
+
+            if (productos.isEmpty()) {
+                tablaMasVendidos.setPlaceholder(new Label("Sin ventas en el período"));
+            }
+        });
+
+        task.setOnFailed(e -> {
+            error("Error al cargar productos más vendidos");
+            e.getSource().getException().printStackTrace();
+        });
+
+        new Thread(task).start();
+    }
+
+    // ⭐ FILTRAR VENTAS POR PRODUCTO SELECCIONADO
+    private void filtrarVentasPorProducto(String etiqueta) {
+        Task<List<Venta>> task = new Task<>() {
+            @Override
+            protected List<Venta> call() throws Exception {
+                LocalDate inicio = dpFechaInicio.getValue();
+                LocalDate fin = dpFechaFin.getValue();
+                List<Venta> ventas = VentaDAO.obtenerVentasPorFecha(inicio, fin);
+
+                // Filtrar solo ventas que contengan este producto
+                return ventas.stream()
+                        .peek(v -> {
+                            try {
+                                v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                            }
+                        })
+                        .filter(v -> v.getItems().stream()
+                                .anyMatch(item -> item.getProductoEtiqueta().equals(etiqueta)))
+                        .toList();
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            ventasData.setAll(task.getValue());
+            ok("📌 Mostrando ventas de: " + etiqueta);
+        });
+
+        task.setOnFailed(e -> error("Error al filtrar ventas"));
+
+        new Thread(task).start();
+    }
+
 }

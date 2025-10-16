@@ -3,6 +3,7 @@ package com.arielcardales.arielcardales.Util;
 import com.arielcardales.arielcardales.Entidades.Categoria;
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
+import com.arielcardales.arielcardales.Entidades.ProductoVariante;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
 
@@ -65,6 +66,31 @@ public class Mapper {
         p.setPrecio(rs.getBigDecimal("precio"));
         p.setStockOnHand(rs.getInt("stockOnHand"));
         return p;
+    }
+
+    // ========================================
+    // VARIANTES
+    // ========================================
+
+    /**
+     * Mapea una ProductoVariante desde ResultSet
+     * Espera columnas: id, producto_id, color, talle, precio, costo, stock,
+     *                  etiqueta, active, createdAt, updatedAt
+     */
+    public static ProductoVariante getProductoVariante(ResultSet rs) throws SQLException {
+        ProductoVariante v = new ProductoVariante();
+        v.setId(rs.getLong("id"));
+        v.setProductoId(rs.getLong("producto_id"));
+        v.setColor(rs.getString("color"));
+        v.setTalle(rs.getString("talle"));
+        v.setPrecio(rs.getBigDecimal("precio"));
+        v.setCosto(rs.getBigDecimal("costo"));
+        v.setStock(rs.getInt("stock"));
+        v.setEtiqueta(rs.getString("etiqueta"));
+        v.setActive(rs.getBoolean("active"));
+        v.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
+        v.setUpdatedAt(rs.getTimestamp("updatedAt").toLocalDateTime());
+        return v;
     }
 
     // ========================================
