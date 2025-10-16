@@ -667,7 +667,7 @@ public class ProductoTreeController {
         pedirCantidad(producto, null);
     }
 
-    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
+    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante, String clienteNombre) {
         try {
             // 🔹 PASO 1: Validar stock ANTES de iniciar transacción
             int stockActual;
@@ -706,7 +706,7 @@ public class ProductoTreeController {
 
             // 🔹 PASO 3: Crear objeto venta
             Venta venta = new Venta();
-            venta.setClienteNombre(null);
+            venta.setClienteNombre(clienteNombre); // En lugar de null
             venta.setMedioPago(medioPago);
             venta.setFecha(LocalDateTime.now());
 
@@ -767,7 +767,7 @@ public class ProductoTreeController {
             e.printStackTrace();
         }
     }
-
+    
     private void pedirCantidad(Producto producto, Long idVariante) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Nueva venta");
@@ -787,7 +787,7 @@ public class ProductoTreeController {
                 NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
                 String totalFormateado = formato.format(total);
 
-                // === Diálogo de confirmación ===
+                // === Diálogo de confirmación CON nombre del cliente (OPCIONAL) ===
                 Dialog<ButtonType> confirmar = new Dialog<>();
                 confirmar.setTitle("Confirmar venta");
 
@@ -803,6 +803,12 @@ public class ProductoTreeController {
                 ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
                 pane2.getButtonTypes().addAll(ok, cancel);
 
+                // ✅ Campo para nombre del cliente (opcional)
+                Label lblCliente = new Label("Cliente (opcional):");
+                TextField txtCliente = new TextField();
+                txtCliente.setPromptText("Nombre del cliente");
+                txtCliente.setPrefWidth(200);
+
                 Label lblProducto = new Label("Producto: " + producto.getNombre());
                 Label lblCantidad = new Label("Cantidad: " + cantidad);
                 Label lblPrecio = new Label("Precio unitario: " + formato.format(producto.getPrecio()));
@@ -812,14 +818,26 @@ public class ProductoTreeController {
                 comboPago.getItems().addAll("Efectivo", "Tarjeta", "Transferencia", "MercadoPago");
                 comboPago.setValue("Efectivo");
 
-                VBox content = new VBox(lblProducto, lblCantidad, lblPrecio, lblMedio, comboPago);
+                // ✅ Agregar campo cliente al layout
+                VBox content = new VBox(10, lblCliente, txtCliente, lblProducto, lblCantidad, lblPrecio, lblMedio, comboPago);
                 content.getStyleClass().add("dialog-content");
+                content.setStyle("-fx-padding: 15;");
                 pane2.setContent(content);
+
+                // ✅ Focus automático en el campo cliente
+                Platform.runLater(txtCliente::requestFocus);
 
                 Optional<ButtonType> res = confirmar.showAndWait();
                 if (res.isPresent() && res.get() == ok) {
+                    String clienteNombre = txtCliente.getText().trim();
                     String medioPago = comboPago.getValue();
-                    procesarVenta(producto, cantidad, total, medioPago, idVariante);
+
+                    // ✅ Si el campo está vacío, pasar null
+                    if (clienteNombre.isEmpty()) {
+                        clienteNombre = null;
+                    }
+
+                    procesarVenta(producto, cantidad, total, medioPago, idVariante, clienteNombre);
                 }
 
             } catch (NumberFormatException e) {
@@ -828,10 +846,9 @@ public class ProductoTreeController {
         });
     }
 
-    private void procesarVenta(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante) {
+    private void procesarVenta(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante, String clienteNombre) {
         try {
-            registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante);
-            // ❌ NO DEBE HABER NADA MÁS AQUÍ
+            registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante, clienteNombre); // ✅ Agregado clienteNombre
         } catch (Exception e) {
             e.printStackTrace();
             error("❌ Error al procesar la venta: " + e.getMessage());
