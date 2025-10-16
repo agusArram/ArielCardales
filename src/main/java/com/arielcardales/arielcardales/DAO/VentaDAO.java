@@ -451,4 +451,91 @@ public class VentaDAO {
 
         return ventas;
     }
+
+    // Agregar en VentaDAO.java
+
+    /**
+     * Anula una venta: elimina items, restaura stock y elimina la venta
+     * ⚠️ Transacción completa con rollback automático si falla
+     */
+    public static boolean anularVenta(Long ventaId) throws SQLException {
+        try (Connection conn = Database.get()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // 1️⃣ Obtener items de la venta para restaurar stock
+                String sqlItems = "SELECT productoId, qty FROM ventaItem WHERE ventaId = ?";
+                List<ItemParaRestaurar> items = new ArrayList<>();
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlItems)) {
+                    ps.setLong(1, ventaId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            items.add(new ItemParaRestaurar(
+                                    rs.getLong("productoId"),
+                                    rs.getInt("qty")
+                            ));
+                        }
+                    }
+                }
+
+                // 2️⃣ Restaurar stock de cada producto
+                String sqlRestaurarStock = """
+                UPDATE producto 
+                SET stockOnHand = stockOnHand + ?
+                WHERE id = ?
+            """;
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlRestaurarStock)) {
+                    for (ItemParaRestaurar item : items) {
+                        ps.setInt(1, item.cantidad);
+                        ps.setLong(2, item.productoId);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+
+                // 3️⃣ Eliminar items de la venta
+                String sqlDeleteItems = "DELETE FROM ventaItem WHERE ventaId = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteItems)) {
+                    ps.setLong(1, ventaId);
+                    ps.executeUpdate();
+                }
+
+                // 4️⃣ Eliminar la venta
+                String sqlDeleteVenta = "DELETE FROM venta WHERE id = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteVenta)) {
+                    ps.setLong(1, ventaId);
+                    int rows = ps.executeUpdate();
+
+                    if (rows == 0) {
+                        throw new SQLException("No se encontró la venta con ID: " + ventaId);
+                    }
+                }
+
+                // ✅ Commit si todo salió bien
+                conn.commit();
+                System.out.println("✅ Venta anulada exitosamente. Stock restaurado.");
+                return true;
+
+            } catch (SQLException e) {
+                // ⚠️ Rollback automático
+                System.err.println("❌ Error anulando venta: " + e.getMessage());
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Clase auxiliar para restaurar stock
+     */
+    private static class ItemParaRestaurar {
+        Long productoId;
+        int cantidad;
+
+        ItemParaRestaurar(Long productoId, int cantidad) {
+            this.productoId = productoId;
+            this.cantidad = cantidad;
+        }
+    }
 }

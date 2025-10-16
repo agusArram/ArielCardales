@@ -9,6 +9,7 @@ com\arielcardales\arielcardales\controller\ProductoTreeController$5.class
 com\arielcardales\arielcardales\Util\Tablas$2.class
 com\arielcardales\arielcardales\Util\TablasDialog$1.class
 com\arielcardales\arielcardales\View\VentanaProducto.class
+com\arielcardales\arielcardales\controller\VentasController$10.class
 com\arielcardales\arielcardales\Updates\UpdateConfig.class
 com\arielcardales\arielcardales\Updates\UpdateDialog.class
 com\arielcardales\arielcardales\Updates\Updater.class
@@ -21,6 +22,7 @@ com\arielcardales\arielcardales\DAO\InventarioDAO.class
 com\arielcardales\arielcardales\Util\Arboles$1.class
 com\arielcardales\arielcardales\controller\ProductoTreeController$2.class
 com\arielcardales\arielcardales\Launcher.class
+com\arielcardales\arielcardales\controller\VentasController$11.class
 com\arielcardales\arielcardales\Updates\UpdateException$ErrorType.class
 com\arielcardales\arielcardales\Entidades\Producto.class
 com\arielcardales\arielcardales\controller\VentasController$3.class
@@ -39,6 +41,7 @@ com\arielcardales\arielcardales\controller\EditarProductoController$2.class
 com\arielcardales\arielcardales\Util\Tablas.class
 com\arielcardales\arielcardales\DAO\ProductoDAO.class
 com\arielcardales\arielcardales\controller\ProductoTreeController$3.class
+com\arielcardales\arielcardales\controller\VentasController$12.class
 com\arielcardales\arielcardales\DAO\CategoriaDAO.class
 com\arielcardales\arielcardales\controller\EditarProductoController$1.class
 com\arielcardales\arielcardales\Updates\UpdateManager$UpdatePhase.class

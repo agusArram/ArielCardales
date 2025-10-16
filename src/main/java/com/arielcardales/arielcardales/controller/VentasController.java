@@ -48,6 +48,7 @@ public class VentasController {
     @FXML private VBox panelLateralMasVendidos;
     @FXML private TableView<VentaDAO.ProductoVendido> tablaMasVendidos;
     @FXML private Label lblPeriodoPanel;
+    @FXML private Button btnAnularVenta;
 
     @FXML private Label lblTotalVentas;
     @FXML private Label lblTotalMonto;
@@ -229,6 +230,36 @@ public class VentasController {
                     }
 
                     setTooltip(new Tooltip(tooltip.toString()));
+                }
+            });
+        }
+        // ✅ COLUMNA CANTIDAD - Sobrescribir formato de $ que aplicó Tablas.crearColumnas()
+        @SuppressWarnings("unchecked")
+        TableColumn<Venta, Object> colCantidad = (TableColumn<Venta, Object>)
+                cols.stream().filter(c -> c.getId().equals("cantidadTotal")).findFirst().orElse(null);
+
+        if (colCantidad != null) {
+            colCantidad.setCellValueFactory(null); // Limpiar el value factory automático
+            colCantidad.setCellFactory(col -> new TableCell<Venta, Object>() {
+                @Override
+                protected void updateItem(Object item, boolean empty) {
+                    super.updateItem(item, empty);
+
+                    if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                        setText(null);
+                        return;
+                    }
+
+                    Venta venta = getTableRow().getItem();
+
+                    if (venta.getItems() != null && !venta.getItems().isEmpty()) {
+                        int total = venta.getItems().stream()
+                                .mapToInt(VentaItem::getQty)
+                                .sum();
+                        setText(String.valueOf(total)); // ✅ Solo número entero, sin $
+                    } else {
+                        setText("0");
+                    }
                 }
             });
         }
@@ -925,6 +956,84 @@ public class VentasController {
 
         task.setOnFailed(e -> {
             mostrarError("Error al filtrar", task.getException().getMessage());
+            task.getException().printStackTrace();
+            mostrarLoading(false);
+        });
+
+        new Thread(task).start();
+    }
+
+    @FXML
+    private void anularVentaSeleccionada() {
+        Venta ventaSeleccionada = tablaVentas.getSelectionModel().getSelectedItem();
+
+        if (ventaSeleccionada == null) {
+            mostrarAlerta("Selecciona una venta de la tabla para anular");
+            return;
+        }
+
+        // Confirmación con detalles
+        Alert confirmacion = new Alert(Alert.AlertType.WARNING);
+        confirmacion.setTitle("⚠️ Confirmar anulación");
+        confirmacion.setHeaderText("¿Anular venta #" + ventaSeleccionada.getId() + "?");
+
+        NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+        confirmacion.setContentText(
+                "Cliente: " + ventaSeleccionada.getClienteNombre() + "\n" +
+                        "Fecha: " + ventaSeleccionada.getFecha().format(formatoFecha) + "\n" +
+                        "Total: " + formato.format(ventaSeleccionada.getTotal()) + "\n\n" +
+                        "⚠️ Esta acción:\n" +
+                        "• Eliminará la venta permanentemente\n" +
+                        "• Restaurará el stock de los productos\n" +
+                        "• NO se puede deshacer\n\n" +
+                        "¿Deseas continuar?"
+        );
+
+        ButtonType btnConfirmar = new ButtonType("Sí, anular", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmacion.getButtonTypes().setAll(btnConfirmar, btnCancelar);
+
+        if (confirmacion.showAndWait().orElse(btnCancelar) != btnConfirmar) {
+            return;
+        }
+
+        mostrarLoading(true);
+
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() throws Exception {
+                return VentaDAO.anularVenta(ventaSeleccionada.getId());
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            try {
+                if (task.getValue()) {
+                    // ✅ Recargar desde cero con el sistema paginado
+                    cargarVentasInicial();
+
+                    // ✅ Actualizar estadísticas
+                    actualizarEstadisticas();
+
+                    // ✅ Si el panel de más vendidos está visible, actualizarlo
+                    if (panelVisible) {
+                        cargarProductosMasVendidos();
+                    }
+
+                    Notifications.create()
+                            .title("✅ Venta anulada")
+                            .text("Venta #" + ventaSeleccionada.getId() + " eliminada. Stock restaurado correctamente.")
+                            .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                            .showConfirm();
+                }
+            } finally {
+                mostrarLoading(false);
+            }
+        });
+
+        task.setOnFailed(e -> {
+            mostrarError("Error al anular venta",
+                    "No se pudo anular la venta: " + task.getException().getMessage());
             task.getException().printStackTrace();
             mostrarLoading(false);
         });
