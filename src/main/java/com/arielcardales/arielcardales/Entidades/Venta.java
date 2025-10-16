@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Venta {
     private Long id;
@@ -56,17 +57,27 @@ public class Venta {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    // ✅ NUEVO: Getters computados para JavaFX TableView
+    // ✅ Getters computados para JavaFX TableView
     public String getFechaFormateada() {
         if (fecha == null) return "";
         return fecha.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
     }
 
-    public int getCantidadProductos() {
-        return items.stream()
-                .mapToInt(VentaItem::getQty)
-                .sum();
+    public String getTotalFormateado() {
+        if (total == null) return "$0,00";
+        return String.format("$%,.2f", total);
     }
+
+    public String getProductosEtiquetasosEtiquetas() {
+        if (items == null || items.isEmpty()) return "-";
+        return items.stream()
+                .map(VentaItem::getProductoEtiqueta)
+                .distinct()
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("-");
+    }
+
+
 
     // ========================================
     // CLASE INTERNA: VentaItem
@@ -75,7 +86,7 @@ public class Venta {
         private Long id;
         private Long ventaId;
         private Long productoId;
-        private Long varianteId;  // ✅ NUEVO - ID de la variante si aplica
+        private Long varianteId;
         private String productoNombre;
         private String productoEtiqueta;
         private int qty;
@@ -106,7 +117,6 @@ public class Venta {
         public Long getProductoId() { return productoId; }
         public void setProductoId(Long productoId) { this.productoId = productoId; }
 
-        // ✅ NUEVO: Getter y Setter para varianteId
         public Long getVarianteId() { return varianteId; }
         public void setVarianteId(Long varianteId) { this.varianteId = varianteId; }
 
@@ -144,20 +154,52 @@ public class Venta {
         }
     }
 
+    @Override
+    public String toString() {
+        return String.format("Venta #%d - %s - %s - Total: %s",
+                id, clienteNombre, getFechaFormateada(), getTotalFormateado());
+    }
+
     public String getProductosEtiquetas() {
-        if (items == null || items.isEmpty()) return "";
-        return items.stream()
-                .map(VentaItem::getProductoEtiqueta)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
+        if (items == null || items.isEmpty()) return "-";
+
+        try {
+            String result = items.stream()
+                    .map(VentaItem::getProductoEtiqueta)
+                    .filter(etiq -> etiq != null && !etiq.isEmpty())
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+
+            return result.isEmpty() ? "-" : result;
+        } catch (Exception e) {
+            return "-";
+        }
     }
 
     public String getProductosNombres() {
-        if (items == null || items.isEmpty()) return "";
-        return items.stream()
-                .map(VentaItem::getProductoNombre)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
+        if (items == null || items.isEmpty()) return "-";
+
+        try {
+            String result = items.stream()
+                    .map(VentaItem::getProductoNombre)
+                    .filter(nombre -> nombre != null && !nombre.isEmpty())
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+
+            return result.isEmpty() ? "-" : result;
+        } catch (Exception e) {
+            return "-";
+        }
     }
 
+    public int getCantidadTotal() {
+        return getCantidadProductos();
+    }
+
+    public int getCantidadProductos() {
+        if (items == null || items.isEmpty()) return 0;
+        return items.stream()
+                .mapToInt(VentaItem::getQty)
+                .sum();
+    }
 }

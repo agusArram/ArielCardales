@@ -160,7 +160,7 @@ public class AppController {
 
     @FXML
     private void verInventarioTreeExperimental() {
-        cargarVista("/fxml/productoTree.fxml");
+        cargarVista("/fxml/ProductoTree.fxml");
     }
 
     // ═══════════════════════════════════════════════════════════

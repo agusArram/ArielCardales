@@ -6,6 +6,7 @@ import com.arielcardales.arielcardales.DAO.ProductoVarianteDAO;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,6 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Pos;
+import javafx.stage.Screen;
 import org.controlsfx.control.Notifications;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -37,6 +39,7 @@ public class VentasController {
     @FXML private Button btnLimpiar;
     @FXML private Button btnNuevaVenta;
     @FXML private ToggleButton btnMasVendidos;
+    @FXML private Label lblCargando; // Puede ser null si no está en el FXML
 
     @FXML private TableView<Venta> tablaVentas;
 
@@ -60,29 +63,90 @@ public class VentasController {
     private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private ProductoDAO productoDAO = new ProductoDAO();
     private ProductoVarianteDAO varianteDAO = new ProductoVarianteDAO();
-    private static final int PAGE_SIZE = 10;
+    private int PAGE_SIZE; // Ya no es final ni static
     private int currentOffset = 0;
     private int totalVentas = 0;
-
+    private boolean scrollListenerInstalado = false;
     private boolean cargandoPagina = false;
+    private boolean cargaAutomaticaCompletada = false; // ✅ NUEVO
 
-
+    // ✅ CAMBIAR estas constantes
+    private static final int CARGA_INICIAL = 10;      // Primera carga (inmediata)
+    private static final int CARGA_INCREMENTAL = 10;  // Cargas automáticas
+    private static final int MINIMO_PARA_SCROLL = 35; // Límite antes de activar scroll
+    private static final int PAGE_SIZE_SCROLL = 15;   // Tamaño al hacer scroll manual
     private boolean panelVisible = false;
 
     @FXML
     public void initialize() {
+        System.out.println("🚀 Iniciando VentasController...");
+
+        // Debug de elementos FXML
+        System.out.println("   - tablaVentas: " + (tablaVentas != null ? "OK" : "NULL"));
+        System.out.println("   - vboxLoading: " + (vboxLoading != null ? "OK" : "NULL"));
+        System.out.println("   - progressIndicator: " + (progressIndicator != null ? "OK" : "NULL"));
+        System.out.println("   - lblCargando: " + (lblCargando != null ? "OK" : "NULL"));
+
+        ventasData = FXCollections.observableArrayList();
+
+        // Placeholders para stats
+        lblTotalVentas.setText("...");
+        lblTotalMonto.setText("...");
+        lblPromedioVenta.setText("...");
+        lblVentaMayor.setText("...");
+        lblVentaMenor.setText("...");
+
         configurarTablaVentasUnificada();
         configurarTablaMasVendidos();
         configurarFiltros();
         cargarVentasInicial();
 
-        // ⭐ Panel oculto inicialmente (sin animación, solo hidden)
         panelLateralMasVendidos.setVisible(false);
         panelLateralMasVendidos.setManaged(false);
+
+        System.out.println("✅ VentasController inicializado");
+    }
+
+    /**
+     * Calcula el PAGE_SIZE óptimo según resolución de pantalla
+     * Objetivo: Llenar la pantalla + tener suficientes para scroll
+     */
+    private int calcularPageSizeOptimo() {
+        try {
+            // Obtener altura de la pantalla principal
+            double altoPantalla = Screen.getPrimary().getBounds().getHeight();
+
+            // Estimar filas visibles (considerando headers, toolbars, etc)
+            // Altura promedio por fila: ~35-40px
+            // Espacio disponible para tabla: ~70-80% de la pantalla
+            double espacioDisponible = altoPantalla * 0.75; // 75% de la pantalla
+            int filasVisibles = (int)(espacioDisponible / 38); // ~38px por fila
+
+            // Cargar el doble de lo visible para asegurar scroll
+            int pageSize = filasVisibles * 2;
+
+            // Límites: mínimo 30, máximo 100
+            pageSize = Math.max(30, Math.min(pageSize, 100));
+
+            System.out.println("🖥️ Resolución pantalla: " + altoPantalla + "px");
+            System.out.println("📊 Filas visibles estimadas: " + filasVisibles);
+            System.out.println("📦 PAGE_SIZE ajustado: " + pageSize);
+
+            return pageSize;
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Error calculando PAGE_SIZE, usando default 50");
+            e.printStackTrace();
+            return 50; // Fallback seguro
+        }
     }
 
     // ========== MÉTODOS ORIGINALES (sin cambios) ==========
 
+    // ===============================================
+// REEMPLAZAR configurarTablaVentasUnificada()
+// Versión basada en tu código original que funcionaba
+// ===============================================
     private void configurarTablaVentasUnificada() {
         String[][] columnas = {
                 {"ID", "id", "0.04", "50"},
@@ -91,14 +155,14 @@ public class VentasController {
                 {"Medio Pago", "medioPago", "0.10", "90"},
                 {"Etiqueta", "productosEtiquetas", "0.15", "130"},
                 {"Nombre Producto", "productosNombres", "0.35", "280"},
-                {"Cant.", "cantidadProductos", "0.05", "50"},
+                {"Cant.", "cantidadTotal", "0.05", "50"}, // ✅ CAMBIADO: cantidadProductos → cantidadTotal
                 {"Total", "total", "0.09", "90"}
         };
 
         List<TableColumn<Venta, ?>> cols = com.arielcardales.arielcardales.Util.Tablas.crearColumnas(columnas);
         tablaVentas.getColumns().setAll(cols);
 
-        // Renderizar columnas personalizadas (código original)
+        // ✅ Configurar ETIQUETAS (solo setCellFactory, sin setCellValueFactory)
         @SuppressWarnings("unchecked")
         TableColumn<Venta, Object> colEtiquetas = (TableColumn<Venta, Object>)
                 cols.stream().filter(c -> c.getId().equals("productosEtiquetas")).findFirst().orElse(null);
@@ -129,6 +193,7 @@ public class VentasController {
             });
         }
 
+        // ✅ Configurar NOMBRES (solo setCellFactory, sin setCellValueFactory)
         @SuppressWarnings("unchecked")
         TableColumn<Venta, Object> colNombres = (TableColumn<Venta, Object>)
                 cols.stream().filter(c -> c.getId().equals("productosNombres")).findFirst().orElse(null);
@@ -139,7 +204,6 @@ public class VentasController {
                 protected void updateItem(Object item, boolean empty) {
                     super.updateItem(item, empty);
 
-                    // ✅ Validación robusta para evitar errores de formato
                     if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                         setText(null);
                         setTooltip(null);
@@ -148,14 +212,12 @@ public class VentasController {
 
                     Venta venta = getTableRow().getItem();
 
-                    // ✅ Verificar que la venta tiene items cargados
                     if (venta.getItems() == null || venta.getItems().isEmpty()) {
                         setText("-");
                         setTooltip(null);
                         return;
                     }
 
-                    // ✅ Construir texto de productos
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < venta.getItems().size(); i++) {
                         VentaItem vi = venta.getItems().get(i);
@@ -164,12 +226,10 @@ public class VentasController {
                     }
                     setText(sb.toString());
 
-                    // ✅ Construir tooltip con detalles
                     StringBuilder tooltip = new StringBuilder();
                     NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
 
                     for (VentaItem vi : venta.getItems()) {
-                        // 🔥 Fix crítico: validar que subtotal no sea null antes de formatear
                         BigDecimal subtotal = vi.getSubtotal();
                         String subtotalStr = (subtotal != null)
                                 ? formato.format(subtotal)
@@ -200,7 +260,7 @@ public class VentasController {
             if (newVal != null && newVal.length() > 2) {
                 buscarPorCliente(newVal);
             } else if (newVal == null || newVal.isEmpty()) {
-                cargarVentasCompleta();
+                cargarVentasInicial();
             }
         });
     }
@@ -244,27 +304,44 @@ public class VentasController {
     private void cargarVentasInicial() {
         ventasData.clear();
         currentOffset = 0;
+        scrollListenerInstalado = false;
+        cargaAutomaticaCompletada = false; // ✅ Reset
         mostrarLoading(true);
 
-        Task<List<com.arielcardales.arielcardales.Entidades.Venta>> task = new Task<>() {
+        Task<List<Venta>> task = new Task<>() {
             @Override
-            protected List<com.arielcardales.arielcardales.Entidades.Venta> call() throws Exception {
-                totalVentas = VentaDAO.contarVentas(); // nuevo método en DAO
-                return VentaDAO.obtenerVentasPaginadas(currentOffset, PAGE_SIZE);
+            protected List<Venta> call() throws Exception {
+                totalVentas = VentaDAO.contarVentas();
+                // ✅ Primera carga: solo 10 ventas
+                List<Venta> ventas = VentaDAO.obtenerVentasPaginadas(currentOffset, CARGA_INICIAL);
+
+                for (Venta v : ventas) {
+                    try {
+                        v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
+                    } catch (Exception ex) {
+                        System.err.println("Error cargando items de venta " + v.getId() + ": " + ex.getMessage());
+                        v.setItems(new java.util.ArrayList<>());
+                    }
+                }
+
+                return ventas;
             }
         };
 
         task.setOnSucceeded(e -> {
-            List<com.arielcardales.arielcardales.Entidades.Venta> primeras = task.getValue();
+            List<Venta> primeras = task.getValue();
             ventasData.addAll(primeras);
+            currentOffset = CARGA_INICIAL;
             mostrarLoading(false);
 
-            // Cargar items en segundo plano para las ventas que ya mostramos
-            cargarItemsEnSegundoPlano(primeras);
+            System.out.println("⚡ Carga inicial: " + primeras.size() + " ventas (total: " + totalVentas + ")");
 
-            // Instalar listener del scroll (una sola vez)
-            Platform.runLater(this::instalarScrollListener);
+            actualizarIndicadorCarga(); // ✅ AGREGAR AQUÍ
+
+            Platform.runLater(this::cargarEstadisticasEnSegundoPlano);
+            Platform.runLater(this::cargarProgresivoAutomatico);
         });
+
 
         task.setOnFailed(e -> {
             mostrarError("Error al cargar ventas", task.getException().getMessage());
@@ -276,104 +353,199 @@ public class VentasController {
     }
 
     /**
-     * Carga la siguiente página (si hay más) — evita llamadas simultáneas con cargandoPagina.
+     * Carga ventas de forma progresiva hasta alcanzar MINIMO_PARA_SCROLL
+     * Luego instala el scroll listener para carga manual
      */
-    private void cargarMasVentas() {
-        if (cargandoPagina) return;
-        if (ventasData.size() >= totalVentas) return;
+    private void cargarProgresivoAutomatico() {
+        // Si ya tenemos suficientes ventas, instalar scroll y terminar
+        if (ventasData.size() >= MINIMO_PARA_SCROLL || ventasData.size() >= totalVentas) {
+            System.out.println("✅ Carga automática completada: " + ventasData.size() + " ventas");
+
+            actualizarIndicadorCarga(); // (oculta el label)
+
+
+            cargaAutomaticaCompletada = true;
+            Platform.runLater(this::instalarScrollListener);
+            return;
+        }
+
+        // Si ya hay una carga en progreso, esperar
+        if (cargandoPagina) {
+            Platform.runLater(() -> {
+                try {
+                    Thread.sleep(100);
+                    cargarProgresivoAutomatico();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            });
+            return;
+        }
 
         cargandoPagina = true;
-        currentOffset += PAGE_SIZE;
 
-        Task<List<com.arielcardales.arielcardales.Entidades.Venta>> task = new Task<>() {
+        Task<List<Venta>> task = new Task<>() {
             @Override
-            protected List<com.arielcardales.arielcardales.Entidades.Venta> call() throws Exception {
-                return VentaDAO.obtenerVentasPaginadas(currentOffset, PAGE_SIZE);
-            }
-        };
+            protected List<Venta> call() throws Exception {
+                // Cargar siguiente lote
+                int cantidadACargar = Math.min(CARGA_INCREMENTAL, totalVentas - currentOffset);
+                List<Venta> ventas = VentaDAO.obtenerVentasPaginadas(currentOffset, cantidadACargar);
 
-        task.setOnSucceeded(e -> {
-            List<com.arielcardales.arielcardales.Entidades.Venta> nuevas = task.getValue();
-            ventasData.addAll(nuevas);
-            cargarItemsEnSegundoPlano(nuevas);
-            cargandoPagina = false;
-            actualizarEstadoPie(); // opcional (ver abajo)
-        });
-
-        task.setOnFailed(e -> {
-            task.getException().printStackTrace();
-            cargandoPagina = false;
-        });
-
-        new Thread(task).start();
-    }
-
-    /**
-     * Cargar los items de las ventas en segundo plano (no bloquea la UI).
-     */
-    private void cargarItemsEnSegundoPlano(List<com.arielcardales.arielcardales.Entidades.Venta> ventas) {
-        if (ventas == null || ventas.isEmpty()) return;
-
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                for (com.arielcardales.arielcardales.Entidades.Venta v : ventas) {
+                for (Venta v : ventas) {
                     try {
                         v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
+                    } catch (Exception ex) {
+                        System.err.println("Error cargando items de venta " + v.getId() + ": " + ex.getMessage());
+                        v.setItems(new java.util.ArrayList<>());
                     }
                 }
-                return null;
+
+                return ventas;
             }
         };
 
-        // Cuando terminen de cargar items podemos forzar actualización visual (si hace falta)
         task.setOnSucceeded(e -> {
-            // Forzar refresh de la tabla para que las celdas custom muestren tooltips/textos actualizados
+            List<Venta> nuevas = task.getValue();
+
+            if (!nuevas.isEmpty()) {
+                ventasData.addAll(nuevas);
+                currentOffset += nuevas.size();
+                System.out.println("📦 Carga progresiva: +" + nuevas.size() + " ventas (total: " + ventasData.size() + "/" + totalVentas + ")");
+
+                actualizarIndicadorCarga(); // ✅ AGREGAR AQUÍ
+
+            }
+
+            cargandoPagina = false;
+
+            // Continuar cargando automáticamente con un pequeño delay
             Platform.runLater(() -> {
-                // simple refresh: re-asignar items a la tabla (no recrea objetos)
-                tablaVentas.getItems().setAll(ventasData);
-                actualizarEstadoPie();
+                try {
+                    Thread.sleep(50); // 50ms de pausa entre cargas (imperceptible)
+                    cargarProgresivoAutomatico();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
             });
         });
 
+        task.setOnFailed(e -> {
+            System.err.println("❌ Error en carga progresiva:");
+            task.getException().printStackTrace();
+            cargandoPagina = false;
+            cargaAutomaticaCompletada = true;
+            Platform.runLater(this::instalarScrollListener);
+        });
+
+        new Thread(task).start();
+
+
+    }
+
+
+
+    private void cargarEstadisticasEnSegundoPlano() {
+        LocalDate inicio = dpFechaInicio.getValue();
+        LocalDate fin = dpFechaFin.getValue();
+
+        if (inicio == null || fin == null) return;
+
+        Task<VentaDAO.VentaEstadisticas> task = new Task<>() {
+            @Override
+            protected VentaDAO.VentaEstadisticas call() throws Exception {
+                return VentaDAO.obtenerEstadisticas(inicio, fin);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            VentaDAO.VentaEstadisticas stats = task.getValue();
+            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+            lblTotalVentas.setText(String.valueOf(stats.getTotalVentas()));
+            lblTotalMonto.setText(formato.format(stats.getTotalMonto()));
+            lblPromedioVenta.setText(formato.format(stats.getPromedioVenta()));
+            lblVentaMayor.setText(formato.format(stats.getVentaMayor()));
+            lblVentaMenor.setText(formato.format(stats.getVentaMenor()));
+
+            System.out.println("✅ Estadísticas cargadas");
+        });
+
+        task.setOnFailed(e -> {
+            System.err.println("⚠️ Error al cargar estadísticas (no crítico)");
+            e.getSource().getException().printStackTrace();
+        });
+
         new Thread(task).start();
     }
 
     /**
-     * Listener seguro: detecta el scrollbar vertical y carga más cuando llega al final.
-     * Se instala una sola vez (se invoca desde cargarVentasInicial() con Platform.runLater).
+     * Carga la siguiente página (si hay más) — evita llamadas simultáneas con cargandoPagina.
      */
-    private void instalarScrollListener() {
-        tablaVentas.skinProperty().addListener((obs, oldSkin, newSkin) -> {
-            if (newSkin != null) {
-                ScrollBar vBar = null;
-                for (Node n : tablaVentas.lookupAll(".scroll-bar")) {
-                    if (n instanceof ScrollBar sb && sb.getOrientation() == Orientation.VERTICAL) {
-                        vBar = sb;
-                        break;
+    private void cargarMasVentas() {
+        if (!cargaAutomaticaCompletada) {
+            System.out.println("⏸️ Carga automática aún en progreso...");
+            return;
+        }
+
+        if (cargandoPagina) {
+            System.out.println("⏳ Ya hay una carga en progreso...");
+            return;
+        }
+
+        if (ventasData.size() >= totalVentas) {
+            System.out.println("✅ Todas las ventas cargadas (" + ventasData.size() + "/" + totalVentas + ")");
+            return;
+        }
+
+        cargandoPagina = true;
+
+        // ✅ Actualizar label durante carga manual
+        if (lblCargando != null) {
+            lblCargando.setText("⏳ Cargando más...");
+        }
+
+        Task<List<Venta>> task = new Task<>() {
+            @Override
+            protected List<Venta> call() throws Exception {
+                int cantidadACargar = Math.min(PAGE_SIZE_SCROLL, totalVentas - currentOffset);
+                List<Venta> ventas = VentaDAO.obtenerVentasPaginadas(currentOffset, cantidadACargar);
+
+                for (Venta v : ventas) {
+                    try {
+                        v.setItems(VentaDAO.obtenerItemsDeVenta(v.getId()));
+                    } catch (Exception ex) {
+                        System.err.println("Error cargando items de venta " + v.getId() + ": " + ex.getMessage());
+                        v.setItems(new java.util.ArrayList<>());
                     }
                 }
 
-                if (vBar != null) {
-                    ScrollBar finalVBar = vBar;
-                    vBar.valueProperty().addListener((o, oldV, newV) -> {
-                        // Detecta el final del scroll con margen
-                        if (newV.doubleValue() >= 0.9) {
-                            if (!cargandoPagina && ventasData.size() < totalVentas) {
-                                cargarMasVentas();
-                            }
-                        }
-                    });
-                    System.out.println("✅ Scroll listener instalado correctamente (max=" + finalVBar.getMax() + ")");
-                } else {
-                    System.out.println("⚠️ ScrollBar vertical no encontrada todavía, reintentando...");
-                    Platform.runLater(this::instalarScrollListener);
-                }
+                return ventas;
             }
+        };
+
+        task.setOnSucceeded(e -> {
+            List<Venta> nuevas = task.getValue();
+
+            if (!nuevas.isEmpty()) {
+                ventasData.addAll(nuevas);
+                currentOffset += nuevas.size();
+                System.out.println("🔄 Scroll manual: +" + nuevas.size() + " ventas (total: " + ventasData.size() + "/" + totalVentas + ")");
+            }
+
+            cargandoPagina = false;
+            actualizarIndicadorCarga(); // ✅ Actualizar después de cargar
         });
+
+        task.setOnFailed(e -> {
+            System.err.println("❌ Error al cargar más ventas:");
+            task.getException().printStackTrace();
+            cargandoPagina = false;
+            actualizarIndicadorCarga();
+        });
+
+        new Thread(task).start();
     }
+
 
 
     /**
@@ -466,31 +638,11 @@ public class VentasController {
         cargarVentasInicial();
     }
 
+    // Ya no se llama desde cargarVentasInicial
+// ===============================================
     private void actualizarEstadisticas() {
-        LocalDate inicio = dpFechaInicio.getValue();
-        LocalDate fin = dpFechaFin.getValue();
-
-        if (inicio == null || fin == null) return;
-
-        Task<VentaDAO.VentaEstadisticas> task = new Task<>() {
-            @Override
-            protected VentaDAO.VentaEstadisticas call() throws Exception {
-                return VentaDAO.obtenerEstadisticas(inicio, fin);
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            VentaDAO.VentaEstadisticas stats = task.getValue();
-            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-
-            lblTotalVentas.setText(String.valueOf(stats.getTotalVentas()));
-            lblTotalMonto.setText(formato.format(stats.getTotalMonto()));
-            lblPromedioVenta.setText(formato.format(stats.getPromedioVenta()));
-            lblVentaMayor.setText(formato.format(stats.getVentaMayor()));
-            lblVentaMenor.setText(formato.format(stats.getVentaMenor()));
-        });
-
-        new Thread(task).start();
+        // ✅ Ahora solo delega al método de segundo plano
+        cargarEstadisticasEnSegundoPlano();
     }
 
     @FXML
@@ -499,9 +651,18 @@ public class VentasController {
     }
 
     private void mostrarLoading(boolean mostrar) {
+        System.out.println((mostrar ? "🔄 Mostrando" : "✅ Ocultando") + " spinner de carga");
+
         if (vboxLoading != null && progressIndicator != null) {
             vboxLoading.setVisible(mostrar);
             vboxLoading.setManaged(mostrar);
+
+            System.out.println("   - vboxLoading visible: " + vboxLoading.isVisible());
+            System.out.println("   - vboxLoading managed: " + vboxLoading.isManaged());
+        } else {
+            System.err.println("⚠️ vboxLoading o progressIndicator es NULL");
+            if (vboxLoading == null) System.err.println("   - vboxLoading es null");
+            if (progressIndicator == null) System.err.println("   - progressIndicator es null");
         }
     }
 
@@ -538,31 +699,32 @@ public class VentasController {
     }
 
 
-    // ⭐ NUEVA TABLA DE PRODUCTOS MÁS VENDIDOS
     private void configurarTablaMasVendidos() {
-        // Columnas optimizadas para panel lateral
+        // Columna posición
         TableColumn<VentaDAO.ProductoVendido, Integer> colPos = new TableColumn<>("#");
-        colPos.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
+        colPos.setCellValueFactory(cd -> new SimpleIntegerProperty(
                 cd.getValue().getPosicion()).asObject());
         colPos.setPrefWidth(35);
         colPos.setStyle("-fx-alignment: CENTER;");
 
+        // Columna etiqueta
         TableColumn<VentaDAO.ProductoVendido, String> colEtiqueta = new TableColumn<>("Etiq.");
         colEtiqueta.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEtiqueta()));
         colEtiqueta.setPrefWidth(60);
         colEtiqueta.setStyle("-fx-alignment: CENTER;");
 
+        // Columna nombre
         TableColumn<VentaDAO.ProductoVendido, String> colNombre = new TableColumn<>("Producto");
         colNombre.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getNombre()));
         colNombre.setPrefWidth(150);
 
+        // Columna cantidad con ProgressBar
         TableColumn<VentaDAO.ProductoVendido, Integer> colCantidad = new TableColumn<>("Cant.");
-        colCantidad.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(
+        colCantidad.setCellValueFactory(cd -> new SimpleIntegerProperty(
                 cd.getValue().getTotalVendido()).asObject());
-        colCantidad.setPrefWidth(50);
+        colCantidad.setPrefWidth(80);
         colCantidad.setStyle("-fx-alignment: CENTER;");
 
-        // 📊 Barra visual inline (con colores de tu paleta)
         colCantidad.setCellFactory(col -> new TableCell<VentaDAO.ProductoVendido, Integer>() {
             @Override
             protected void updateItem(Integer item, boolean empty) {
@@ -582,7 +744,7 @@ public class VentasController {
                 ProgressBar bar = new ProgressBar(porcentaje);
                 bar.setPrefWidth(40);
                 bar.setMaxHeight(8);
-                bar.setStyle("-fx-accent: #b88a52;"); // ⭐ Tu color
+                bar.setStyle("-fx-accent: #b88a52;");
 
                 Label lbl = new Label(String.valueOf(item));
                 lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #2b2b2b;");
@@ -598,7 +760,6 @@ public class VentasController {
         masVendidosData = FXCollections.observableArrayList();
         tablaMasVendidos.setItems(masVendidosData);
 
-        // 🖱️ Click en producto → filtrar ventas
         tablaMasVendidos.setOnMouseClicked(event -> {
             if (event.getClickCount() == 1) {
                 VentaDAO.ProductoVendido selected = tablaMasVendidos.getSelectionModel().getSelectedItem();
@@ -711,4 +872,76 @@ public class VentasController {
         new Thread(task).start();
     }
 
+    // ===============================================
+// REEMPLAZAR instalarScrollListener() POR ESTA VERSIÓN ÚNICA
+// Borra cualquier otro método con este nombre
+// ===============================================
+
+    private void instalarScrollListener() {
+        if (scrollListenerInstalado) {
+            System.out.println("⚠️ Scroll listener ya instalado, omitiendo...");
+            return;
+        }
+
+        if (tablaVentas.getSkin() == null) {
+            System.out.println("⏳ Skin no está listo, reintentando...");
+            Platform.runLater(this::instalarScrollListener);
+            return;
+        }
+
+        ScrollBar vBar = null;
+        for (Node n : tablaVentas.lookupAll(".scroll-bar")) {
+            if (n instanceof ScrollBar sb && sb.getOrientation() == Orientation.VERTICAL) {
+                vBar = sb;
+                break;
+            }
+        }
+
+        if (vBar != null) {
+            ScrollBar finalVBar = vBar;
+
+            finalVBar.valueProperty().addListener((o, oldV, newV) -> {
+                // Detectar 80% en vez de 90% (más sensible)
+                if (newV.doubleValue() >= 0.8) {
+                    if (!cargandoPagina && ventasData.size() < totalVentas) {
+                        System.out.println("📥 Scroll detectado al " + (int)(newV.doubleValue() * 100) + "% - Cargando más...");
+                        cargarMasVentas();
+                    }
+                }
+            });
+
+            scrollListenerInstalado = true;
+            System.out.println("✅ Scroll listener instalado (ventas actuales: " + ventasData.size() + "/" + totalVentas + ")");
+
+            // Si después de cargar las primeras NO hay scroll, cargar más automáticamente
+            Platform.runLater(() -> {
+                if (finalVBar.getMax() == 0.0 && ventasData.size() < totalVentas) {
+                    System.out.println("⚠️ No hay scroll visible - Cargando más ventas automáticamente...");
+                    cargarMasVentas();
+                }
+            });
+
+        } else {
+            System.out.println("⚠️ ScrollBar no encontrada, reintentando...");
+            Platform.runLater(this::instalarScrollListener);
+        }
+    }
+
+    private void actualizarIndicadorCarga() {
+        if (lblCargando == null) return;
+
+        if (!cargaAutomaticaCompletada && ventasData.size() < MINIMO_PARA_SCROLL) {
+            // Durante la carga progresiva
+            lblCargando.setText("⏳ Cargando " + ventasData.size() + "/" + Math.min(MINIMO_PARA_SCROLL, totalVentas) + " ventas...");
+            lblCargando.setStyle("-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-font-weight: bold; -fx-padding: 5 10; -fx-background-color: rgba(139, 115, 85, 0.15); -fx-background-radius: 5;");
+        } else if (cargaAutomaticaCompletada && ventasData.size() < totalVentas) {
+            // Después de la carga automática, esperando scroll
+            lblCargando.setText("📊 " + ventasData.size() + "/" + totalVentas + " ventas cargadas");
+            lblCargando.setStyle("-fx-font-size: 12px; -fx-text-fill: #A67C52; -fx-font-style: italic; -fx-padding: 5 10;");
+        } else {
+            // Todo cargado
+            lblCargando.setText("✅ " + totalVentas + " ventas");
+            lblCargando.setStyle("-fx-font-size: 12px; -fx-text-fill: #5D9C5D; -fx-font-weight: bold; -fx-padding: 5 10;");
+        }
+    }
 }
