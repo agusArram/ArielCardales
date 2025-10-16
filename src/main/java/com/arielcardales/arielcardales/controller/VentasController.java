@@ -74,19 +74,11 @@ public class VentasController {
     private static final int CARGA_INICIAL = 10;      // Primera carga (inmediata)
     private static final int CARGA_INCREMENTAL = 10;  // Cargas automáticas
     private static final int MINIMO_PARA_SCROLL = 35; // Límite antes de activar scroll
-    private static final int PAGE_SIZE_SCROLL = 15;   // Tamaño al hacer scroll manual
+    private static final int PAGE_SIZE_SCROLL = 10;   // Tamaño al hacer scroll manual
     private boolean panelVisible = false;
 
     @FXML
     public void initialize() {
-        System.out.println("🚀 Iniciando VentasController...");
-
-        // Debug de elementos FXML
-        System.out.println("   - tablaVentas: " + (tablaVentas != null ? "OK" : "NULL"));
-        System.out.println("   - vboxLoading: " + (vboxLoading != null ? "OK" : "NULL"));
-        System.out.println("   - progressIndicator: " + (progressIndicator != null ? "OK" : "NULL"));
-        System.out.println("   - lblCargando: " + (lblCargando != null ? "OK" : "NULL"));
-
         ventasData = FXCollections.observableArrayList();
 
         // Placeholders para stats
@@ -103,8 +95,6 @@ public class VentasController {
 
         panelLateralMasVendidos.setVisible(false);
         panelLateralMasVendidos.setManaged(false);
-
-        System.out.println("✅ VentasController inicializado");
     }
 
     /**
@@ -143,10 +133,6 @@ public class VentasController {
 
     // ========== MÉTODOS ORIGINALES (sin cambios) ==========
 
-    // ===============================================
-// REEMPLAZAR configurarTablaVentasUnificada()
-// Versión basada en tu código original que funcionaba
-// ===============================================
     private void configurarTablaVentasUnificada() {
         String[][] columnas = {
                 {"ID", "id", "0.04", "50"},
@@ -334,9 +320,7 @@ public class VentasController {
             currentOffset = CARGA_INICIAL;
             mostrarLoading(false);
 
-            System.out.println("⚡ Carga inicial: " + primeras.size() + " ventas (total: " + totalVentas + ")");
-
-            actualizarIndicadorCarga(); // ✅ AGREGAR AQUÍ
+            actualizarIndicadorCarga();
 
             Platform.runLater(this::cargarEstadisticasEnSegundoPlano);
             Platform.runLater(this::cargarProgresivoAutomatico);
@@ -410,10 +394,7 @@ public class VentasController {
             if (!nuevas.isEmpty()) {
                 ventasData.addAll(nuevas);
                 currentOffset += nuevas.size();
-                System.out.println("📦 Carga progresiva: +" + nuevas.size() + " ventas (total: " + ventasData.size() + "/" + totalVentas + ")");
-
                 actualizarIndicadorCarga(); // ✅ AGREGAR AQUÍ
-
             }
 
             cargandoPagina = false;
@@ -466,8 +447,6 @@ public class VentasController {
             lblPromedioVenta.setText(formato.format(stats.getPromedioVenta()));
             lblVentaMayor.setText(formato.format(stats.getVentaMayor()));
             lblVentaMenor.setText(formato.format(stats.getVentaMenor()));
-
-            System.out.println("✅ Estadísticas cargadas");
         });
 
         task.setOnFailed(e -> {
@@ -518,7 +497,6 @@ public class VentasController {
                         v.setItems(new java.util.ArrayList<>());
                     }
                 }
-
                 return ventas;
             }
         };
@@ -531,7 +509,6 @@ public class VentasController {
                 currentOffset += nuevas.size();
                 System.out.println("🔄 Scroll manual: +" + nuevas.size() + " ventas (total: " + ventasData.size() + "/" + totalVentas + ")");
             }
-
             cargandoPagina = false;
             actualizarIndicadorCarga(); // ✅ Actualizar después de cargar
         });
@@ -651,14 +628,10 @@ public class VentasController {
     }
 
     private void mostrarLoading(boolean mostrar) {
-        System.out.println((mostrar ? "🔄 Mostrando" : "✅ Ocultando") + " spinner de carga");
 
         if (vboxLoading != null && progressIndicator != null) {
             vboxLoading.setVisible(mostrar);
             vboxLoading.setManaged(mostrar);
-
-            System.out.println("   - vboxLoading visible: " + vboxLoading.isVisible());
-            System.out.println("   - vboxLoading managed: " + vboxLoading.isManaged());
         } else {
             System.err.println("⚠️ vboxLoading o progressIndicator es NULL");
             if (vboxLoading == null) System.err.println("   - vboxLoading es null");
@@ -909,10 +882,7 @@ public class VentasController {
                     }
                 }
             });
-
             scrollListenerInstalado = true;
-            System.out.println("✅ Scroll listener instalado (ventas actuales: " + ventasData.size() + "/" + totalVentas + ")");
-
             // Si después de cargar las primeras NO hay scroll, cargar más automáticamente
             Platform.runLater(() -> {
                 if (finalVBar.getMax() == 0.0 && ventasData.size() < totalVentas) {
