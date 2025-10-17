@@ -3,6 +3,7 @@ package com.arielcardales.arielcardales.controller;
 import com.arielcardales.arielcardales.DAO.*;
 import com.arielcardales.arielcardales.Entidades.*;
 import com.arielcardales.arielcardales.Util.*;
+import com.arielcardales.arielcardales.View.VentanaVenta;
 import com.arielcardales.arielcardales.service.InventarioService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -59,245 +60,304 @@ public class ProductoTreeController {
         cargarArbolAsync("");    // primera carga en background
     }
 
-    /**
-     * Configura toda la interfaz de usuario del TreeTableView:
-     * - Crea columnas dinámicas.
-     * - Aplica estilos y renderizadores.
-     * - Configura la búsqueda reactiva.
-     * - Vincula edición directa en celdas.
-     * - Inicializa el control de expansión automática.
-     */
-    private void configurarUI() {
+    // ============================================================================
+// ESTRUCTURA CORRECTA - Métodos al mismo nivel
+// ============================================================================
 
-        // 🧹 Limpia columnas previas antes de volver a construirlas
+    private void configurarUI() {
+        configurarColumnas();
+        configurarPropiedadesTabla();
+        configurarBusqueda();
+        configurarEdicion();
+        configurarCheckboxExpandir();
+        configurarRowFactory();
+    }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 1. CONFIGURACIÓN DE COLUMNAS
+// ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Crea y configura las columnas del TreeTableView usando helper
+     */
+    private void configurarColumnas() {
         tablaInventarioTree.getColumns().clear();
 
-        // === Definición de columnas visibles y su propiedad asociada ===
-        // 1° valor → título visible en la UI
-        // 2° valor → nombre del atributo en la clase ItemInventario
+        // Matriz: {Título, Propiedad, Peso, AnchoMin}
         String[][] columnas = {
-                {"Etiqueta", "etiquetaProducto"},
-                {"Nombre",   "nombreProducto"},
-                {"Color",    "color"},
-                {"Talle",    "talle"},
-                {"Categoría","categoria"},
-                {"Costo",    "costo"},
-                {"Precio",   "precio"},
-                {"Stock",    "stockOnHand"}
+                {"Etiqueta",  "etiquetaProducto", "0.08", "60"},
+                {"Nombre",    "nombreProducto",   "0.30", "150"},
+                {"Color",     "color",            "0.10", "70"},
+                {"Talle",     "talle",            "0.08", "60"},
+                {"Categoría", "categoria",        "0.15", "100"},
+                {"Costo",     "costo",            "0.12", "90"},
+                {"Precio",    "precio",           "0.12", "90"},
+                {"Stock",     "stockOnHand",      "0.05", "50"}
         };
 
-        // 🔄 Recorre la definición y crea dinámicamente cada columna
-        for (String[] c : columnas) {
-            TreeTableColumn<ItemInventario, ?> col;
+        // ✅ Crear columnas con el helper
+        List<TreeTableColumn<ItemInventario, ?>> cols = Arboles.crearColumnasTree(columnas);
 
-            // 🧩 Determina el tipo genérico de columna según su contenido
-            switch (c[0].toLowerCase()) {
-                case "stock" -> col = new TreeTableColumn<ItemInventario, Integer>(c[0]);
-                case "precio", "costo" -> col = new TreeTableColumn<ItemInventario, BigDecimal>(c[0]);
-                default -> col = new TreeTableColumn<ItemInventario, String>(c[0]);
+        // Aplicar renders personalizados solo a Color y Talle
+        for (TreeTableColumn<ItemInventario, ?> col : cols) {
+            String titulo = col.getText();
+            if (titulo.equalsIgnoreCase("Color") || titulo.equalsIgnoreCase("Talle")) {
+                aplicarRendererColorTalle(col);
             }
-
-            // 🔗 Vincula la columna con la propiedad correspondiente del modelo
-            col.setCellValueFactory(new TreeItemPropertyValueFactory<>(c[1]));
-
-            // 🎨 Personaliza el renderizado de las columnas Color y Talle
-            if (c[0].equalsIgnoreCase("Color") || c[0].equalsIgnoreCase("Talle")) {
-                ((TreeTableColumn<ItemInventario, String>) col).setCellFactory(tc -> new TreeTableCell<>() {
-                    @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty) { setText(null); setStyle(""); return; }
-
-                        // Obtiene el TreeItem asociado a la fila actual
-                        TreeItem<ItemInventario> treeItem = getTreeTableRow().getTreeItem();
-                        if (treeItem == null || treeItem.getValue() == null) {
-                            setText(item);
-                            return;
-                        }
-
-                        ItemInventario data = treeItem.getValue();
-                        boolean esVariante = data.isEsVariante();
-
-                        // 🔸 Producto base → muestra un guion y color gris
-                        if (!esVariante) {
-                            setText("—");
-                            setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
-                        }
-                        // 🔹 Variante → texto normal
-                        else {
-                            setText(item == null ? "" : item);
-                            setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
-                        }
-                    }
-                });
-            }
-
-            // Agrega la columna construida al TreeTableView
             tablaInventarioTree.getColumns().add(col);
         }
 
-        // === Propiedades generales del TreeTableView ===
-        tablaInventarioTree.setShowRoot(false);                         // Oculta el nodo raíz “invisible”
-        tablaInventarioTree.setEditable(true);                          // Permite edición de celdas
-        tablaInventarioTree.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY); // Ajusta ancho
+        // ✅ Configurar ajuste dinámico con el helper
+        Arboles.configurarAjusteDinamicoTree(tablaInventarioTree);
+    }
+
+    /**
+     * Aplica el renderizado personalizado para columnas Color y Talle
+     * Muestra "—" en productos base y el valor real en variantes
+     */
+    @SuppressWarnings("unchecked")
+    private void aplicarRendererColorTalle(TreeTableColumn<ItemInventario, ?> col) {
+        TreeTableColumn<ItemInventario, String> colStr = (TreeTableColumn<ItemInventario, String>) col;
+
+        colStr.setCellFactory(tc -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty) {
+                    setText(null);
+                    setStyle("");
+                    return;
+                }
+
+                TreeItem<ItemInventario> treeItem = getTreeTableRow().getTreeItem();
+                if (treeItem == null || treeItem.getValue() == null) {
+                    setText(item);
+                    return;
+                }
+
+                ItemInventario data = treeItem.getValue();
+
+                // Producto base → guion gris
+                if (!data.isEsVariante()) {
+                    setText("—");
+                    setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
+                }
+                // Variante → texto normal
+                else {
+                    setText(item == null ? "" : item);
+                    setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
+                }
+            }
+        });
+    }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 2. PROPIEDADES GENERALES DE LA TABLA
+// ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Configura propiedades generales del TreeTableView
+     */
+    private void configurarPropiedadesTabla() {
+        tablaInventarioTree.setShowRoot(false);
+        tablaInventarioTree.setEditable(true);
+        tablaInventarioTree.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         tablaInventarioTree.setStyle("-fx-background-color: transparent;");
+
+        // Cargar CSS
         URL cssUrl = getClass().getResource("/Estilos/Estilos.css");
         if (cssUrl != null) {
             tablaInventarioTree.getStylesheets().add(cssUrl.toExternalForm());
         } else {
-            System.err.println("⚠️ Advertencia: No se encontró estilos.css, usando estilos por defecto");
+            System.err.println("⚠️ Advertencia: No se encontró estilos.css");
         }
 
-        // 🌀 Placeholder inicial mientras carga datos
+        // Placeholder con spinner
         ProgressIndicator pi = new ProgressIndicator();
         pi.setPrefSize(40, 40);
         tablaInventarioTree.setPlaceholder(pi);
-
-        // === Configuración de búsqueda reactiva ===
+    }
+// ────────────────────────────────────────────────────────────────────────────
+// 3. BÚSQUEDA REACTIVA
+// ────────────────────────────────────────────────────────────────────────────
+    /**
+     * Configura el sistema de búsqueda con filtrado reactivo
+     */
+    private void configurarBusqueda() {
+        // Configurar ToggleGroup
         grupoBusqueda = new ToggleGroup();
         btnNombre.setToggleGroup(grupoBusqueda);
         btnCategoria.setToggleGroup(grupoBusqueda);
         btnEtiqueta.setToggleGroup(grupoBusqueda);
-        grupoBusqueda.selectToggle(btnNombre); // búsqueda por nombre por defecto
+        grupoBusqueda.selectToggle(btnNombre);
 
-        // 🔍 Lógica principal del filtro dinámico
+        // Runnable que aplica el filtro
         Runnable aplicarFiltro = () -> {
-            String filtro = Optional.ofNullable(txtBuscarEtiqueta.getText()).orElse("").trim().toLowerCase();
+            if (rootCompleto == null) return;
 
-            // Si el campo de búsqueda está vacío → restaurar inventario completo
-            if (filtro.isBlank()) {
-                if (rootCompleto != null) {
-                    TreeItem<ItemInventario> copia = clonarArbol(rootCompleto);
-                    tablaInventarioTree.setRoot(copia);
-
-                    // 🔧 Si está activa la preferencia “Expandir auto”, expandir nodos
-                    boolean expandir = prefs.getBoolean(PREF_EXPANDIR_NODOS, false);
-                    if (expandir) expandirTodo(copia);
-                } else {
-                    // Si aún no hay cache, recargar desde BD
-                    cargarArbolAsync("");
-                }
+            String filtro = txtBuscarEtiqueta.getText();
+            if (filtro == null || filtro.isBlank()) {
+                tablaInventarioTree.setRoot(rootCompleto);
                 return;
             }
 
-            // Si aún no terminó de cargar el árbol → abortar filtro
-            if (rootCompleto == null) return;
+            // ✅ Usar el método específico para ItemInventario
+            TreeItem<ItemInventario> copia = Arboles.clonarYFiltrarItemInventario(
+                    rootCompleto,
+                    obtenerCampoBusqueda(),
+                    filtro
+            );
 
-            // Determina el tipo de filtro (Nombre, Categoría o Etiqueta)
-            String tipo = ((ToggleButton) Optional.ofNullable(grupoBusqueda.getSelectedToggle())
-                    .orElse(btnNombre)).getText().toLowerCase();
-
-            // Crea una copia del árbol original en memoria
-            TreeItem<ItemInventario> copia = clonarArbol(rootCompleto);
-
-            // Aplica el filtrado recursivo según el campo seleccionado
-            filtrarRecursivo(copia, switch (tipo) {
-                case "categoría", "categoria" -> "categoria";
-                case "etiqueta" -> "etiqueta";
-                default -> "nombre";
-            }, filtro);
-
-            // Reemplaza el árbol en pantalla por la versión filtrada
             tablaInventarioTree.setRoot(copia);
 
-            // Si está activa la preferencia, expande los nodos filtrados
-            boolean expandir = prefs.getBoolean(PREF_EXPANDIR_NODOS, false);
-            if (expandir) expandirTodo(copia);
+            if (prefs.getBoolean(PREF_EXPANDIR_NODOS, false)) {
+                expandirTodo(copia);
+            }
         };
 
-        // === Búsqueda reactiva con debounce y recuperación segura ===
+        // Búsqueda con debounce
         txtBuscarEtiqueta.textProperty().addListener((o, oldValue, newValue) -> {
             pausaBusqueda.stop();
             pausaBusqueda.setOnFinished(e -> aplicarFiltro.run());
             pausaBusqueda.playFromStart();
 
-            // 🩹 Fallback instantáneo si el texto queda vacío (borra todo de golpe)
+            // Fallback instantáneo si se borra todo
             if (newValue == null || newValue.isBlank()) {
-                Platform.runLater(aplicarFiltro); // fuerza ejecución inmediata
+                Platform.runLater(aplicarFiltro);
             }
         });
 
-
-        // Escucha cambios en el tipo de búsqueda (Nombre / Categoría / Etiqueta)
+        // Listener para cambio de tipo de búsqueda
         grupoBusqueda.selectedToggleProperty().addListener((o, a, b) -> aplicarFiltro.run());
+    }
 
-        // === Configura edición y renderizados ===
-        aplicarRendererColorTalle();  // Renderizado especial para color/talle
-        editGeneral();                // Asigna celdas editables
-        ajustarAnchoColumnas(tablaInventarioTree); // Ajusta proporciones iniciales
+    /**
+     * Obtiene el campo seleccionado para búsqueda
+     */
+    private String obtenerCampoBusqueda() {
+        Toggle seleccionado = grupoBusqueda.getSelectedToggle();
+        if (seleccionado == null) return "nombre";
 
-        // === Checkbox de expansión automática persistente ===
+        String tipo = ((ToggleButton) seleccionado).getText().toLowerCase();
+        return switch (tipo) {
+            case "categoría", "categoria" -> "categoria";
+            case "etiqueta" -> "etiqueta";
+            default -> "nombre";
+        };
+    }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 4. EDICIÓN DE CELDAS
+// ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Configura la edición inline de todas las columnas
+     */
+    private void configurarEdicion() {
+        for (TreeTableColumn<ItemInventario, ?> col : tablaInventarioTree.getColumns()) {
+            String prop = col.getText().toLowerCase();
+
+            switch (prop) {
+                case "nombre" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
+                case "precio", "costo" -> configurarEdicionDecimal((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
+                case "stock" -> configurarEdicionEntero((TreeTableColumn<ItemInventario, Integer>) col, prop);
+                case "color", "talle" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
+                case "categoría", "categoria" -> configurarEdicionCategoria((TreeTableColumn<ItemInventario, String>) col);
+            }
+        }
+    }
+
+// ────────────────────────────────────────────────────────────────────────────
+// 5. CHECKBOX EXPANDIR
+// ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Agrega checkbox de expansión automática al panel lateral
+     */
+    private void configurarCheckboxExpandir() {
         CheckBox chkExpandir = new CheckBox("Expandir auto");
         chkExpandir.setSelected(prefs.getBoolean(PREF_EXPANDIR_NODOS, false));
         chkExpandir.setOnAction(e -> {
-            // Guarda la preferencia del usuario y recarga el árbol
             prefs.putBoolean(PREF_EXPANDIR_NODOS, chkExpandir.isSelected());
             recargarArbol(txtBuscarEtiqueta.getText());
         });
         chkExpandir.setStyle("-fx-padding: 10 0 0 4; -fx-font-size: 13px;");
 
-        if (panelLateral != null) panelLateral.getChildren().add(chkExpandir);
+        if (panelLateral != null) {
+            panelLateral.getChildren().add(chkExpandir);
+        }
+    }
 
-        // === RowFactory con doble clic para editar celdas ===
+// ────────────────────────────────────────────────────────────────────────────
+// 6. ROW FACTORY
+// ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Configura el comportamiento de las filas (doble clic, estilos)
+     */
+    private void configurarRowFactory() {
         tablaInventarioTree.setRowFactory(tv -> {
             TreeTableRow<ItemInventario> row = new TreeTableRow<>();
 
-            // Pseudo-clase CSS “.hijo” → permite colorear filas hijas
+            // Pseudo-clase CSS para filas hijas
             row.treeItemProperty().addListener((obs, oldItem, newItem) -> {
-                boolean esHijo = newItem != null && newItem.getParent() != null && newItem.getParent().getParent() != null;
+                boolean esHijo = newItem != null &&
+                        newItem.getParent() != null &&
+                        newItem.getParent().getParent() != null;
                 row.pseudoClassStateChanged(PseudoClass.getPseudoClass("hijo"), esHijo);
             });
 
-            // Doble clic para activar edición directa
+            // Doble clic para editar
             row.setOnMouseClicked(event -> {
-                // 🖱 Doble clic en una fila no vacía
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    manejarDobleClicFila(event, row);
+                }
+            });
 
+            // Bloquear expansión en doble clic fuera de la flechita
+            tablaInventarioTree.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
+                if (event.getClickCount() == 2) {
                     Node nodo = event.getPickResult().getIntersectedNode();
 
-                    // ❌ Si tocó la flechita de expansión → no editar
-                    while (nodo != null && nodo != row && !(nodo instanceof TreeTableRow)) {
+                    while (nodo != null && !(nodo instanceof TreeTableRow)) {
                         if (nodo.getStyleClass().contains("tree-disclosure-node")) {
                             return;
                         }
                         nodo = nodo.getParent();
                     }
 
-                    // ✅ Evita que el doble clic se propague y cause expansión
-                    event.consume();
-
-                    // 🔎 Determina columna seleccionada
-                    int colIndex = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
-                            ? 0
-                            : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0).getColumn();
-
-                    // 🧭 Asegura foco en la tabla antes de editar
-                    tablaInventarioTree.requestFocus();
-
-                    // ✏ Inicia edición sobre la celda clickeada
-                    tablaInventarioTree.edit(row.getIndex(), tablaInventarioTree.getColumns().get(colIndex));
-                }
-            });
-            // 🧩 Bloquea la expansión/colapso del padre cuando se hace doble clic fuera de la flechita
-            tablaInventarioTree.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
-                if (event.getClickCount() == 2) {
-                    Node nodo = event.getPickResult().getIntersectedNode();
-
-                    // ✅ Si el clic fue sobre la flechita, permitir comportamiento normal
-                    while (nodo != null && !(nodo instanceof TreeTableRow)) {
-                        if (nodo.getStyleClass().contains("tree-disclosure-node")) {
-                            return; // no bloqueamos expansión si tocó la flecha
-                        }
-                        nodo = nodo.getParent();
-                    }
-
-                    // ❌ Si el doble clic fue sobre cualquier otra parte de la fila, no expandir
                     event.consume();
                 }
             });
 
             return row;
         });
+    }
+
+    /**
+     * Maneja el doble clic en una fila para iniciar edición
+     */
+    private void manejarDobleClicFila(javafx.scene.input.MouseEvent event, TreeTableRow<ItemInventario> row) {
+        Node nodo = event.getPickResult().getIntersectedNode();
+
+        // No editar si tocó la flechita de expansión
+        while (nodo != null && nodo != row && !(nodo instanceof TreeTableRow)) {
+            if (nodo.getStyleClass().contains("tree-disclosure-node")) {
+                return;
+            }
+            nodo = nodo.getParent();
+        }
+
+        event.consume();
+
+        // Determinar columna seleccionada
+        int colIndex = tablaInventarioTree.getSelectionModel().getSelectedCells().isEmpty()
+                ? 0
+                : tablaInventarioTree.getSelectionModel().getSelectedCells().get(0).getColumn();
+
+        tablaInventarioTree.requestFocus();
+        tablaInventarioTree.edit(row.getIndex(), tablaInventarioTree.getColumns().get(colIndex));
     }
 
 
@@ -375,22 +435,6 @@ public class ProductoTreeController {
         cargarArbolAsync(filtro);
     }
 
-    private void editGeneral() {
-        tablaInventarioTree.setEditable(true);
-
-        for (TreeTableColumn<ItemInventario, ?> col : tablaInventarioTree.getColumns()) {
-            String prop = col.getText().toLowerCase();
-
-            switch (prop) {
-                case "nombre" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
-                case "precio", "costo" -> configurarEdicionDecimal((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
-                case "stock" -> configurarEdicionEntero((TreeTableColumn<ItemInventario, Integer>) col, prop);
-                case "color", "talle" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
-                case "categoría", "categoria" -> configurarEdicionCategoria((TreeTableColumn<ItemInventario, String>) col);
-            }
-
-        }
-    }
 
     private void guardarEdicion(ItemInventario item, String campo, String valor) {
         boolean okDB = false;
@@ -619,242 +663,12 @@ public class ProductoTreeController {
             return;
         }
 
-        ItemInventario item = sel.get();
-
-        // 🧩 Si es variante → cargar datos DIRECTAMENTE desde ProductoVarianteDAO
-        if (item.isEsVariante()) {
-            Optional<ProductoVariante> varOpt = new ProductoVarianteDAO().findById(item.getVarianteId());
-
-            if (varOpt.isEmpty()) {
-                error("No se encontró la variante en la base de datos.");
-                return;
-            }
-
-            ProductoVariante variante = varOpt.get();
-
-            // Obtener info del producto base solo para nombre/etiqueta
-            Optional<Producto> baseOpt = productoDAO.findById(variante.getProductoId());
-            if (baseOpt.isEmpty()) {
-                error("No se encontró el producto base.");
-                return;
-            }
-
-            Producto base = baseOpt.get();
-
-            // 🔹 Crear objeto temporal con TODOS los datos de la variante
-            Producto productoVenta = new Producto();
-            productoVenta.setId(variante.getProductoId());  // ✅ ID del padre (para ventaItem)
-            productoVenta.setEtiqueta(variante.getEtiqueta()); // ✅ Etiqueta de la variante
-            productoVenta.setNombre(base.getNombre() + " - " + variante.getColor() + " " + variante.getTalle());
-            productoVenta.setPrecio(variante.getPrecio());     // ✅ Precio de la variante
-            productoVenta.setStockOnHand(variante.getStock()); // ✅ Stock REAL de la variante desde BD
-
-            // ⚠️ CRÍTICO: Pasar el ID de la variante para que registrarVentaEnBD() descuente correctamente
-            pedirCantidad(productoVenta, item.getVarianteId());
-            return;
-        }
-
-        // 🧩 Si es producto base (sin variantes)
-        Optional<Producto> opt = productoDAO.findById(item.getProductoId());
-        if (opt.isEmpty()) {
-            error("No se encontró el producto en base de datos.");
-            return;
-        }
-
-        Producto producto = opt.get();
-
-        // ✅ Pasar null como idVariante porque es producto base
-        pedirCantidad(producto, null);
+        VentanaVenta.mostrar(
+                (Stage) tablaInventarioTree.getScene().getWindow(),
+                sel.get(),
+                () -> recargarArbol(txtBuscarEtiqueta.getText())
+        );
     }
-
-    private void registrarVentaEnBD(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante, String clienteNombre) {
-        try {
-            // 🔹 PASO 1: Validar stock ANTES de iniciar transacción
-            int stockActual;
-            Long productoIdParaVenta; // ID que va en ventaItem.productoId (siempre del padre)
-
-            if (idVariante != null) {
-                // ✅ Validar stock de la VARIANTE
-                Optional<ProductoVariante> varOpt = new ProductoVarianteDAO().findById(idVariante);
-
-                if (varOpt.isEmpty()) {
-                    error("⚠ Variante no encontrada en base de datos.");
-                    return;
-                }
-
-                ProductoVariante variante = varOpt.get();
-                stockActual = variante.getStock();
-                productoIdParaVenta = variante.getProductoId(); // ✅ ID del producto PADRE
-
-            } else {
-                // ✅ Validar stock del PRODUCTO BASE
-                Optional<Producto> prodOpt = productoDAO.findById(producto.getId());
-                if (prodOpt.isEmpty()) {
-                    error("⚠ Producto no encontrado en base de datos.");
-                    return;
-                }
-                stockActual = prodOpt.get().getStockOnHand();
-                productoIdParaVenta = producto.getId();
-            }
-
-            // 🔹 PASO 2: Verificar que hay suficiente stock
-            if (stockActual < cantidad) {
-                error(String.format("⚠ Stock insuficiente.\nDisponible: %d | Solicitado: %d",
-                        stockActual, cantidad));
-                return;
-            }
-
-            // 🔹 PASO 3: Crear objeto venta
-            Venta venta = new Venta();
-            venta.setClienteNombre(clienteNombre); // En lugar de null
-            venta.setMedioPago(medioPago);
-            venta.setFecha(LocalDateTime.now());
-
-            Venta.VentaItem item = new Venta.VentaItem();
-            item.setProductoId(productoIdParaVenta); // ✅ SIEMPRE el ID del producto padre
-            item.setProductoNombre(producto.getNombre());
-            item.setProductoEtiqueta(producto.getEtiqueta());
-            item.setQty(cantidad);
-            item.setPrecioUnit(producto.getPrecio());
-
-            // ✅ Si es variante, guardar el ID en el campo variante_id
-            if (idVariante != null) {
-                item.setVarianteId(idVariante);
-            }
-
-            venta.addItem(item);
-            venta.calcularTotal();
-
-            // 🔹 PASO 4: Registrar venta (el trigger descuenta stock automáticamente)
-            Long ventaId;
-            try {
-                ventaId = VentaDAO.registrarVentaCompleta(venta);
-            } catch (SQLException e) {
-                // 🔴 El trigger de PostgreSQL rechazó la venta por stock insuficiente
-                if (e.getMessage() != null && e.getMessage().contains("Stock insuficiente")) {
-                    error("⚠ Stock insuficiente. La venta no se completó.");
-                    return;
-                }
-                throw e;
-            }
-
-            if (ventaId == null || ventaId <= 0) {
-                error("❌ Error al registrar venta en base de datos.");
-                return;
-            }
-
-            // ✅✅✅ CRÍTICO: NO DESCONTAR STOCK AQUÍ ✅✅✅
-            // El trigger de PostgreSQL YA descontó el stock automáticamente
-            // Si descuentas aquí, resta el doble
-
-            // ✅ PASO 5: Recargar UI y confirmar
-            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-            ok("✅ Venta registrada correctamente. Total: " + formato.format(total));
-
-            Platform.runLater(() -> {
-                recargarArbol(txtBuscarEtiqueta.getText());
-            });
-
-        } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Stock insuficiente")) {
-                error("⚠ Stock insuficiente para completar la venta.");
-            } else {
-                error("❌ Error al registrar venta: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } catch (Exception e) {
-            error("❌ Error inesperado: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private void pedirCantidad(Producto producto, Long idVariante) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Nueva venta");
-        dialog.setHeaderText("Producto: " + producto.getNombre());
-        dialog.setContentText("Cantidad:");
-
-        DialogPane pane1 = dialog.getDialogPane();
-        pane1.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
-        pane1.getStyleClass().add("dialog-cuero");
-
-        dialog.showAndWait().ifPresent(valor -> {
-            try {
-                int cantidad = Integer.parseInt(valor);
-                if (cantidad <= 0) throw new NumberFormatException();
-
-                BigDecimal total = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
-                NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-                String totalFormateado = formato.format(total);
-
-                // === Diálogo de confirmación CON nombre del cliente (OPCIONAL) ===
-                Dialog<ButtonType> confirmar = new Dialog<>();
-                confirmar.setTitle("Confirmar venta");
-
-                DialogPane pane2 = confirmar.getDialogPane();
-                pane2.getStylesheets().add(getClass().getResource("/Estilos/Estilos.css").toExternalForm());
-                pane2.getStyleClass().add("dialog-cuero");
-
-                Label header = new Label("💰 Total: " + totalFormateado);
-                header.getStyleClass().add("dialog-header");
-                pane2.setHeader(header);
-
-                ButtonType ok = new ButtonType("Confirmar", ButtonBar.ButtonData.OK_DONE);
-                ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-                pane2.getButtonTypes().addAll(ok, cancel);
-
-                // ✅ Campo para nombre del cliente (opcional)
-                Label lblCliente = new Label("Cliente (opcional):");
-                TextField txtCliente = new TextField();
-                txtCliente.setPromptText("Nombre del cliente");
-                txtCliente.setPrefWidth(200);
-
-                Label lblProducto = new Label("Producto: " + producto.getNombre());
-                Label lblCantidad = new Label("Cantidad: " + cantidad);
-                Label lblPrecio = new Label("Precio unitario: " + formato.format(producto.getPrecio()));
-                Label lblMedio = new Label("Medio de pago:");
-
-                ComboBox<String> comboPago = new ComboBox<>();
-                comboPago.getItems().addAll("Efectivo", "Tarjeta", "Transferencia", "MercadoPago");
-                comboPago.setValue("Efectivo");
-
-                // ✅ Agregar campo cliente al layout
-                VBox content = new VBox(10, lblCliente, txtCliente, lblProducto, lblCantidad, lblPrecio, lblMedio, comboPago);
-                content.getStyleClass().add("dialog-content");
-                content.setStyle("-fx-padding: 15;");
-                pane2.setContent(content);
-
-                // ✅ Focus automático en el campo cliente
-                Platform.runLater(txtCliente::requestFocus);
-
-                Optional<ButtonType> res = confirmar.showAndWait();
-                if (res.isPresent() && res.get() == ok) {
-                    String clienteNombre = txtCliente.getText().trim();
-                    String medioPago = comboPago.getValue();
-
-                    // ✅ Si el campo está vacío, pasar null
-                    if (clienteNombre.isEmpty()) {
-                        clienteNombre = null;
-                    }
-
-                    procesarVenta(producto, cantidad, total, medioPago, idVariante, clienteNombre);
-                }
-
-            } catch (NumberFormatException e) {
-                error("Cantidad inválida.");
-            }
-        });
-    }
-
-    private void procesarVenta(Producto producto, int cantidad, BigDecimal total, String medioPago, Long idVariante, String clienteNombre) {
-        try {
-            registrarVentaEnBD(producto, cantidad, total, medioPago, idVariante, clienteNombre); // ✅ Agregado clienteNombre
-        } catch (Exception e) {
-            e.printStackTrace();
-            error("❌ Error al procesar la venta: " + e.getMessage());
-        }
-    }
-
 
     // -------------------------------------------------------------------
     // Helpers
@@ -1073,111 +887,6 @@ public class ProductoTreeController {
         }
     }
 
-    private void ajustarAnchoColumnas(TreeTableView<ItemInventario> tabla) {
-        // Política de ajuste: la última columna se estira para completar el espacio
-        tabla.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
-        // Escuchar una sola vez el cambio de ancho total del TreeTableView
-        tabla.widthProperty().addListener((obs, oldVal, newVal) -> recalcularAnchoColumnas(tabla, newVal.doubleValue()));
-
-        // También ejecutar inmediatamente cuando la tabla ya tenga tamaño real
-        if (tabla.getWidth() > 0) {
-            recalcularAnchoColumnas(tabla, tabla.getWidth());
-        }
-    }
-
-    // 🔧 Método auxiliar real que ajusta las proporciones
-    private void recalcularAnchoColumnas(TreeTableView<ItemInventario> tabla, double total) {
-        if (tabla.getColumns().isEmpty() || total <= 0) return;
-
-        for (TreeTableColumn<ItemInventario, ?> col : tabla.getColumns()) {
-            String nombre = col.getText().toLowerCase();
-
-            double ancho = switch (nombre) {
-                case "etiqueta" -> total * 0.07;
-                case "nombre" -> total * 0.25;
-                case "color" -> total * 0.08;
-                case "talle" -> total * 0.07;
-                case "categoría", "categoria" -> total * 0.2;
-                case "costo" -> total * 0.12;
-                case "precio" -> total * 0.12;
-                case "stock" -> total * 0.06;
-                default -> total * 0.10;
-            };
-
-            // 🔒 Limitar ancho mínimo y máximo razonables
-            col.setMinWidth(65);
-            col.setMaxWidth(Math.max(120, ancho * 1.5));
-
-            col.setPrefWidth(ancho);
-
-            // Alineaciones limpias
-            if (List.of("costo", "precio", "stock", "etiqueta", "color", "talle", "categoría", "categoria").contains(nombre))
-                col.setStyle("-fx-alignment: CENTER;");
-            else
-                col.setStyle("-fx-alignment: CENTER-LEFT;");
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void aplicarRendererColorTalle() {
-        for (TreeTableColumn<ItemInventario, ?> anyCol : tablaInventarioTree.getColumns()) {
-            String header = anyCol.getText().toLowerCase();
-
-            // ✅ Solo aplica a "color" y "talle"
-            if (!List.of("color", "talle").contains(header))
-                continue;
-
-            TreeTableColumn<ItemInventario, Object> col = (TreeTableColumn<ItemInventario, Object>) anyCol;
-
-            col.setCellFactory(tc -> new TextFieldTreeTableCell<>(new javafx.util.StringConverter<Object>() {
-                @Override
-                public String toString(Object value) {
-                    if (value == null) return "";
-                    return value.toString();
-                }
-
-                @Override
-                public Object fromString(String s) {
-                    return (s == null || s.isBlank()) ? null : s.trim();
-                }
-            }) {
-                @Override
-                public void updateItem(Object item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty) {
-                        setText(null);
-                        setStyle("");
-                        return;
-                    }
-
-                    TreeItem<ItemInventario> ti = getTreeTableRow() == null ? null : getTreeTableRow().getTreeItem();
-                    if (ti == null || ti.getValue() == null) return;
-
-                    ItemInventario data = ti.getValue();
-                    boolean esVariante = data.isEsVariante();
-
-                    // 🔸 Producto base → muestra guion gris
-                    if (!esVariante) {
-                        setText("—");
-                        setStyle("-fx-text-fill: #9b8b74; -fx-font-style: italic;");
-                    } else {
-                        setStyle("-fx-text-fill: #2b2b2b; -fx-font-style: normal;");
-                    }
-                }
-
-                @Override
-                public void startEdit() {
-                    TreeItem<ItemInventario> ti = getTreeTableRow() == null ? null : getTreeTableRow().getTreeItem();
-                    if (ti != null && ti.getValue() != null && !ti.getValue().isEsVariante()) {
-                        // 🔒 No permitir editar color/talle en producto base
-                        return;
-                    }
-                    super.startEdit();
-                }
-            });
-        }
-    }
 
     @FXML
     private void buscarPorNombre() { grupoBusqueda.selectToggle(btnNombre); }
