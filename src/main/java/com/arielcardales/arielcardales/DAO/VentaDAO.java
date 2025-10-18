@@ -77,19 +77,25 @@ public class VentaDAO {
     }
 
     public static List<VentaItem> obtenerItemsDeVenta(Long ventaId) throws SQLException {
+        // 🔹 Consulta directa a las tablas para obtener color y talle
         String sql = """
-            SELECT 
-                itemId as id,
-                ventaId,
-                productoId,
-                productoNombre,
-                productoEtiqueta,
-                qty,
-                precioUnit,
-                subtotal
-            FROM vVentasCompletas
-            WHERE ventaId = ?
-            ORDER BY itemId
+            SELECT
+                vi.id,
+                vi.ventaId,
+                vi.productoId,
+                vi.variante_id,
+                p.nombre as productoNombre,
+                p.etiqueta as productoEtiqueta,
+                vi.qty,
+                vi.precioUnit,
+                (vi.qty * vi.precioUnit) as subtotal,
+                pv.color,
+                pv.talle
+            FROM ventaItem vi
+            JOIN producto p ON p.id = vi.productoId
+            LEFT JOIN producto_variante pv ON pv.id = vi.variante_id
+            WHERE vi.ventaId = ?
+            ORDER BY vi.id
         """;
 
         List<VentaItem> items = new ArrayList<>();
@@ -111,6 +117,17 @@ public class VentaDAO {
                             rs.getBigDecimal("precioUnit"),
                             rs.getBigDecimal("subtotal")
                     );
+
+                    // 🔹 Setear varianteId si existe
+                    Long varianteId = (Long) rs.getObject("variante_id");
+                    item.setVarianteId(varianteId);
+
+                    // 🔹 Setear color y talle si es variante
+                    if (varianteId != null) {
+                        item.setColor(rs.getString("color"));
+                        item.setTalle(rs.getString("talle"));
+                    }
+
                     items.add(item);
                 }
             }
@@ -225,9 +242,11 @@ public class VentaDAO {
             }
 
             // 2️⃣ Insertar items (aquí puede fallar el trigger de stock)
+            // 🔹 IMPORTANTE: Si la tabla ventaItem NO tiene columna productoNombre,
+            // ejecuta este SQL primero: ALTER TABLE ventaItem ADD COLUMN productoNombre VARCHAR(255);
             String sqlItem = """
-            INSERT INTO ventaItem (ventaId, productoId, variante_id, qty, precioUnit)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO ventaItem (ventaId, productoId, variante_id, qty, precioUnit, productoNombre)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
 
             // ✅ DEBUG: Imprimir cuántos items se van a insertar
@@ -238,6 +257,7 @@ public class VentaDAO {
                     // ✅ DEBUG: Imprimir cada item antes de agregarlo al batch
                     System.out.println("📦 Item → productoId=" + item.getProductoId() +
                             ", varianteId=" + item.getVarianteId() +
+                            ", nombre=" + item.getProductoNombre() +
                             ", qty=" + item.getQty());
 
                     ps.setLong(1, ventaId);
@@ -252,6 +272,7 @@ public class VentaDAO {
 
                     ps.setInt(4, item.getQty());
                     ps.setBigDecimal(5, item.getPrecioUnit());
+                    ps.setString(6, item.getProductoNombre());  // 🔹 Guardar nombre con color/talle
 
                     // ✅ CRÍTICO: Agregar UNA SOLA VEZ al batch
                     ps.addBatch();

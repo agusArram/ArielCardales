@@ -89,6 +89,8 @@ public class Venta {
         private Long varianteId;
         private String productoNombre;
         private String productoEtiqueta;
+        private String color;           // 🔹 Nuevo: color de la variante
+        private String talle;           // 🔹 Nuevo: talle de la variante
         private int qty;
         private BigDecimal precioUnit;
         private BigDecimal subtotal;
@@ -141,6 +143,33 @@ public class Venta {
         public BigDecimal getSubtotal() { return subtotal; }
         public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 
+        public String getColor() { return color; }
+        public void setColor(String color) { this.color = color; }
+
+        public String getTalle() { return talle; }
+        public void setTalle(String talle) { this.talle = talle; }
+
+        /**
+         * Retorna el nombre del producto con color y talle (si es variante)
+         * Ejemplo: "Pantalón Jean - Azul - Talle 42"
+         */
+        public String getNombreCompleto() {
+            if (productoNombre == null) return "";
+
+            StringBuilder sb = new StringBuilder(productoNombre);
+
+            // Agregar color si existe
+            if (color != null && !color.trim().isEmpty()) {
+                sb.append(" - -  ").append(color);
+            }
+            // Agregar talle si existe
+            if (talle != null && !talle.trim().isEmpty()) {
+                sb.append("  ").append(talle);
+            }
+
+            return sb.toString();
+        }
+
         private void calcularSubtotal() {
             if (precioUnit != null && qty > 0) {
                 this.subtotal = precioUnit.multiply(BigDecimal.valueOf(qty));
@@ -150,7 +179,7 @@ public class Venta {
         @Override
         public String toString() {
             return String.format("%s x%d @ %s = %s",
-                    productoNombre, qty, precioUnit, subtotal);
+                    getNombreCompleto(), qty, precioUnit, subtotal);
         }
     }
 

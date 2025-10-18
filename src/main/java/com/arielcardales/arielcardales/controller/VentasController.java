@@ -170,7 +170,7 @@ public class VentasController {
                         for (int i = 0; i < venta.getItems().size(); i++) {
                             VentaItem vi = venta.getItems().get(i);
                             if (i > 0) sb.append(", ");
-                            sb.append(vi.getProductoEtiqueta()).append(" x").append(vi.getQty());
+                            sb.append(vi.getProductoEtiqueta());  // 🔹 Solo etiqueta, sin cantidad
                         }
                         setText(sb.toString());
                     } else {
@@ -209,7 +209,7 @@ public class VentasController {
                     for (int i = 0; i < venta.getItems().size(); i++) {
                         VentaItem vi = venta.getItems().get(i);
                         if (i > 0) sb.append(", ");
-                        sb.append(vi.getProductoNombre());
+                        sb.append(vi.getNombreCompleto());  // 🔹 Usar nombre completo con color/talle
                     }
                     setText(sb.toString());
 
@@ -224,7 +224,7 @@ public class VentasController {
 
                         tooltip.append(String.format("%s - %s (x%d) = %s\n",
                                 vi.getProductoEtiqueta(),
-                                vi.getProductoNombre(),
+                                vi.getNombreCompleto(),  // 🔹 Usar nombre completo con color/talle
                                 vi.getQty(),
                                 subtotalStr));
                     }

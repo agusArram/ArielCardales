@@ -42,6 +42,16 @@ public class AgregarProductoController {
         cmbCategoria.setItems(FXCollections.observableArrayList(categorias.keySet()));
         cmbUnidad.setItems(FXCollections.observableArrayList(unidades.keySet()));
 
+        // 🔹 Seleccionar automáticamente "unidad" como valor por defecto
+        if (unidades.containsKey("unidad")) {
+            cmbUnidad.setValue("unidad");
+        } else if (unidades.containsKey("Unidad")) {
+            cmbUnidad.setValue("Unidad");
+        } else if (!unidades.isEmpty()) {
+            // Si no existe "unidad", usar la primera disponible
+            cmbUnidad.setValue(unidades.keySet().iterator().next());
+        }
+
         // 🔹 Generar automáticamente la etiqueta sugerida
         String ultima = productoDAO.getUltimaEtiqueta();
         if (ultima != null && ultima.matches("p\\d+")) {

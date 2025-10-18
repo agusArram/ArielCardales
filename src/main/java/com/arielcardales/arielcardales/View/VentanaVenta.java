@@ -195,6 +195,7 @@ public class VentanaVenta {
         try {
             // 🔹 PASO 1: Determinar ID del producto para ventaItem
             Long productoIdParaVenta;
+            ProductoVariante variante = null;
 
             if (idVariante != null) {
                 Optional<ProductoVariante> varOpt = varianteDAO.findById(idVariante);
@@ -202,7 +203,8 @@ public class VentanaVenta {
                     error("⚠ Variante no encontrada.");
                     return;
                 }
-                productoIdParaVenta = varOpt.get().getProductoId();
+                variante = varOpt.get();
+                productoIdParaVenta = variante.getProductoId();
             } else {
                 productoIdParaVenta = producto.getId();
             }
@@ -215,7 +217,21 @@ public class VentanaVenta {
 
             Venta.VentaItem item = new Venta.VentaItem();
             item.setProductoId(productoIdParaVenta);
-            item.setProductoNombre(producto.getNombre());
+
+            // 🔹 Construir nombre con color y talle si es variante
+            String nombreCompleto = producto.getNombre();
+            if (variante != null) {
+                StringBuilder sb = new StringBuilder(nombreCompleto);
+                if (variante.getColor() != null && !variante.getColor().isEmpty()) {
+                    sb.append(" - ").append(variante.getColor());
+                }
+                if (variante.getTalle() != null && !variante.getTalle().isEmpty()) {
+                    sb.append(" - Talle ").append(variante.getTalle());
+                }
+                nombreCompleto = sb.toString();
+            }
+
+            item.setProductoNombre(nombreCompleto);
             item.setProductoEtiqueta(producto.getEtiqueta());
             item.setQty(cantidad);
             item.setPrecioUnit(producto.getPrecio());
