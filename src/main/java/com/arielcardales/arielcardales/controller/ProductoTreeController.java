@@ -56,6 +56,8 @@ public class ProductoTreeController {
 
     @FXML
     public void initialize() {
+        cargarCategoriasCache();
+
         configurarUI();          // columnas, listeners, rowFactory, etc. (sin BD)
         cargarArbolAsync("");    // primera carga en background
     }
@@ -252,20 +254,58 @@ public class ProductoTreeController {
 // ────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Configura la edición inline de todas las columnas
+     * Configura la edición inline de todas las columnas usando EdicionCeldas helper
+     */
+    // ============================================================================
+// REEMPLAZAR configurarEdicion() y ELIMINAR los 4 métodos de edición
+// ============================================================================
+
+    /**
+     * Configura la edición inline de todas las columnas usando el helper EdicionCeldas
      */
     private void configurarEdicion() {
+        EdicionCeldas editor = new EdicionCeldas(inventarioService, tablaInventarioTree);
+
         for (TreeTableColumn<ItemInventario, ?> col : tablaInventarioTree.getColumns()) {
             String prop = col.getText().toLowerCase();
 
             switch (prop) {
-                case "nombre" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
-                case "precio", "costo" -> configurarEdicionDecimal((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
-                case "stock" -> configurarEdicionEntero((TreeTableColumn<ItemInventario, Integer>) col, prop);
-                case "color", "talle" -> configurarEdicionTexto((TreeTableColumn<ItemInventario, String>) col, prop);
-                case "categoría", "categoria" -> configurarEdicionCategoria((TreeTableColumn<ItemInventario, String>) col);
+                case "nombre", "color", "talle" ->
+                        editor.configurarTexto((TreeTableColumn<ItemInventario, String>) col, prop);
+
+                case "precio", "costo" ->
+                        editor.configurarDecimal((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
+
+                case "stock" ->
+                        editor.configurarEntero((TreeTableColumn<ItemInventario, Integer>) col, prop, 0, Integer.MAX_VALUE);
+
+                case "categoría", "categoria" ->
+                        configurarEdicionCategoriaConCache((TreeTableColumn<ItemInventario, String>) col, editor);
             }
         }
+    }
+
+    /**
+     * Configura edición de categoría usando el cache cargado en initialize()
+     * Se integra con EdicionCeldas para mantener consistencia
+     */
+    private void configurarEdicionCategoriaConCache(TreeTableColumn<ItemInventario, String> col, EdicionCeldas editor) {
+        // Bloquear edición en variantes ANTES de mostrar el ComboBox
+        col.setOnEditStart(event -> {
+            TreeItem<ItemInventario> treeItem = event.getRowValue();
+            if (treeItem != null && treeItem.getValue() != null) {
+                ItemInventario item = treeItem.getValue();
+
+                if (item.isEsVariante()) {
+                    error("Las variantes heredan la categoría del producto base");
+                    event.consume();
+                    return;
+                }
+            }
+        });
+
+        // Usar el helper con las categorías ya cargadas
+        editor.configurarCombo(col, "categoria", categoriasNombres);
     }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -436,78 +476,13 @@ public class ProductoTreeController {
     }
 
 
-    private void guardarEdicion(ItemInventario item, String campo, String valor) {
-        boolean okDB = false;
-
-        try {
-            // 🚫 Evitar campos que no aplican a productos base
-            if (!item.isEsVariante() && (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle"))) {
-                error("Este producto no tiene variantes, por lo que no puede editar " + campo + ".");
-                tablaInventarioTree.refresh();
-                return;
-            }
-
-            // 🚫 Evitar categoría en variantes si no querés actualizar el padre
-            if (item.isEsVariante() && campo.equalsIgnoreCase("categoria")) {
-                error("Las variantes heredan la categoría del producto base.");
-                tablaInventarioTree.refresh();
-                return;
-            }
-
-            // ✅ Guardar normalmente según tipo
-            if (item.isEsVariante()) {
-                okDB = InventarioDAO.updateVarianteCampo(item.getVarianteId(), campo, valor);
-            } else {
-                okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, valor);
-            }
-
-            if (okDB)
-                ok("✔ Cambios guardados en " + campo);
-            else
-                error("⚠ No se pudo actualizar el campo " + campo);
-
-        } catch (Exception e) {
-            error("❌ Error al guardar " + campo + ": " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            tablaInventarioTree.refresh();
-        }
-    }
-
-    private boolean filtrarRecursivo(TreeItem<ItemInventario> nodo, String campo, String valor) {
-        if (nodo == null || nodo.getChildren() == null) return false;
-
-        Iterator<TreeItem<ItemInventario>> it = nodo.getChildren().iterator();
-        boolean algunHijoVisible = false;
-
-        while (it.hasNext()) {
-            TreeItem<ItemInventario> hijo = it.next();
-            ItemInventario data = hijo.getValue();
-
-            boolean coincide = false;
-            if (data != null) {
-                switch (campo) {
-                    case "nombre" -> coincide = data.getNombreProducto() != null && data.getNombreProducto().toLowerCase().contains(valor);
-                    case "categoria" -> coincide = data.getCategoria() != null && data.getCategoria().toLowerCase().contains(valor);
-                    case "etiqueta" -> coincide = data.getEtiquetaProducto() != null && data.getEtiquetaProducto().toLowerCase().contains(valor);
-                }
-            }
-
-            boolean hijosCoinciden = filtrarRecursivo(hijo, campo, valor);
-            if (!coincide && !hijosCoinciden) {
-                it.remove();
-            } else {
-                algunHijoVisible = true;
-            }
-        }
-
-        return algunHijoVisible;
-    }
-
     // -------------------------------------------------------------------
     // ACCIONES
     // -------------------------------------------------------------------
 
+    /**
+     * ✅ ACTUALIZADO: Agrega la nueva categoría al cache en memoria
+     */
     @FXML
     private void agregarCategoria() {
         TextInputDialog dialog = new TextInputDialog();
@@ -528,13 +503,14 @@ public class ProductoTreeController {
                 cat.setParentId(null);
 
                 Long id = categoriaDAO.insert(cat);
-                if (categoriasNombreId != null) {
-                    categoriasNombreId.put(nombre.trim(), id);
-                    categoriasNombres.add(nombre.trim());
-                    FXCollections.sort(categoriasNombres);
-                }
+
+                // ⭐ Actualizar el cache en memoria
+                categoriasNombreId.put(nombre.trim(), id);
+                categoriasNombres.add(nombre.trim());
+                FXCollections.sort(categoriasNombres);
 
                 ok("Categoría agregada: " + nombre);
+
             } catch (Exception e) {
                 error("No se pudo agregar: " + e.getMessage());
             }
@@ -655,6 +631,7 @@ public class ProductoTreeController {
             error("Error al abrir ventana de producto: " + e.getMessage());
         }
     }
+
     @FXML
     private void iniciarVenta() {
         Optional<ItemInventario> sel = getSeleccionInventario();
@@ -695,198 +672,6 @@ public class ProductoTreeController {
                 .hideAfter(javafx.util.Duration.seconds(5))
                 .showError();
     }
-
-    private void configurarEdicionTexto(TreeTableColumn<ItemInventario, String> col, String campo) {
-        col.setCellFactory(TextFieldTreeTableCell.forTreeTableColumn());
-        col.setOnEditCommit(event -> {
-            ItemInventario item = event.getRowValue().getValue();
-            String nuevo = event.getNewValue();
-            String anterior = event.getOldValue();
-
-            try {
-                boolean okDB;
-                if (item.isEsVariante()) {
-                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo);
-                } else {
-                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo);
-                }
-
-                if (okDB) {
-                    ok("✔ Cambios guardados en " + campo);
-                    switch (campo.toLowerCase()) {
-                        case "nombre" -> item.setNombreProducto(nuevo);
-                        case "color" -> item.setColor(nuevo);
-                        case "talle" -> item.setTalle(nuevo);
-                    }
-                } else {
-                    error("⚠ No se pudo actualizar el campo " + campo);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                error("❌ Error al guardar " + campo + ": " + e.getMessage());
-            } finally {
-                tablaInventarioTree.refresh();
-            }
-
-        });
-    }
-
-    private void configurarEdicionDecimal(TreeTableColumn<ItemInventario, BigDecimal> col, String campo) {
-        NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-        formato.setMaximumFractionDigits(2);
-        formato.setMinimumFractionDigits(2);
-
-        col.setCellFactory(column -> new TextFieldTreeTableCell<>(new javafx.util.StringConverter<>() {
-            @Override
-            public String toString(BigDecimal value) {
-                if (value == null) return "";
-                try {
-                    return formato.format(value);
-                } catch (Exception e) {
-                    return value.toPlainString();
-                }
-            }
-
-            @Override
-            public BigDecimal fromString(String string) {
-                if (string == null || string.isBlank()) return BigDecimal.ZERO;
-
-                try {
-                    // 🔹 Elimina TODO lo que no sea número o separador decimal
-                    String limpio = string
-                            .replaceAll("[^\\d,.-]", "")   // quita $, espacios, letras, etc.
-                            .replace(".", "")              // elimina puntos de miles
-                            .replace(",", ".")             // cambia coma por punto decimal
-                            .trim();
-
-                    // 🔹 Si el usuario deja solo el signo o algo inválido → 0
-                    if (limpio.isBlank() || limpio.equals("-") || limpio.equals("."))
-                        return BigDecimal.ZERO;
-
-                    return new BigDecimal(limpio);
-                } catch (Exception e) {
-                    return BigDecimal.ZERO;
-                }
-            }
-        }));
-
-        col.setOnEditCommit(event -> {
-            ItemInventario item = event.getRowValue().getValue();
-            BigDecimal nuevo = event.getNewValue();
-            BigDecimal anterior = event.getOldValue();
-
-            try {
-                boolean okDB;
-                if (item.isEsVariante()) {
-                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo.toPlainString());
-                } else {
-                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo.toPlainString());
-                }
-
-                if (okDB) {
-                    ok("✔ " + campo + " actualizado correctamente");
-                    if (campo.equalsIgnoreCase("precio"))
-                        item.setPrecio(nuevo);
-                    else
-                        item.setCosto(nuevo);
-                } else {
-                    error("⚠ No se pudo actualizar el campo " + campo);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                error("❌ Error al actualizar " + campo + ": " + e.getMessage());
-            } finally {
-                tablaInventarioTree.refresh();
-            }
-
-        });
-    }
-
-    private void configurarEdicionEntero(TreeTableColumn<ItemInventario, Integer> col, String campo) {
-        col.setCellFactory(TextFieldTreeTableCell.forTreeTableColumn(new javafx.util.StringConverter<>() {
-            @Override
-            public String toString(Integer value) {
-                return (value != null) ? value.toString() : "";
-            }
-
-            @Override
-            public Integer fromString(String string) {
-                if (string == null || string.isBlank()) return 0;
-                try {
-                    // 🔹 Elimina espacios, puntos o comas que el usuario pueda poner
-                    String limpio = string.replaceAll("[^\\d-]", "").trim();
-                    if (limpio.isBlank() || limpio.equals("-")) return 0;
-                    return Integer.parseInt(limpio);
-                } catch (Exception e) {
-                    return 0;
-                }
-            }
-        }));
-
-        col.setOnEditCommit(event -> {
-            ItemInventario item = event.getRowValue().getValue();
-            Integer nuevo = event.getNewValue();
-            Integer anterior = event.getOldValue();
-
-            // Validación extra: no permitir negativos
-            if (nuevo < 0) {
-                error("⚠ El stock no puede ser negativo.");
-                item.setStockOnHand(anterior);
-                tablaInventarioTree.refresh();
-                return;
-            }
-
-            try {
-                boolean okDB;
-                if (item.isEsVariante()) {
-                    okDB = inventarioService.actualizarVariante(item.getVarianteId(), campo, nuevo.toString());
-                } else {
-                    okDB = inventarioService.actualizarCampo(item.getProductoId(), campo, nuevo.toString());
-                }
-
-                if (okDB) {
-                    ok("✔ Stock actualizado correctamente");
-                    item.setStockOnHand(nuevo);
-                } else {
-                    error("⚠ No se pudo actualizar el campo " + campo);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                error("❌ Error al actualizar " + campo + ": " + e.getMessage());
-            } finally {
-                tablaInventarioTree.refresh();
-            }
-
-        });
-    }
-
-    private void configurarEdicionCategoria(TreeTableColumn<ItemInventario, String> col) {
-        try {
-            // Obtener lista de categorías desde BD
-            CategoriaDAO categoriaDAO = new CategoriaDAO();
-            List<Categoria> categorias = categoriaDAO.findAll(); // o tu método de obtener todas
-            ObservableList<String> opciones = FXCollections.observableArrayList();
-            for (Categoria c : categorias) {
-                opciones.add(c.getNombre());
-            }
-
-            col.setCellFactory(ComboBoxTreeTableCell.forTreeTableColumn(opciones));
-
-            col.setOnEditCommit(event -> {
-                ItemInventario item = event.getRowValue().getValue();
-                String nuevaCategoria = event.getNewValue();
-
-                item.setCategoria(nuevaCategoria);
-                guardarEdicion(item, "categoria", nuevaCategoria);
-                tablaInventarioTree.refresh();
-            });
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            error("No se pudieron cargar las categorías: " + e.getMessage());
-        }
-    }
-
 
     @FXML
     private void buscarPorNombre() { grupoBusqueda.selectToggle(btnNombre); }
@@ -1047,4 +832,26 @@ public class ProductoTreeController {
         }
     }
 
+    private void cargarCategoriasCache() {
+        try {
+            CategoriaDAO categoriaDAO = new CategoriaDAO();
+            List<Categoria> categorias = categoriaDAO.findAll();
+
+            categoriasNombreId = new HashMap<>();
+            categoriasNombres = FXCollections.observableArrayList();
+
+            for (Categoria c : categorias) {
+                categoriasNombreId.put(c.getNombre(), c.getId());
+                categoriasNombres.add(c.getNombre());
+            }
+
+            FXCollections.sort(categoriasNombres);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            error("Error al cargar categorías: " + e.getMessage());
+            categoriasNombreId = new HashMap<>();
+            categoriasNombres = FXCollections.observableArrayList();
+        }
+    }
 }

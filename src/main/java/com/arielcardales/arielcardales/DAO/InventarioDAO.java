@@ -87,6 +87,53 @@ public class InventarioDAO {
         if (campo.equalsIgnoreCase("precio")) columna = "precio";
         if (campo.equalsIgnoreCase("costo")) columna = "costo";
 
+        // ✅ VALIDACIÓN ESPECIAL: Si edita color o talle, verificar duplicados
+        if (columna.equalsIgnoreCase("color") || columna.equalsIgnoreCase("talle")) {
+            try (Connection conn = Database.get()) {
+                // 1. Obtener datos actuales de la variante
+                String sqlActual = "SELECT producto_id, color, talle FROM producto_variante WHERE id = ?";
+                Long productoId;
+                String colorActual, talleActual;
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlActual)) {
+                    ps.setLong(1, idVariante);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) return false;
+                        productoId = rs.getLong("producto_id");
+                        colorActual = rs.getString("color");
+                        talleActual = rs.getString("talle");
+                    }
+                }
+
+                // 2. Determinar valores nuevos
+                String nuevoColor = columna.equalsIgnoreCase("color") ? valor : colorActual;
+                String nuevoTalle = columna.equalsIgnoreCase("talle") ? valor : talleActual;
+
+                // 3. Verificar si ya existe otra variante con esa combinación
+                String sqlCheck = "SELECT id FROM producto_variante " +
+                        "WHERE producto_id = ? AND color = ? AND talle = ? AND id != ?";
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
+                    ps.setLong(1, productoId);
+                    ps.setString(2, nuevoColor);
+                    ps.setString(3, nuevoTalle);
+                    ps.setLong(4, idVariante);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            // ❌ Ya existe una variante con esa combinación
+                            System.err.println("⚠️ Ya existe una variante con color=" + nuevoColor + " y talle=" + nuevoTalle);
+                            return false;
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        // 4. Si pasó la validación, hacer el UPDATE
         String sql = "UPDATE producto_variante SET " + columna + " = ? WHERE id = ?";
 
         try (Connection conn = Database.get();
@@ -103,9 +150,10 @@ public class InventarioDAO {
         }
     }
 
-
-
-
-
-
 }
+
+
+
+
+
+
