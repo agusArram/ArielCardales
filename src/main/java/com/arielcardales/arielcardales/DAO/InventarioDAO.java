@@ -32,7 +32,8 @@ public class InventarioDAO {
         try (Connection cn = Database.get();
              PreparedStatement ps = cn.prepareStatement(
                      "SELECT * FROM vInventario_variantes " +
-                             "WHERE (? = '' " +
+                             "WHERE active = true " +  // Filtra productos/variantes inactivos
+                             "AND (? = '' " +
                              "OR lower(producto_etiqueta) LIKE lower(?) " +
                              "OR lower(producto_nombre) LIKE lower(?) " +
                              "OR lower(coalesce(color,'')) LIKE lower(?) " +

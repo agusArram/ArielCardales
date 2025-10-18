@@ -29,7 +29,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     @Override
     public List<Producto> findAll() {
-        String sql = sqlBase + " order by p.nombre asc";
+        String sql = sqlBase + " where p.active = true order by p.nombre asc";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -40,7 +40,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
         }catch (SQLException e) {
             e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
-            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+            throw new DaoException("Error obteniendo productos: " + e.getMessage(), e);
         }
     }
 
@@ -50,7 +50,8 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         int lim = (limit <= 0) ? 50 : limit;
 
         String sql = sqlBase + """
-            where p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?
+            where p.active = true
+            and (p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?)
             order by similarity(p.nombre, ?) desc, p.nombre asc
             limit ?
         """;
@@ -71,7 +72,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             }
         }catch (SQLException e) {
             e.printStackTrace(); // Esto imprime la causa real en consola
-            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+            throw new DaoException("Error buscando productos: " + e.getMessage(), e);
         }
     }
     // ----- CRUD “real” contra tabla producto (para ABM) -----
@@ -200,14 +201,15 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     @Override
     public boolean deleteById(Long id) {
-        String sql = "delete from producto where id = ?";
+        // Soft delete: marcar como inactivo en lugar de eliminar físicamente
+        String sql = "UPDATE producto SET active = false WHERE id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+            throw new DaoException("Error deshabilitando producto: " + e.getMessage(), e);
         }
     }
 

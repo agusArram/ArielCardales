@@ -17,9 +17,10 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
     @Override
     public List<ProductoVariante> findAll() {
         String sql = """
-            SELECT id, producto_id, color, talle, precio, costo, stock, 
+            SELECT id, producto_id, color, talle, precio, costo, stock,
                    etiqueta, active, createdAt, updatedAt
             FROM producto_variante
+            WHERE active = true
             ORDER BY producto_id, color, talle
         """;
 
@@ -130,7 +131,8 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public boolean deleteById(Long id) {
-        String sql = "DELETE FROM producto_variante WHERE id = ?";
+        // Soft delete: marcar como inactivo en lugar de eliminar físicamente
+        String sql = "UPDATE producto_variante SET active = false WHERE id = ?";
 
         try (Connection conn = Database.get();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -140,7 +142,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new DaoException("Error eliminando variante: " + e.getMessage(), e);
+            throw new DaoException("Error deshabilitando variante: " + e.getMessage(), e);
         }
     }
 
@@ -156,7 +158,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             SELECT id, producto_id, color, talle, precio, costo, stock,
                    etiqueta, active, createdAt, updatedAt
             FROM producto_variante
-            WHERE producto_id = ?
+            WHERE producto_id = ? AND active = true
             ORDER BY color, talle
         """;
 
@@ -209,6 +211,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
     /**
      * Actualiza un campo específico de una variante (usado en edición inline)
      */
+    //Capaz se borra esto, no se usa
     public boolean updateCampo(long idVariante, String campo, String valor) {
         boolean actualizado = false;
 
