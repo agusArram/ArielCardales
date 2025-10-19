@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean compile -DskipTests)",
+      "Bash(mvn javafx:run)",
+      "Bash(mvn package -DskipTests)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

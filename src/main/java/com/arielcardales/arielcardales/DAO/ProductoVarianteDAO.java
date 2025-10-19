@@ -209,49 +209,76 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
     }
 
     /**
-     * Actualiza un campo específico de una variante (usado en edición inline)
+     * Actualiza un campo específico de una variante
+     * INCLUYE validación de duplicados para color/talle
+     *
+     * @param idVariante ID de la variante a actualizar
+     * @param campo Nombre del campo (stock, precio, costo, color, talle)
+     * @param valor Nuevo valor como String
+     * @return true si la actualización fue exitosa, false si falló o hay duplicado
      */
-    //Capaz se borra esto, no se usa
-    public boolean updateCampo(long idVariante, String campo, String valor) {
-        boolean actualizado = false;
+    public boolean updateCampo(Long idVariante, String campo, String valor) {
+        String columna = campo.trim().toLowerCase();
+
+        // Mapear nombres del modelo Java a columnas reales de la BD
+        if (columna.equalsIgnoreCase("stockOnHand")) columna = "stock";
 
         try (Connection conn = Database.get()) {
-            campo = campo.trim().toLowerCase();
-            String sql;
+            // ✅ VALIDACIÓN: Si edita color o talle, verificar duplicados
+            if (columna.equalsIgnoreCase("color") || columna.equalsIgnoreCase("talle")) {
+                // 1. Obtener datos actuales de la variante
+                String sqlActual = "SELECT producto_id, color, talle FROM producto_variante WHERE id = ?";
+                Long productoId;
+                String colorActual, talleActual;
 
-            // 🔧 Normaliza nombres de campos según la BD real
-            switch (campo) {
-                case "stock" ->
-                        sql = "UPDATE producto_variante SET stock = ? WHERE id = ?";
-                case "precio" ->
-                        sql = "UPDATE producto_variante SET precio = ? WHERE id = ?";
-                case "costo" ->
-                        sql = "UPDATE producto_variante SET costo = ? WHERE id = ?";
-                case "color" ->
-                        sql = "UPDATE producto_variante SET color = ? WHERE id = ?";
-                case "talle" ->
-                        sql = "UPDATE producto_variante SET talle = ? WHERE id = ?";
-                default ->
-                        sql = "UPDATE producto_variante SET " + campo + " = ? WHERE id = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlActual)) {
+                    ps.setLong(1, idVariante);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) return false;
+                        productoId = rs.getLong("producto_id");
+                        colorActual = rs.getString("color");
+                        talleActual = rs.getString("talle");
+                    }
+                }
+
+                // 2. Determinar valores nuevos
+                String nuevoColor = columna.equalsIgnoreCase("color") ? valor : colorActual;
+                String nuevoTalle = columna.equalsIgnoreCase("talle") ? valor : talleActual;
+
+                // 3. Verificar si ya existe otra variante con esa combinación
+                String sqlCheck = "SELECT id FROM producto_variante " +
+                        "WHERE producto_id = ? AND color = ? AND talle = ? AND id != ?";
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
+                    ps.setLong(1, productoId);
+                    ps.setString(2, nuevoColor);
+                    ps.setString(3, nuevoTalle);
+                    ps.setLong(4, idVariante);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            // ❌ Ya existe una variante con esa combinación
+                            System.err.println("⚠️ Duplicado: Ya existe variante con color=" + nuevoColor + " y talle=" + nuevoTalle);
+                            return false;
+                        }
+                    }
+                }
             }
 
-            System.out.println("🔧 Ejecutando SQL (variante): " + sql);
-            System.out.println("📦 Parámetros → valor='" + valor + "' | id=" + idVariante);
+            // 4. Si pasó la validación, hacer el UPDATE
+            String sql = "UPDATE producto_variante SET " + columna + " = ? WHERE id = ?";
 
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, valor);
                 stmt.setLong(2, idVariante);
                 int filas = stmt.executeUpdate();
-                actualizado = filas > 0;
+                return filas > 0;
             }
 
-            System.out.println("📊 Filas afectadas: " + (actualizado ? "1" : "0"));
-
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-
-        return actualizado;
     }
 
     /**

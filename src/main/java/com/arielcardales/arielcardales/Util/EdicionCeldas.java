@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.Util;
 
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.service.InventarioService;
+import com.arielcardales.arielcardales.service.InventarioService.ResultadoActualizacion;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
@@ -15,8 +16,10 @@ import java.math.BigDecimal;
 import java.util.function.BiConsumer;
 
 /**
- * Helper para configurar edición inline en TreeTableView de ItemInventario.
- * Centraliza toda la lógica de edición de celdas eliminando duplicación.
+ * Configurador de edición inline para TreeTableView.
+ *
+ * RESPONSABILIDAD: Solo configurar cell factories de JavaFX (UI)
+ * DELEGACIÓN: Toda la lógica de negocio está en InventarioService
  */
 public class EdicionCeldas {
 
@@ -28,37 +31,32 @@ public class EdicionCeldas {
         this.tabla = tabla;
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // CONFIGURADORES PÚBLICOS
-    // ────────────────────────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════════
+    // CONFIGURADORES PÚBLICOS - Solo configuran UI
+    // ════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Configura edición de texto simple con validación específica por campo
+     * Configura edición de texto simple
      */
     public void configurarTexto(TreeTableColumn<ItemInventario, String> col, String campo) {
         col.setCellFactory(TextFieldTreeTableCell.forTreeTableColumn());
-
-        // ⭐ Bloquear edición de nombre en variantes
-        col.setOnEditStart(event -> {
-            ItemInventario item = event.getRowValue().getValue();
-
-            if (item.isEsVariante() && campo.equalsIgnoreCase("nombre")) {
-                error("⚠ Las variantes heredan el nombre del producto base");
-                event.consume();
-            }
-        });
 
         col.setOnEditCommit(event -> {
             ItemInventario item = event.getRowValue().getValue();
             String nuevoValor = event.getNewValue();
 
-            guardarCambio(item, campo, nuevoValor, (it, val) -> {
-                switch (campo.toLowerCase()) {
-                    case "nombre" -> it.setNombreProducto(val);
-                    case "color" -> it.setColor(val);
-                    case "talle" -> it.setTalle(val);
-                }
-            });
+            // Delegar al Service
+            ResultadoActualizacion resultado = inventarioService.actualizarCampo(item, campo, nuevoValor);
+
+            if (resultado.isExitoso()) {
+                // Actualizar objeto en memoria
+                actualizarObjetoEnMemoria(item, campo, nuevoValor);
+                ok(resultado.getMensaje());
+            } else {
+                error(resultado.getMensaje());
+            }
+
+            tabla.refresh();
         });
     }
 
@@ -66,7 +64,6 @@ public class EdicionCeldas {
      * Configura edición de BigDecimal (precio, costo) con formato de moneda
      */
     public void configurarDecimal(TreeTableColumn<ItemInventario, BigDecimal> col, String campo) {
-        // Cell factory con formato $ y edición
         col.setCellFactory(tc -> new TreeTableCell<ItemInventario, BigDecimal>() {
             private javafx.scene.control.TextField textField;
             private final java.text.NumberFormat formato = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "AR"));
@@ -115,38 +112,26 @@ public class EdicionCeldas {
                 textField = new javafx.scene.control.TextField(getItem().toPlainString());
                 textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
 
-                textField.setOnAction(evt -> {
-                    try {
-                        String input = textField.getText()
-                                .replace("$", "")
-                                .replace(" ", "")
-                                .replace(".", "")
-                                .replace(",", ".")
-                                .trim();
-
-                        BigDecimal nuevoValor = new BigDecimal(input);
-                        commitEdit(nuevoValor);
-                    } catch (Exception e) {
-                        cancelEdit();
-                    }
-                });
-
+                textField.setOnAction(evt -> commitarValor());
                 textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-                    if (!isNowFocused) {
-                        try {
-                            String input = textField.getText()
-                                    .replace("$", "")
-                                    .replace(" ", "")
-                                    .replace(".", "")
-                                    .replace(",", ".")
-                                    .trim();
-                            BigDecimal nuevoValor = new BigDecimal(input);
-                            commitEdit(nuevoValor);
-                        } catch (Exception e) {
-                            cancelEdit();
-                        }
-                    }
+                    if (!isNowFocused) commitarValor();
                 });
+            }
+
+            private void commitarValor() {
+                try {
+                    String input = textField.getText()
+                            .replace("$", "")
+                            .replace(" ", "")
+                            .replace(".", "")
+                            .replace(",", ".")
+                            .trim();
+
+                    BigDecimal nuevoValor = new BigDecimal(input);
+                    commitEdit(nuevoValor);
+                } catch (Exception e) {
+                    cancelEdit();
+                }
             }
         });
 
@@ -154,26 +139,27 @@ public class EdicionCeldas {
             ItemInventario item = event.getRowValue().getValue();
             BigDecimal nuevoValor = event.getNewValue();
 
-            guardarCambio(item, campo, nuevoValor.toPlainString(), (it, val) -> {
-                BigDecimal valor = new BigDecimal(val);
+            // Delegar al Service
+            ResultadoActualizacion resultado = inventarioService.actualizarCampo(item, campo, nuevoValor.toPlainString());
+
+            if (resultado.isExitoso()) {
+                // Actualizar objeto en memoria
                 if (campo.equalsIgnoreCase("precio")) {
-                    it.setPrecio(valor);
+                    item.setPrecio(nuevoValor);
                 } else {
-                    it.setCosto(valor);
+                    item.setCosto(nuevoValor);
                 }
-            });
+                ok(resultado.getMensaje());
+            } else {
+                error(resultado.getMensaje());
+            }
+
+            tabla.refresh();
         });
     }
 
     /**
      * Configura edición de enteros (stock)
-     */
-    public void configurarEntero(TreeTableColumn<ItemInventario, Integer> col, String campo) {
-        configurarEntero(col, campo, 0, Integer.MAX_VALUE);
-    }
-
-    /**
-     * Configura edición de enteros con validación de rango
      */
     public void configurarEntero(TreeTableColumn<ItemInventario, Integer> col, String campo, int min, int max) {
         col.setCellFactory(TextFieldTreeTableCell.forTreeTableColumn(new StringConverter<>() {
@@ -200,24 +186,32 @@ public class EdicionCeldas {
             Integer nuevoValor = event.getNewValue();
             Integer anterior = event.getOldValue();
 
-            // Validación de rango
+            // Validación de rango (UI)
             if (nuevoValor < min) {
-                error("⚠ El valor no puede ser menor a " + min);
+                error("El valor no puede ser menor a " + min);
                 item.setStockOnHand(anterior);
                 tabla.refresh();
                 return;
             }
 
             if (nuevoValor > max) {
-                error("⚠ El valor no puede ser mayor a " + max);
+                error("El valor no puede ser mayor a " + max);
                 item.setStockOnHand(anterior);
                 tabla.refresh();
                 return;
             }
 
-            guardarCambio(item, campo, nuevoValor.toString(), (it, val) -> {
-                it.setStockOnHand(Integer.parseInt(val));
-            });
+            // Delegar al Service
+            ResultadoActualizacion resultado = inventarioService.actualizarCampo(item, campo, nuevoValor.toString());
+
+            if (resultado.isExitoso()) {
+                item.setStockOnHand(nuevoValor);
+                ok(resultado.getMensaje());
+            } else {
+                error(resultado.getMensaje());
+            }
+
+            tabla.refresh();
         });
     }
 
@@ -228,90 +222,43 @@ public class EdicionCeldas {
                                 String campo,
                                 ObservableList<String> opciones) {
         col.setCellFactory(ComboBoxTreeTableCell.forTreeTableColumn(opciones));
+
         col.setOnEditCommit(event -> {
             ItemInventario item = event.getRowValue().getValue();
             String nuevoValor = event.getNewValue();
 
-            // ✅ VALIDACIÓN: No permitir editar categoría en variantes
-            if (item.isEsVariante() && campo.equalsIgnoreCase("categoria")) {
-                error("Las variantes heredan la categoría del producto base");
-                tabla.refresh();
-                event.consume(); // Cancela el evento
-                return;
+            // Delegar al Service
+            ResultadoActualizacion resultado = inventarioService.actualizarCampo(item, campo, nuevoValor);
+
+            if (resultado.isExitoso()) {
+                item.setCategoria(nuevoValor);
+                ok(resultado.getMensaje());
+            } else {
+                error(resultado.getMensaje());
             }
 
-            guardarCambio(item, campo, nuevoValor, (it, val) -> {
-                it.setCategoria(val);
-            });
+            tabla.refresh();
         });
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // LÓGICA CENTRAL DE GUARDADO
-    // ────────────────────────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════════
+    // HELPERS PRIVADOS
+    // ════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Guarda un cambio en BD y actualiza el objeto en memoria
-     *
-     * @param item ItemInventario a actualizar
-     * @param campo Nombre del campo
-     * @param valor Nuevo valor como String
-     * @param actualizador Lambda que actualiza el objeto en memoria
+     * Actualiza el objeto en memoria después de un guardado exitoso
      */
-    private void guardarCambio(ItemInventario item,
-                               String campo,
-                               String valor,
-                               BiConsumer<ItemInventario, String> actualizador) {
-        try {
-            // Validación: campos que no aplican a productos base
-            if (!item.isEsVariante() &&
-                    (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle"))) {
-                error("Este producto no tiene variantes, no puede editar " + campo);
-                tabla.refresh();
-                return;
-            }
-
-            // Validación: categoría en variantes
-            if (item.isEsVariante() && campo.equalsIgnoreCase("categoria")) {
-                error("Las variantes heredan la categoría del producto base");
-                tabla.refresh();
-                return;
-            }
-
-            // Guardar en BD
-            boolean exitoso;
-            if (item.isEsVariante()) {
-                exitoso = inventarioService.actualizarVariante(item.getVarianteId(), campo, valor);
-
-                // ⚠️ Validación especial: duplicado de color/talle
-                if (!exitoso && (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle"))) {
-                    error("⚠ Ya existe una variante con esa combinación de color y talle");
-                    tabla.refresh();
-                    return;
-                }
-            } else {
-                exitoso = inventarioService.actualizarCampo(item.getProductoId(), campo, valor);
-            }
-
-            if (exitoso) {
-                // Actualizar objeto en memoria
-                actualizador.accept(item, valor);
-                ok("✓ " + campo + " actualizado correctamente");
-            } else {
-                error("⚠ No se pudo actualizar " + campo);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            error("❌ Error al actualizar " + campo + ": " + e.getMessage());
-        } finally {
-            tabla.refresh();
+    private void actualizarObjetoEnMemoria(ItemInventario item, String campo, String valor) {
+        switch (campo.toLowerCase()) {
+            case "nombre" -> item.setNombreProducto(valor);
+            case "color" -> item.setColor(valor);
+            case "talle" -> item.setTalle(valor);
         }
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════════
     // NOTIFICACIONES
-    // ────────────────────────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════════
 
     private void ok(String msg) {
         Notifications.create()

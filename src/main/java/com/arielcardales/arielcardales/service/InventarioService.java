@@ -78,23 +78,103 @@ public class InventarioService {
         }
     }
 
-    // 🔹 Actualizar un campo en un producto base
-    public boolean actualizarCampo(long productoId, String campo, String valor) {
+    /**
+     * Método unificado para actualizar un campo de un ItemInventario
+     * Centraliza toda la lógica de validación y delegación a los DAOs correctos
+     *
+     * @param item ItemInventario a actualizar
+     * @param campo Nombre del campo
+     * @param valor Nuevo valor como String
+     * @return ResultadoActualizacion con éxito/error y mensaje
+     */
+    public ResultadoActualizacion actualizarCampo(ItemInventario item, String campo, String valor) {
         try {
-            return productoDAO.updateCampo(productoId, campo, valor);
+            // ════════════════════════════════════════════════════════════
+            // VALIDACIONES DE NEGOCIO
+            // ════════════════════════════════════════════════════════════
+
+            // 1. Validar que no se editen campos de productos base que no aplican
+            if (!item.isEsVariante()) {
+                if (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle")) {
+                    return ResultadoActualizacion.error(
+                        "Los productos base no tienen color/talle. Solo las variantes."
+                    );
+                }
+            }
+
+            // 2. Validar que las variantes no editen campos heredados del padre
+            if (item.isEsVariante()) {
+                if (campo.equalsIgnoreCase("categoria")) {
+                    return ResultadoActualizacion.error(
+                        "Las variantes heredan la categoría del producto base"
+                    );
+                }
+                if (campo.equalsIgnoreCase("nombre")) {
+                    return ResultadoActualizacion.error(
+                        "Las variantes heredan el nombre del producto base"
+                    );
+                }
+            }
+
+            // ════════════════════════════════════════════════════════════
+            // DELEGACIÓN A DAOs
+            // ════════════════════════════════════════════════════════════
+
+            boolean exitoso;
+
+            if (item.isEsVariante()) {
+                // Delegar a ProductoVarianteDAO
+                exitoso = varianteDAO.updateCampo(item.getVarianteId(), campo, valor);
+
+                // Validación especial: detectar duplicado de color/talle
+                if (!exitoso && (campo.equalsIgnoreCase("color") || campo.equalsIgnoreCase("talle"))) {
+                    return ResultadoActualizacion.error(
+                        "Ya existe una variante con esa combinación de color y talle"
+                    );
+                }
+            } else {
+                // Delegar a ProductoDAO
+                exitoso = productoDAO.updateCampo(item.getProductoId(), campo, valor);
+            }
+
+            if (exitoso) {
+                return ResultadoActualizacion.exito("Campo actualizado correctamente");
+            } else {
+                return ResultadoActualizacion.error("No se pudo actualizar el campo");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return ResultadoActualizacion.error("Error: " + e.getMessage());
         }
     }
 
-    // 🔹 Actualizar un campo en una variante
-    public boolean actualizarVariante(long varianteId, String campo, String valor) {
-        try {
-            return InventarioDAO.updateVarianteCampo(varianteId, campo, valor);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    /**
+     * Clase para encapsular el resultado de una actualización
+     */
+    public static class ResultadoActualizacion {
+        private final boolean exitoso;
+        private final String mensaje;
+
+        private ResultadoActualizacion(boolean exitoso, String mensaje) {
+            this.exitoso = exitoso;
+            this.mensaje = mensaje;
+        }
+
+        public static ResultadoActualizacion exito(String mensaje) {
+            return new ResultadoActualizacion(true, mensaje);
+        }
+
+        public static ResultadoActualizacion error(String mensaje) {
+            return new ResultadoActualizacion(false, mensaje);
+        }
+
+        public boolean isExitoso() {
+            return exitoso;
+        }
+
+        public String getMensaje() {
+            return mensaje;
         }
     }
 
