@@ -33,8 +33,8 @@ public class AppController {
 
     @FXML
     public void initialize() {
-        // Cargar el dashboard al iniciar la app
-        mostrarDashboard();
+        // Cargar las métricas al iniciar la app
+        mostrarMetricas();
 
         // Inicializar update manager
         updateManager = new UpdateManager();
@@ -149,8 +149,8 @@ public class AppController {
     }
 
     @FXML
-    private void mostrarDashboard() {
-        cargarVista("/fxml/dashboard.fxml");
+    private void mostrarMetricas() {
+        cargarVista("/fxml/metricas.fxml");
     }
 
     @FXML

@@ -668,3 +668,57 @@
     -fx-background-radius: 8;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0.2, 0, 2);
 }
+
+/* =======================
+   Tabs (Dashboard/Rentabilidad)
+   ======================= */
+.tab-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 10 0;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.tab {
+    -fx-background-color: #cfa971;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 8 20;
+    -fx-border-color: transparent;
+}
+
+.tab-label {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.tab:selected {
+    -fx-background-color: #e6c89b;
+    -fx-border-color: #b88a52;
+    -fx-border-width: 2 2 0 2;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: #2b2b2b;
+}
+
+.tab:hover {
+    -fx-background-color: #b88a52;
+}
+
+.tab:hover .tab-label {
+    -fx-text-fill: white;
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}

@@ -5,7 +5,8 @@
       "Bash(mvn javafx:run)",
       "Bash(mvn package -DskipTests)",
       "Bash(mvn clean javafx:run)",
-      "Bash(mvn clean compile)"
+      "Bash(mvn clean compile)",
+      "Bash(psql \"$PG_URL\" -c \"\\d vInventario_variantes\")"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.MetricasController"
+      spacing="15" styleClass="root"
+      VBox.vgrow="ALWAYS"
+      HBox.hgrow="ALWAYS"
+      style="-fx-padding: 20;">
+
+    <padding>
+        <Insets top="15" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <!-- Título -->
+    <Label text="📊 Métricas del Negocio" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+    <!-- TabPane con Dashboard y Rentabilidad -->
+    <TabPane VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE"
+             style="-fx-background-color: transparent;">
+
+        <!-- Tab Dashboard -->
+        <Tab text="📈 Dashboard">
+            <fx:include source="dashboard.fxml"/>
+        </Tab>
+
+        <!-- Tab Rentabilidad -->
+        <Tab text="💰 Rentabilidad">
+            <fx:include source="rentabilidad.fxml"/>
+        </Tab>
+
+    </TabPane>
+
+</VBox>

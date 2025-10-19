@@ -7,20 +7,15 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.arielcardales.arielcardales.controller.DashboardController"
-      spacing="20" styleClass="root"
+      spacing="15" styleClass="root"
       VBox.vgrow="ALWAYS"
       HBox.hgrow="ALWAYS"
-      style="-fx-padding: 20;">
+      style="-fx-padding: 10;">
 
-    <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
-    </padding>
-
-    <!-- Título -->
-    <HBox alignment="CENTER_LEFT" spacing="10">
-        <Label text="📊 Dashboard" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="btnRefrescar" text="🔄 Refrescar" onAction="#refrescarDashboard"/>
+    <!-- Botón refrescar -->
+    <HBox alignment="CENTER_RIGHT">
+        <Button fx:id="btnRefrescar" text="🔄 Refrescar" onAction="#refrescarDashboard"
+                style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
     </HBox>
 
     <!-- Cards de Métricas -->

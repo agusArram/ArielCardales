@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.RentabilidadController"
+      spacing="15" styleClass="root"
+      VBox.vgrow="ALWAYS"
+      HBox.hgrow="ALWAYS"
+      style="-fx-padding: 10;">
+
+    <!-- Filtros -->
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <Label text="Período:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+        <ComboBox fx:id="comboPeriodo" prefWidth="180"/>
+
+        <Label text="Categoría:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+        <ComboBox fx:id="comboCategoria" prefWidth="200"/>
+
+        <Button fx:id="btnAnalizar" text="🔍 Analizar" onAction="#analizarRentabilidad"
+                style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 20;"/>
+    </HBox>
+
+    <!-- Cards de Métricas -->
+    <GridPane hgap="15" vgap="15" HBox.hgrow="ALWAYS">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="25" minWidth="200" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="25" minWidth="200" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="25" minWidth="200" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="25" minWidth="200" hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <!-- Card 1: Margen Promedio -->
+        <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+            <Label text="Margen Promedio" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+            <Label fx:id="lblMargenPromedio" text="0.0%" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196f3;"/>
+        </VBox>
+
+        <!-- Card 2: Ganancia Total -->
+        <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+            <Label text="Ganancia Total" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+            <Label fx:id="lblGananciaTotal" text="0.00" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #4caf50;"/>
+        </VBox>
+
+        <!-- Card 3: Producto Más Rentable -->
+        <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+            <Label text="Producto Más Rentable" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+            <Label fx:id="lblProductoMasRentable" text="N/A" wrapText="true"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        </VBox>
+
+        <!-- Card 4: Categoría Más Rentable -->
+        <VBox GridPane.columnIndex="3" styleClass="metric-card" spacing="8">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+            <Label text="Categoría Más Rentable" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+            <Label fx:id="lblCategoriaMasRentable" text="N/A" wrapText="true"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        </VBox>
+    </GridPane>
+
+    <!-- Tabla de Análisis Detallado -->
+    <StackPane VBox.vgrow="ALWAYS">
+        <VBox spacing="10" VBox.vgrow="ALWAYS">
+            <Label text="📊 Análisis Detallado por Producto" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+            <TableView fx:id="tablaRentabilidad" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" style="-fx-font-size: 14px;">
+                <columns>
+                    <TableColumn fx:id="colProducto" text="Producto" minWidth="150" prefWidth="200"/>
+                    <TableColumn fx:id="colCategoria" text="Categoría" minWidth="100" prefWidth="120" styleClass="col-center"/>
+                    <TableColumn fx:id="colPrecio" text="Precio Venta" minWidth="100" maxWidth="130" styleClass="col-center"/>
+                    <TableColumn fx:id="colCosto" text="Costo" minWidth="100" maxWidth="130" styleClass="col-center"/>
+                    <TableColumn fx:id="colMargen" text="Margen %" minWidth="80" maxWidth="100" styleClass="col-center"/>
+                    <TableColumn fx:id="colGananciaUnit" text="Ganancia/Unit" minWidth="100" maxWidth="130" styleClass="col-center"/>
+                    <TableColumn fx:id="colCantidad" text="Cant. Vendida" minWidth="80" maxWidth="120" styleClass="col-center"/>
+                    <TableColumn fx:id="colGananciaTotal" text="Ganancia Total" minWidth="120" maxWidth="150" styleClass="col-center"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+        <!-- Indicador de carga -->
+        <VBox fx:id="vboxLoading" alignment="CENTER" spacing="15"
+              style="-fx-background-color: rgba(229, 203, 161, 0.95); -fx-padding: 30;"
+              visible="false" managed="false">
+            <ProgressIndicator prefWidth="60" prefHeight="60"/>
+            <Label text="Analizando rentabilidad..." style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        </VBox>
+    </StackPane>
+
+</VBox>

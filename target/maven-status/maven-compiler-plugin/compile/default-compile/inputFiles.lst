@@ -5,7 +5,9 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\AppCon
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\DashboardController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\EditarProductoController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ExportarController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\MetricasController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ProductoTreeController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\RentabilidadController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\VentasController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CategoriaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CrudDAO.java
@@ -15,6 +17,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\Database.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\InventarioDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoVarianteDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\RentabilidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\UnidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\VentaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\Categoria.java
