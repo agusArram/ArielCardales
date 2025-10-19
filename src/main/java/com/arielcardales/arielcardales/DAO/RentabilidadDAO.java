@@ -228,15 +228,15 @@ public class RentabilidadDAO {
                 LEFT JOIN producto p ON p.id = v.producto_id
                 LEFT JOIN categoria c ON c.id = p.categoriaid
                 WHERE v.active = true
-                GROUP BY v.producto_nombre
             """);
 
         // Si hay filtro de categoría, lo agregamos al CTE
         if (categoriaId != null) {
-            sql.append(" AND categoria = (SELECT nombre FROM categoria WHERE id = ?)");
+            sql.append(" AND c.id = ?");
         }
 
         sql.append("""
+                GROUP BY v.producto_nombre
             )
             SELECT
                 vi.productoNombre as nombre,
