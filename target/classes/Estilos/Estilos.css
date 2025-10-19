@@ -656,3 +656,15 @@
 #progressIndicator .percentage {
     -fx-fill: #2b2b2b;
 }
+
+/* ======================================================
+   DASHBOARD - METRIC CARDS
+   ====================================================== */
+.metric-card {
+    -fx-background-color: #f5e5d0;
+    -fx-border-color: #cfa971;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0.2, 0, 2);
+}

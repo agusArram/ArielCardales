@@ -168,6 +168,16 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <!-- JavaFX Maven Plugin -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.arielcardales.arielcardales.Launcher</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
 
         <resources>

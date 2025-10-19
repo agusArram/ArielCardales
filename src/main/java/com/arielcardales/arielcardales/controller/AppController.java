@@ -33,8 +33,8 @@ public class AppController {
 
     @FXML
     public void initialize() {
-        // Cargar el inventario (productos) directamente al iniciar la app
-        mostrarProductos();
+        // Cargar el dashboard al iniciar la app
+        mostrarDashboard();
 
         // Inicializar update manager
         updateManager = new UpdateManager();
@@ -146,6 +146,11 @@ public class AppController {
             Label error = new Label("❌ Error al restaurar inventario");
             contenedorPrincipal.getChildren().setAll(error);
         }
+    }
+
+    @FXML
+    private void mostrarDashboard() {
+        cargarVista("/fxml/dashboard.fxml");
     }
 
     @FXML

@@ -3,7 +3,9 @@
     "allow": [
       "Bash(mvn clean compile -DskipTests)",
       "Bash(mvn javafx:run)",
-      "Bash(mvn package -DskipTests)"
+      "Bash(mvn package -DskipTests)",
+      "Bash(mvn clean javafx:run)",
+      "Bash(mvn clean compile)"
     ],
     "deny": [],
     "ask": []
