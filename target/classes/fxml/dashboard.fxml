@@ -35,28 +35,28 @@
         <!-- Card 1: Total Productos -->
         <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Total Productos" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Total Productos" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblTotalProductos" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
         </VBox>
 
         <!-- Card 2: Stock Bajo -->
         <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Stock Bajo (≤5)" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Stock Bajo (≤5)" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblStockBajo" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff9800;"/>
         </VBox>
 
         <!-- Card 3: Sin Stock -->
         <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Sin Stock" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Sin Stock" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblSinStock" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f44336;"/>
         </VBox>
 
         <!-- Card 4: Valor Total -->
         <VBox GridPane.columnIndex="3" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Valor Inventario" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Valor Inventario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblValorTotal" text="0.00" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #4caf50;"/>
         </VBox>
     </GridPane>
@@ -72,45 +72,47 @@
         <!-- Card: Ventas Hoy -->
         <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Ventas Hoy" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Ventas Hoy" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblVentasHoy" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         </VBox>
 
         <!-- Card: Total 30 días -->
         <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Total 30 días" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Total 30 días" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblTotalVentas30" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         </VBox>
 
         <!-- Card: Promedio Diario -->
         <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
             <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Promedio Diario" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            <Label text="Promedio Diario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
             <Label fx:id="lblPromedioDiario" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         </VBox>
     </GridPane>
 
     <!-- Top 5 Productos Más Vendidos -->
-    <VBox spacing="10" VBox.vgrow="ALWAYS">
-        <Label text="🏆 Top 5 Productos Más Vendidos (últimos 30 días)" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+    <StackPane VBox.vgrow="ALWAYS">
+        <VBox spacing="10" VBox.vgrow="ALWAYS">
+            <Label text="🏆 Top 5 Productos Más Vendidos (últimos 30 días)" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 
-        <TableView fx:id="tablaTopProductos" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="colRank" text="#" minWidth="50" maxWidth="70" styleClass="col-center"/>
-                <TableColumn fx:id="colNombre" text="Producto" minWidth="200"/>
-                <TableColumn fx:id="colCantidad" text="Cantidad" minWidth="100" maxWidth="150" styleClass="col-center"/>
-                <TableColumn fx:id="colGanancia" text="Total Ventas" minWidth="120" maxWidth="180" styleClass="col-center"/>
-            </columns>
-        </TableView>
+            <TableView fx:id="tablaTopProductos" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" style="-fx-font-size: 14px;">
+                <columns>
+                    <TableColumn fx:id="colRank" text="#" minWidth="50" maxWidth="70" styleClass="col-center"/>
+                    <TableColumn fx:id="colNombre" text="Producto" minWidth="200"/>
+                    <TableColumn fx:id="colCantidad" text="Cantidad" minWidth="100" maxWidth="150" styleClass="col-center"/>
+                    <TableColumn fx:id="colGanancia" text="Total Ventas" minWidth="120" maxWidth="180" styleClass="col-center"/>
+                </columns>
+            </TableView>
+        </VBox>
 
         <!-- Indicador de carga -->
-        <StackPane fx:id="stackLoading" visible="false" managed="false">
-            <VBox alignment="CENTER" spacing="10" style="-fx-background-color: rgba(255,255,255,0.9);">
-                <ProgressIndicator/>
-                <Label text="Cargando métricas..." style="-fx-font-size: 14px;"/>
-            </VBox>
-        </StackPane>
-    </VBox>
+        <VBox fx:id="vboxLoading" alignment="CENTER" spacing="15"
+              style="-fx-background-color: rgba(229, 203, 161, 0.95); -fx-padding: 30;"
+              visible="false" managed="false">
+            <ProgressIndicator prefWidth="60" prefHeight="60"/>
+            <Label text="Cargando métricas del dashboard..." style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        </VBox>
+    </StackPane>
 
 </VBox>

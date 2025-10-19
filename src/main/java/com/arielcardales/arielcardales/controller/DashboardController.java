@@ -10,6 +10,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import org.controlsfx.control.Notifications;
 
 import java.text.NumberFormat;
@@ -39,7 +40,7 @@ public class DashboardController {
     @FXML private TableColumn<ProductoRanking, Integer> colCantidad;
     @FXML private TableColumn<ProductoRanking, String> colGanancia;
 
-    @FXML private StackPane stackLoading;
+    @FXML private VBox vboxLoading;
 
     private final ObservableList<ProductoRanking> topProductosData = FXCollections.observableArrayList();
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
@@ -199,9 +200,9 @@ public class DashboardController {
      */
     private void mostrarLoading() {
         Platform.runLater(() -> {
-            stackLoading.setVisible(true);
-            stackLoading.setManaged(true);
-            stackLoading.toFront();
+            vboxLoading.setVisible(true);
+            vboxLoading.setManaged(true);
+            vboxLoading.toFront();
         });
     }
 
@@ -210,8 +211,8 @@ public class DashboardController {
      */
     private void ocultarLoading() {
         Platform.runLater(() -> {
-            stackLoading.setVisible(false);
-            stackLoading.setManaged(false);
+            vboxLoading.setVisible(false);
+            vboxLoading.setManaged(false);
         });
     }
 }
