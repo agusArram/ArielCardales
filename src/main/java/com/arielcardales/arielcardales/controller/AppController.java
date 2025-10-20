@@ -34,7 +34,7 @@ public class AppController {
     @FXML
     public void initialize() {
         // Cargar las métricas al iniciar la app
-        mostrarMetricas();
+        mostrarProductos();
 
         // Inicializar update manager
         updateManager = new UpdateManager();

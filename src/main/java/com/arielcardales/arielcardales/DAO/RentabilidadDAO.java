@@ -1,19 +1,10 @@
 package com.arielcardales.arielcardales.DAO;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 public class RentabilidadDAO {
 
-    /**
-     * Clase que representa el análisis de rentabilidad de un producto
-     */
     public static class ProductoRentabilidad {
         private String nombre;
         private String categoria;
@@ -24,8 +15,7 @@ public class RentabilidadDAO {
         private int cantidadVendida;
         private double gananciaTotal;
 
-        public ProductoRentabilidad(String nombre, String categoria, double precioVenta, double costo,
-                                   int cantidadVendida) {
+        public ProductoRentabilidad(String nombre, String categoria, double precioVenta, double costo, int cantidadVendida) {
             this.nombre = nombre;
             this.categoria = categoria;
             this.precioVenta = precioVenta;
@@ -46,42 +36,41 @@ public class RentabilidadDAO {
         public double getGananciaTotal() { return gananciaTotal; }
     }
 
-    /**
-     * Obtiene métricas generales de rentabilidad para un período
-     * @param dias Número de días hacia atrás (7, 30, 90, etc.)
-     * @return Map con métricas de rentabilidad
-     */
+    // 📊 MÉTRICAS GENERALES
     public static Map<String, Object> obtenerMetricasRentabilidad(int dias) {
         Map<String, Object> metricas = new HashMap<>();
 
         String sql = """
             WITH productos_costo AS (
                 SELECT
+                    v.producto_id,
                     v.producto_nombre,
-                    MAX(COALESCE(v.costo, 0)) as costo
+                    MAX(COALESCE(v.costo, 0)) AS costo
                 FROM vInventario_variantes v
                 WHERE v.active = true
-                GROUP BY v.producto_nombre
+                GROUP BY v.producto_id, v.producto_nombre
             ),
             ventas_periodo AS (
                 SELECT
-                    vi.productoNombre,
-                    AVG(vi.precioUnit) as precio_venta,
-                    COALESCE(MAX(pc.costo), 0) as costo,
-                    SUM(vi.qty) as cantidad_vendida
+                    pc.producto_nombre,
+                    AVG(vi.precioUnit) AS precio_venta,
+                    COALESCE(MAX(pc.costo), 0) AS costo,
+                    SUM(vi.qty) AS cantidad_vendida
                 FROM ventaItem vi
-                JOIN venta v ON v.id = vi.ventaId
-                LEFT JOIN productos_costo pc ON pc.producto_nombre = vi.productoNombre
-                WHERE v.fecha >= NOW() - INTERVAL '%d days'
-                GROUP BY vi.productoNombre
+                JOIN venta v2 ON v2.id = vi.ventaId
+                JOIN producto p ON p.id = vi.productoId
+                LEFT JOIN productos_costo pc ON pc.producto_id = p.id
+                WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+                GROUP BY pc.producto_nombre
             )
             SELECT
-                COALESCE(AVG(CASE WHEN precio_venta > 0 THEN ((precio_venta - costo) / precio_venta) * 100 END), 0) as margen_promedio,
-                COALESCE(SUM((precio_venta - costo) * cantidad_vendida), 0) as ganancia_total,
-                COALESCE(SUM(precio_venta * cantidad_vendida), 0) as ventas_totales,
-                COALESCE(SUM(costo * cantidad_vendida), 0) as costos_totales
+                COALESCE(AVG(CASE WHEN precio_venta > 0 THEN ((precio_venta - costo) / precio_venta) * 100 END), 0) AS margen_promedio,
+                COALESCE(SUM((precio_venta - costo) * cantidad_vendida), 0) AS ganancia_total,
+                COALESCE(SUM(precio_venta * cantidad_vendida), 0) AS ventas_totales,
+                COALESCE(SUM(costo * cantidad_vendida), 0) AS costos_totales
             FROM ventas_periodo
             """.formatted(dias);
+
 
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -96,43 +85,38 @@ public class RentabilidadDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            metricas.put("margenPromedio", 0.0);
-            metricas.put("gananciaTotal", 0.0);
-            metricas.put("ventasTotales", 0.0);
-            metricas.put("costosTotales", 0.0);
         }
 
         return metricas;
     }
 
-    /**
-     * Obtiene el producto más rentable del período
-     * @param dias Número de días hacia atrás
-     * @return Map con datos del producto más rentable
-     */
+    // 💰 PRODUCTO MÁS RENTABLE
     public static Map<String, Object> obtenerProductoMasRentable(int dias) {
         Map<String, Object> producto = new HashMap<>();
 
         String sql = """
             WITH productos_costo AS (
                 SELECT
+                    v.producto_id,
                     v.producto_nombre,
-                    MAX(COALESCE(v.costo, 0)) as costo
+                    MAX(COALESCE(v.costo, 0)) AS costo
                 FROM vInventario_variantes v
                 WHERE v.active = true
-                GROUP BY v.producto_nombre
+                GROUP BY v.producto_id, v.producto_nombre
             )
             SELECT
-                vi.productoNombre as nombre,
-                SUM(vi.qty * (vi.precioUnit - COALESCE(pc.costo, 0))) as ganancia_total
+                pc.producto_nombre AS nombre,
+                SUM(vi.qty * (vi.precioUnit - COALESCE(pc.costo, 0))) AS ganancia_total
             FROM ventaItem vi
-            JOIN venta v ON v.id = vi.ventaId
-            LEFT JOIN productos_costo pc ON pc.producto_nombre = vi.productoNombre
-            WHERE v.fecha >= NOW() - INTERVAL '%d days'
-            GROUP BY vi.productoNombre
+            JOIN venta v2 ON v2.id = vi.ventaId
+            JOIN producto p ON p.id = vi.productoId
+            LEFT JOIN productos_costo pc ON pc.producto_id = p.id
+            WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+            GROUP BY pc.producto_nombre
             ORDER BY ganancia_total DESC
             LIMIT 1
             """.formatted(dias);
+
 
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -148,40 +132,33 @@ public class RentabilidadDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            producto.put("nombre", "N/A");
-            producto.put("gananciaTotal", 0.0);
         }
 
         return producto;
     }
 
-    /**
-     * Obtiene la categoría más rentable del período
-     * @param dias Número de días hacia atrás
-     * @return Map con datos de la categoría más rentable
-     */
+    // 🏷️ CATEGORÍA MÁS RENTABLE
     public static Map<String, Object> obtenerCategoriaMasRentable(int dias) {
         Map<String, Object> categoria = new HashMap<>();
 
         String sql = """
             WITH productos_costo AS (
                 SELECT
-                    v.producto_nombre,
-                    MAX(COALESCE(v.costo, 0)) as costo,
-                    MAX(COALESCE(c.nombre, 'Sin categoría')) as categoria
+                    v.producto_id,
+                    MAX(COALESCE(v.costo, 0)) AS costo,
+                    MAX(v.categoria) AS categoria
                 FROM vInventario_variantes v
-                LEFT JOIN producto p ON p.id = v.producto_id
-                LEFT JOIN categoria c ON c.id = p.categoriaid
                 WHERE v.active = true
-                GROUP BY v.producto_nombre
+                GROUP BY v.producto_id
             )
             SELECT
                 pc.categoria,
-                SUM(vi.qty * (vi.precioUnit - COALESCE(pc.costo, 0))) as ganancia_total
+                SUM(vi.qty * (vi.precioUnit - COALESCE(pc.costo, 0))) AS ganancia_total
             FROM ventaItem vi
-            JOIN venta v ON v.id = vi.ventaId
-            LEFT JOIN productos_costo pc ON pc.producto_nombre = vi.productoNombre
-            WHERE v.fecha >= NOW() - INTERVAL '%d days'
+            JOIN venta v2 ON v2.id = vi.ventaId
+            JOIN producto p ON p.id = vi.productoId
+            LEFT JOIN productos_costo pc ON pc.producto_id = p.id
+            WHERE v2.fecha >= NOW() - INTERVAL '%d days'
             GROUP BY pc.categoria
             ORDER BY ganancia_total DESC
             LIMIT 1
@@ -201,54 +178,45 @@ public class RentabilidadDAO {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            categoria.put("nombre", "N/A");
-            categoria.put("gananciaTotal", 0.0);
         }
 
         return categoria;
     }
 
-    /**
-     * Obtiene análisis detallado de rentabilidad por producto
-     * @param dias Número de días hacia atrás
-     * @param categoriaId ID de categoría para filtrar (null para todas)
-     * @return Lista de productos con análisis de rentabilidad
-     */
+    // 📋 ANÁLISIS DETALLADO POR PRODUCTO
     public static List<ProductoRentabilidad> obtenerAnalisisProductos(int dias, Integer categoriaId) {
         List<ProductoRentabilidad> productos = new ArrayList<>();
 
-        // Primero construyo el CTE base
         StringBuilder sql = new StringBuilder("""
             WITH productos_info AS (
                 SELECT
+                    v.producto_id,
                     v.producto_nombre,
-                    MAX(COALESCE(v.costo, 0)) as costo,
-                    MAX(COALESCE(c.nombre, 'Sin categoría')) as categoria
+                    MAX(COALESCE(v.costo, 0)) AS costo,
+                    MAX(v.categoria) AS categoria
                 FROM vInventario_variantes v
-                LEFT JOIN producto p ON p.id = v.producto_id
-                LEFT JOIN categoria c ON c.id = p.categoriaid
                 WHERE v.active = true
-            """);
+        """);
 
-        // Si hay filtro de categoría, lo agregamos al CTE
         if (categoriaId != null) {
-            sql.append(" AND c.id = ?");
+            sql.append(" AND v.categoriaid = ? ");
         }
 
         sql.append("""
-                GROUP BY v.producto_nombre
+        GROUP BY v.producto_id, v.producto_nombre
             )
             SELECT
-                vi.productoNombre as nombre,
+                pi.producto_nombre AS nombre,
                 pi.categoria,
-                AVG(vi.precioUnit) as precio_venta,
-                COALESCE(MAX(pi.costo), 0) as costo,
-                SUM(vi.qty) as cantidad_vendida
+                AVG(vi.precioUnit) AS precio_venta,
+                COALESCE(MAX(pi.costo), 0) AS costo,
+                SUM(vi.qty) AS cantidad_vendida
             FROM ventaItem vi
-            JOIN venta v ON v.id = vi.ventaId
-            LEFT JOIN productos_info pi ON pi.producto_nombre = vi.productoNombre
-            WHERE v.fecha >= NOW() - INTERVAL '%d days'
-            GROUP BY vi.productoNombre, pi.categoria
+            JOIN venta v2 ON v2.id = vi.ventaId
+            JOIN producto p ON p.id = vi.productoId
+            LEFT JOIN productos_info pi ON pi.producto_id = p.id
+            WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+            GROUP BY pi.producto_nombre, pi.categoria
             ORDER BY (AVG(vi.precioUnit) - COALESCE(MAX(pi.costo), 0)) * SUM(vi.qty) DESC
             """.formatted(dias));
 
@@ -262,11 +230,11 @@ public class RentabilidadDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     productos.add(new ProductoRentabilidad(
-                        rs.getString("nombre"),
-                        rs.getString("categoria"),
-                        rs.getDouble("precio_venta"),
-                        rs.getDouble("costo"),
-                        rs.getInt("cantidad_vendida")
+                            rs.getString("nombre"),
+                            rs.getString("categoria"),
+                            rs.getDouble("precio_venta"),
+                            rs.getDouble("costo"),
+                            rs.getInt("cantidad_vendida")
                     ));
                 }
             }
