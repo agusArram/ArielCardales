@@ -22,19 +22,15 @@
 
         <Region HBox.hgrow="ALWAYS"/>
 
+        <Label text="💡 Doble clic en una celda para editar"
+               style="-fx-text-fill: #8B7355; -fx-font-size: 11px; -fx-font-style: italic;"/>
+
+        <Region HBox.hgrow="ALWAYS"/>
+
         <Button fx:id="btnNuevoCliente"
                 text="+ Nuevo Cliente"
                 onAction="#abrirNuevoCliente"
                 style="-fx-background-color: #D4A574; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;">
-            <font>
-                <Font size="13.0"/>
-            </font>
-        </Button>
-
-        <Button fx:id="btnEditarCliente"
-                text="✏️ Editar"
-                onAction="#editarClienteSeleccionado"
-                style="-fx-background-color: #8B7355; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;">
             <font>
                 <Font size="13.0"/>
             </font>

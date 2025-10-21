@@ -49,60 +49,107 @@ public class ClientesController {
     }
 
     private void configurarTablaClientes() {
-        // Definición de columnas: {Título, propertyName, ancho%, anchoPx}
-        String[][] columnas = {
-                {"ID", "id", "0.05", "50"},
-                {"Nombre", "nombre", "0.25", "200"},
-                {"DNI", "dni", "0.12", "100"},
-                {"Teléfono", "telefono", "0.15", "120"},
-                {"Email", "email", "0.23", "180"},
-                {"Notas", "notas", "0.20", "150"}
-        };
+        // ✅ HACER LA TABLA EDITABLE
+        tablaClientes.setEditable(true);
 
-        List<TableColumn<Cliente, ?>> cols = com.arielcardales.arielcardales.Util.Tablas.crearColumnas(columnas);
-        tablaClientes.getColumns().setAll(cols);
+        // Columna ID (no editable)
+        TableColumn<Cliente, Long> colId = new TableColumn<>("ID");
+        colId.setCellValueFactory(cd -> cd.getValue().idProperty().asObject());
+        colId.setPrefWidth(50);
+        colId.setStyle("-fx-alignment: CENTER;");
+        colId.setEditable(false);
 
-        // Personalizar columna Notas (mostrar tooltip completo)
-        @SuppressWarnings("unchecked")
-        TableColumn<Cliente, Object> colNotas = (TableColumn<Cliente, Object>)
-                cols.stream().filter(c -> c.getId().equals("notas")).findFirst().orElse(null);
+        // Columna Nombre (editable)
+        TableColumn<Cliente, String> colNombre = new TableColumn<>("Nombre");
+        colNombre.setCellValueFactory(cd -> cd.getValue().nombreProperty());
+        colNombre.setPrefWidth(200);
+        colNombre.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
+        colNombre.setOnEditCommit(event -> {
+            Cliente cliente = event.getRowValue();
+            String nuevoNombre = event.getNewValue();
 
-        if (colNotas != null) {
-            colNotas.setCellFactory(col -> new TableCell<Cliente, Object>() {
-                @Override
-                protected void updateItem(Object item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                        setText(null);
-                        setTooltip(null);
-                        return;
-                    }
+            if (nuevoNombre == null || nuevoNombre.trim().isEmpty()) {
+                mostrarAlerta("El nombre no puede estar vacío");
+                tablaClientes.refresh();
+                return;
+            }
 
-                    Cliente cliente = getTableRow().getItem();
-                    String notas = cliente.getNotas();
+            cliente.setNombre(nuevoNombre.trim());
+            guardarClienteInline(cliente);
+        });
 
-                    if (notas != null && !notas.trim().isEmpty()) {
-                        // Mostrar primeros 30 caracteres
-                        String preview = notas.length() > 30 ? notas.substring(0, 30) + "..." : notas;
-                        setText(preview);
-                        setTooltip(new Tooltip(notas));
-                    } else {
-                        setText("-");
-                        setTooltip(null);
-                    }
+        // Columna DNI (editable)
+        TableColumn<Cliente, String> colDni = new TableColumn<>("DNI");
+        colDni.setCellValueFactory(cd -> cd.getValue().dniProperty());
+        colDni.setPrefWidth(100);
+        colDni.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
+        colDni.setOnEditCommit(event -> {
+            Cliente cliente = event.getRowValue();
+            String nuevoDni = event.getNewValue();
+
+            // Validar duplicado
+            if (nuevoDni != null && !nuevoDni.trim().isEmpty()) {
+                if (clienteDAO.existeDniDuplicado(nuevoDni.trim(), cliente.getId())) {
+                    mostrarAlerta("Ya existe un cliente con ese DNI");
+                    tablaClientes.refresh();
+                    return;
                 }
-            });
-        }
+            }
+
+            cliente.setDni(nuevoDni != null && !nuevoDni.trim().isEmpty() ? nuevoDni.trim() : null);
+            guardarClienteInline(cliente);
+        });
+
+        // Columna Teléfono (editable)
+        TableColumn<Cliente, String> colTelefono = new TableColumn<>("Teléfono");
+        colTelefono.setCellValueFactory(cd -> cd.getValue().telefonoProperty());
+        colTelefono.setPrefWidth(120);
+        colTelefono.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
+        colTelefono.setOnEditCommit(event -> {
+            Cliente cliente = event.getRowValue();
+            String nuevoTel = event.getNewValue();
+
+            // Validar duplicado
+            if (nuevoTel != null && !nuevoTel.trim().isEmpty()) {
+                if (clienteDAO.existeTelefonoDuplicado(nuevoTel.trim(), cliente.getId())) {
+                    mostrarAlerta("Ya existe un cliente con ese teléfono");
+                    tablaClientes.refresh();
+                    return;
+                }
+            }
+
+            cliente.setTelefono(nuevoTel != null && !nuevoTel.trim().isEmpty() ? nuevoTel.trim() : null);
+            guardarClienteInline(cliente);
+        });
+
+        // Columna Email (editable)
+        TableColumn<Cliente, String> colEmail = new TableColumn<>("Email");
+        colEmail.setCellValueFactory(cd -> cd.getValue().emailProperty());
+        colEmail.setPrefWidth(180);
+        colEmail.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
+        colEmail.setOnEditCommit(event -> {
+            Cliente cliente = event.getRowValue();
+            String nuevoEmail = event.getNewValue();
+            cliente.setEmail(nuevoEmail != null && !nuevoEmail.trim().isEmpty() ? nuevoEmail.trim() : null);
+            guardarClienteInline(cliente);
+        });
+
+        // Columna Notas (editable)
+        TableColumn<Cliente, String> colNotas = new TableColumn<>("Notas");
+        colNotas.setCellValueFactory(cd -> cd.getValue().notasProperty());
+        colNotas.setPrefWidth(150);
+        colNotas.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
+        colNotas.setOnEditCommit(event -> {
+            Cliente cliente = event.getRowValue();
+            String nuevasNotas = event.getNewValue();
+            cliente.setNotas(nuevasNotas != null && !nuevasNotas.trim().isEmpty() ? nuevasNotas.trim() : null);
+            guardarClienteInline(cliente);
+        });
+
+        tablaClientes.getColumns().setAll(colId, colNombre, colDni, colTelefono, colEmail, colNotas);
 
         tablaClientes.setItems(clientesData);
         tablaClientes.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        // Doble clic para editar
-        tablaClientes.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                editarClienteSeleccionado();
-            }
-        });
     }
 
     private void configurarFiltros() {
@@ -183,18 +230,6 @@ public class ClientesController {
     @FXML
     private void abrirNuevoCliente() {
         mostrarDialogoCliente(null);
-    }
-
-    @FXML
-    private void editarClienteSeleccionado() {
-        Cliente seleccionado = tablaClientes.getSelectionModel().getSelectedItem();
-
-        if (seleccionado == null) {
-            mostrarAlerta("Selecciona un cliente de la tabla para editar");
-            return;
-        }
-
-        mostrarDialogoCliente(seleccionado);
     }
 
     @FXML
@@ -352,6 +387,32 @@ public class ClientesController {
         Optional<Cliente> resultado = dialog.showAndWait();
 
         resultado.ifPresent(c -> guardarCliente(c, esNuevo));
+    }
+
+    /**
+     * Guarda cambios de edición inline (sin recargar toda la tabla)
+     */
+    private void guardarClienteInline(Cliente cliente) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                clienteDAO.update(cliente);
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            ok("✓ Cambio guardado");
+            tablaClientes.refresh();
+        });
+
+        task.setOnFailed(e -> {
+            mostrarError("Error al guardar", task.getException().getMessage());
+            task.getException().printStackTrace();
+            cargarClientes(); // Recargar para deshacer cambio
+        });
+
+        new Thread(task).start();
     }
 
     private void guardarCliente(Cliente cliente, boolean esNuevo) {
