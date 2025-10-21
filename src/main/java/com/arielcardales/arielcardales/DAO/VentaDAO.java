@@ -215,16 +215,17 @@ public class VentaDAO {
 
             // 1️⃣ Insertar venta
             String sqlVenta = """
-            INSERT INTO venta (clienteNombre, fecha, medioPago, total)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO venta (clienteId, clienteNombre, fecha, medioPago, total)
+            VALUES (?, ?, ?, ?, ?)
         """;
 
             long ventaId;
             try (PreparedStatement ps = conn.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, venta.getClienteNombre());
-                ps.setTimestamp(2, Timestamp.valueOf(venta.getFecha()));
-                ps.setString(3, venta.getMedioPago());
-                ps.setBigDecimal(4, venta.getTotal());
+                ps.setObject(1, venta.getClienteId()); // Puede ser null
+                ps.setString(2, venta.getClienteNombre());
+                ps.setTimestamp(3, Timestamp.valueOf(venta.getFecha()));
+                ps.setString(4, venta.getMedioPago());
+                ps.setBigDecimal(5, venta.getTotal());
 
                 int affectedRows = ps.executeUpdate();
 

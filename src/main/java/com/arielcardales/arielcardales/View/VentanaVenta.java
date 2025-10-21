@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.View;
 
 import com.arielcardales.arielcardales.DAO.*;
 import com.arielcardales.arielcardales.Entidades.*;
+import com.arielcardales.arielcardales.Util.AutoCompleteCliente;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -147,10 +148,14 @@ public class VentanaVenta {
         content.setPadding(new Insets(20));
         content.setAlignment(Pos.CENTER_LEFT);
 
-        // Campo nombre cliente (OPCIONAL)
-        TextField txtCliente = new TextField();
+        // Campo nombre cliente con autocompletado
+        AutoCompleteCliente txtCliente = new AutoCompleteCliente();
         txtCliente.setPromptText("Nombre del cliente (opcional)");
         txtCliente.setPrefWidth(300);
+
+        // Label de ayuda
+        Label lblAyuda = new Label("💡 Empieza a escribir para ver sugerencias");
+        lblAyuda.setStyle("-fx-text-fill: #888; -fx-font-size: 10px; -fx-font-style: italic;");
 
         // ComboBox medio de pago
         ComboBox<String> cmbMedioPago = new ComboBox<>();
@@ -161,6 +166,7 @@ public class VentanaVenta {
         content.getChildren().addAll(
                 new Label("Nombre del cliente:"),
                 txtCliente,
+                lblAyuda,
                 new Label("Medio de pago:"),
                 cmbMedioPago
         );
@@ -178,10 +184,13 @@ public class VentanaVenta {
                 String clienteNombre = txtCliente.getText().trim();
                 if (clienteNombre.isEmpty()) clienteNombre = null;
 
+                // Obtener ID del cliente si fue seleccionado del autocompletado
+                Long clienteId = txtCliente.getClienteId();
+
                 String medioPago = cmbMedioPago.getValue();
 
                 // 🔹 PASO 4: Procesar venta
-                procesarVenta(producto, cantidad, total, medioPago, idVariante, clienteNombre, onSuccess);
+                procesarVenta(producto, cantidad, total, medioPago, idVariante, clienteNombre, clienteId, onSuccess);
             }
         });
     }
@@ -191,7 +200,7 @@ public class VentanaVenta {
      */
     private static void procesarVenta(Producto producto, int cantidad, BigDecimal total,
                                       String medioPago, Long idVariante, String clienteNombre,
-                                      Runnable onSuccess) {
+                                      Long clienteId, Runnable onSuccess) {
         try {
             // 🔹 PASO 1: Determinar ID del producto para ventaItem
             Long productoIdParaVenta;
@@ -212,6 +221,7 @@ public class VentanaVenta {
             // 🔹 PASO 2: Crear objeto venta
             Venta venta = new Venta();
             venta.setClienteNombre(clienteNombre);
+            venta.setClienteId(clienteId); // Vincular con cliente si fue seleccionado
             venta.setMedioPago(medioPago);
             venta.setFecha(LocalDateTime.now());
 

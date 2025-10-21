@@ -319,6 +319,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
                 c.dni as cliente_dni,
                 c.telefono as cliente_telefono,
                 c.email as cliente_email,
+                c.notas as cliente_notas,
                 v.id as venta_id,
                 v.fecha as venta_fecha,
                 v.medioPago as venta_medio,
@@ -353,6 +354,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
                         clienteItem.setDni(rs.getString("cliente_dni"));
                         clienteItem.setTelefono(rs.getString("cliente_telefono"));
                         clienteItem.setEmail(rs.getString("cliente_email"));
+                        clienteItem.setNotas(rs.getString("cliente_notas"));
 
                         padre = new TreeItem<>(clienteItem);
                         padres.put(clienteId, padre);

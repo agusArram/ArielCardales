@@ -18,6 +18,7 @@ com\arielcardales\arielcardales\Entidades\Categoria.class
 com\arielcardales\arielcardales\controller\RentabilidadController$3.class
 com\arielcardales\arielcardales\Util\Arboles$1.class
 com\arielcardales\arielcardales\controller\DashboardController$1.class
+com\arielcardales\arielcardales\Util\AutoCompleteCliente.class
 com\arielcardales\arielcardales\controller\VentasController$3.class
 com\arielcardales\arielcardales\service\InventarioService.class
 com\arielcardales\arielcardales\Updates\UpdateManager.class

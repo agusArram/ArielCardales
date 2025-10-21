@@ -60,9 +60,21 @@ public class ClientesController {
     private void configurarColumnas() {
         tablaClientes.getColumns().clear();
 
+        // Columna ID (solo para clientes)
+        TreeTableColumn<ItemCliente, String> colId = new TreeTableColumn<>("ID");
+        colId.setPrefWidth(50);
+        colId.setStyle("-fx-alignment: CENTER;");
+        colId.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null || item.isEsVenta()) {
+                return new SimpleStringProperty("");
+            }
+            return new SimpleStringProperty(String.valueOf(item.getClienteId()));
+        });
+
         // Columna Nombre / Fecha
         TreeTableColumn<ItemCliente, String> colNombre = new TreeTableColumn<>("Nombre / Fecha");
-        colNombre.setPrefWidth(250);
+        colNombre.setPrefWidth(220);
         colNombre.setCellValueFactory(param -> {
             ItemCliente item = param.getValue().getValue();
             if (item == null) return new SimpleStringProperty("");
@@ -82,9 +94,9 @@ public class ClientesController {
         });
 
         // Columna DNI / Medio de Pago
-        TreeTableColumn<ItemCliente, String> colDniMedio = new TreeTableColumn<>("DNI / Medio Pago");
-        colDniMedio.setPrefWidth(130);
-        colDniMedio.setCellValueFactory(param -> {
+        TreeTableColumn<ItemCliente, String> colDni = new TreeTableColumn<>("DNI / Medio Pago");
+        colDni.setPrefWidth(130);
+        colDni.setCellValueFactory(param -> {
             ItemCliente item = param.getValue().getValue();
             if (item == null) return new SimpleStringProperty("");
 
@@ -96,39 +108,50 @@ public class ClientesController {
         });
 
         // Columna Teléfono / Total
-        TreeTableColumn<ItemCliente, String> colTelTotal = new TreeTableColumn<>("Teléfono / Total");
-        colTelTotal.setPrefWidth(140);
-        colTelTotal.setCellValueFactory(param -> {
+        TreeTableColumn<ItemCliente, String> colTelefono = new TreeTableColumn<>("Teléfono / Total");
+        colTelefono.setPrefWidth(140);
+        colTelefono.setCellValueFactory(param -> {
             ItemCliente item = param.getValue().getValue();
             if (item == null) return new SimpleStringProperty("");
 
             if (item.isEsVenta()) {
-                // Mostrar total formateado
+                // Mostrar total formateado con separador de miles
                 if (item.getTotal() != null) {
-                    return new SimpleStringProperty(String.format("$%.2f", item.getTotal()));
+                    java.text.NumberFormat nf = java.text.NumberFormat.getInstance(java.util.Locale.forLanguageTag("es-AR"));
+                    nf.setMinimumFractionDigits(2);
+                    nf.setMaximumFractionDigits(2);
+                    return new SimpleStringProperty("$ " + nf.format(item.getTotal()));
                 }
-                return new SimpleStringProperty("$0.00");
+                return new SimpleStringProperty("$ 0,00");
             } else {
                 return item.telefonoProperty();
             }
         });
-        colTelTotal.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colTelefono.setStyle("-fx-alignment: CENTER-RIGHT;");
 
-        // Columna Email
+        // Columna Email (solo para clientes)
         TreeTableColumn<ItemCliente, String> colEmail = new TreeTableColumn<>("Email");
         colEmail.setPrefWidth(200);
         colEmail.setCellValueFactory(param -> {
             ItemCliente item = param.getValue().getValue();
-            if (item == null) return new SimpleStringProperty("");
-
-            if (item.isEsVenta()) {
-                return new SimpleStringProperty(""); // Vacío para ventas
-            } else {
-                return item.emailProperty();
+            if (item == null || item.isEsVenta()) {
+                return new SimpleStringProperty("");
             }
+            return item.emailProperty();
         });
 
-        tablaClientes.getColumns().setAll(colNombre, colDniMedio, colTelTotal, colEmail);
+        // Columna Notas (solo para clientes)
+        TreeTableColumn<ItemCliente, String> colNotas = new TreeTableColumn<>("Notas");
+        colNotas.setPrefWidth(150);
+        colNotas.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null || item.isEsVenta()) {
+                return new SimpleStringProperty("");
+            }
+            return item.notasProperty();
+        });
+
+        tablaClientes.getColumns().setAll(colId, colNombre, colDni, colTelefono, colEmail, colNotas);
     }
 
     /**
