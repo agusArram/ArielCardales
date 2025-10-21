@@ -292,8 +292,8 @@ public class ClientesController {
         Cliente clienteEdit = esNuevo ? new Cliente() : cliente;
 
         Dialog<Cliente> dialog = new Dialog<>();
-        dialog.setTitle(esNuevo ? "Nuevo Cliente" : "Editar Cliente");
-        dialog.setHeaderText(esNuevo ? "Ingrese los datos del nuevo cliente" : "Edite los datos del cliente");
+        dialog.setTitle(esNuevo ? "👤 Nuevo Cliente" : "✏️ Editar Cliente");
+        dialog.setHeaderText(null); // Sin header, queda más limpio
 
         // Botones
         ButtonType btnGuardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
@@ -301,41 +301,136 @@ public class ClientesController {
 
         // Formulario
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setHgap(15);
+        grid.setVgap(12);
+        grid.setPadding(new Insets(20, 20, 20, 20));
+        grid.setStyle("-fx-background-color: #d8b075;"); // Mismo color que form-cuero
 
+        // Campos con estilo
         TextField txtNombre = new TextField(clienteEdit.getNombre());
         txtNombre.setPromptText("Nombre completo");
+        txtNombre.setPrefWidth(300);
+        aplicarEstiloCampo(txtNombre);
 
         TextField txtDni = new TextField(clienteEdit.getDni());
         txtDni.setPromptText("DNI (opcional)");
+        txtDni.setPrefWidth(300);
+        aplicarEstiloCampo(txtDni);
 
         TextField txtTelefono = new TextField(clienteEdit.getTelefono());
         txtTelefono.setPromptText("Teléfono");
+        txtTelefono.setPrefWidth(300);
+        aplicarEstiloCampo(txtTelefono);
 
         TextField txtEmail = new TextField(clienteEdit.getEmail());
         txtEmail.setPromptText("Email");
+        txtEmail.setPrefWidth(300);
+        aplicarEstiloCampo(txtEmail);
 
         TextArea txtNotas = new TextArea(clienteEdit.getNotas());
         txtNotas.setPromptText("Notas adicionales");
         txtNotas.setPrefRowCount(3);
+        txtNotas.setPrefWidth(300);
+        aplicarEstiloCampo(txtNotas);
 
-        grid.add(new Label("Nombre:"), 0, 0);
+        // Labels con estilo
+        Label lblNombre = crearLabelFormulario("Nombre:");
+        Label lblDni = crearLabelFormulario("DNI:");
+        Label lblTelefono = crearLabelFormulario("Teléfono:");
+        Label lblEmail = crearLabelFormulario("Email:");
+        Label lblNotas = crearLabelFormulario("Notas:");
+
+        grid.add(lblNombre, 0, 0);
         grid.add(txtNombre, 1, 0);
-        grid.add(new Label("DNI:"), 0, 1);
+        grid.add(lblDni, 0, 1);
         grid.add(txtDni, 1, 1);
-        grid.add(new Label("Teléfono:"), 0, 2);
+        grid.add(lblTelefono, 0, 2);
         grid.add(txtTelefono, 1, 2);
-        grid.add(new Label("Email:"), 0, 3);
+        grid.add(lblEmail, 0, 3);
         grid.add(txtEmail, 1, 3);
-        grid.add(new Label("Notas:"), 0, 4);
+        grid.add(lblNotas, 0, 4);
         grid.add(txtNotas, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
 
-        // Foco inicial en nombre
-        Platform.runLater(() -> txtNombre.requestFocus());
+        // Estilo del DialogPane
+        dialog.getDialogPane().setStyle(
+            "-fx-background-color: #d8b075; " +
+            "-fx-font-family: 'Lora';"
+        );
+
+        // Estilizar botones del diálogo
+        Platform.runLater(() -> {
+            Button btnGuardarNode = (Button) dialog.getDialogPane().lookupButton(btnGuardar);
+            Button btnCancelarNode = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+
+            if (btnGuardarNode != null) {
+                btnGuardarNode.setStyle(
+                    "-fx-background-color: #6aad6a; " + // Verde
+                    "-fx-text-fill: white; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                );
+
+                // Hover effect para Guardar
+                btnGuardarNode.setOnMouseEntered(e -> btnGuardarNode.setStyle(
+                    "-fx-background-color: #4a8a4a; " + // Verde más oscuro
+                    "-fx-text-fill: white; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                ));
+                btnGuardarNode.setOnMouseExited(e -> btnGuardarNode.setStyle(
+                    "-fx-background-color: #6aad6a; " +
+                    "-fx-text-fill: white; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                ));
+            }
+
+            if (btnCancelarNode != null) {
+                btnCancelarNode.setStyle(
+                    "-fx-background-color: #cfa971; " + // Marrón
+                    "-fx-text-fill: #2b2b2b; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                );
+
+                // Hover effect para Cancelar
+                btnCancelarNode.setOnMouseEntered(e -> btnCancelarNode.setStyle(
+                    "-fx-background-color: #b88a52; " + // Marrón más oscuro
+                    "-fx-text-fill: white; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                ));
+                btnCancelarNode.setOnMouseExited(e -> btnCancelarNode.setStyle(
+                    "-fx-background-color: #cfa971; " +
+                    "-fx-text-fill: #2b2b2b; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 10 30; " +
+                    "-fx-min-width: 120px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-background-radius: 6px;"
+                ));
+            }
+
+            // Foco inicial en nombre
+            txtNombre.requestFocus();
+        });
 
         // Validación
         Button btnGuardarNode = (Button) dialog.getDialogPane().lookupButton(btnGuardar);
@@ -477,5 +572,67 @@ public class ClientesController {
                 .position(javafx.geometry.Pos.BOTTOM_RIGHT)
                 .hideAfter(javafx.util.Duration.seconds(3))
                 .showConfirm();
+    }
+
+    // ========================================
+    // MÉTODOS DE ESTILO
+    // ========================================
+
+    /**
+     * Aplica estilo unificado a campos de texto y áreas (igual que form-cuero)
+     */
+    private void aplicarEstiloCampo(javafx.scene.control.TextInputControl campo) {
+        campo.setStyle(
+            "-fx-background-color: #f3d8ad; " + // Mismo color que form-cuero
+            "-fx-border-color: #b88a52; " +
+            "-fx-border-width: 1px; " +
+            "-fx-border-radius: 5px; " +
+            "-fx-background-radius: 5px; " +
+            "-fx-padding: 6px; " +
+            "-fx-font-size: 13px; " +
+            "-fx-text-fill: #2b2b2b;"
+        );
+
+        // Estilo al hacer foco
+        campo.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (isNowFocused) {
+                campo.setStyle(
+                    "-fx-background-color: #f3d8ad; " +
+                    "-fx-border-color: #cfa971; " +
+                    "-fx-border-width: 2px; " +
+                    "-fx-border-radius: 5px; " +
+                    "-fx-background-radius: 5px; " +
+                    "-fx-padding: 6px; " +
+                    "-fx-font-size: 13px; " +
+                    "-fx-text-fill: #2b2b2b; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(207, 169, 113, 0.5), 6, 0, 0, 0);"
+                );
+            } else {
+                campo.setStyle(
+                    "-fx-background-color: #f3d8ad; " +
+                    "-fx-border-color: #b88a52; " +
+                    "-fx-border-width: 1px; " +
+                    "-fx-border-radius: 5px; " +
+                    "-fx-background-radius: 5px; " +
+                    "-fx-padding: 6px; " +
+                    "-fx-font-size: 13px; " +
+                    "-fx-text-fill: #2b2b2b;"
+                );
+            }
+        });
+    }
+
+    /**
+     * Crea un label estilizado para formularios
+     */
+    private Label crearLabelFormulario(String texto) {
+        Label label = new Label(texto);
+        label.setStyle(
+            "-fx-font-weight: bold; " +
+            "-fx-text-fill: #5D4E37; " +
+            "-fx-font-size: 13px; " +
+            "-fx-padding: 5 10 5 0;"
+        );
+        return label;
     }
 }
