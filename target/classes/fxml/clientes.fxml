@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.ClientesController"
+      spacing="0"
+      style="-fx-background-color: #E8DCC4;"
+      VBox.vgrow="ALWAYS">
+
+    <!-- ENCABEZADO -->
+    <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 20 20 15 20;">
+        <Label text="👥 Gestión de Clientes" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+            <font>
+                <Font name="System Bold" size="24.0"/>
+            </font>
+        </Label>
+
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button fx:id="btnNuevoCliente"
+                text="+ Nuevo Cliente"
+                onAction="#abrirNuevoCliente"
+                style="-fx-background-color: #D4A574; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;">
+            <font>
+                <Font size="13.0"/>
+            </font>
+        </Button>
+
+        <Button fx:id="btnEditarCliente"
+                text="✏️ Editar"
+                onAction="#editarClienteSeleccionado"
+                style="-fx-background-color: #8B7355; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;">
+            <font>
+                <Font size="13.0"/>
+            </font>
+        </Button>
+
+        <Button fx:id="btnEliminarCliente"
+                text="🗑 Eliminar"
+                onAction="#eliminarClienteSeleccionado"
+                style="-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;">
+            <font>
+                <Font size="13.0"/>
+            </font>
+        </Button>
+    </HBox>
+
+    <!-- FILTROS -->
+    <VBox spacing="10" style="-fx-background-color: #D4A574; -fx-padding: 15; -fx-background-radius: 8;">
+        <VBox.margin>
+            <Insets left="20" right="20" bottom="15"/>
+        </VBox.margin>
+
+        <Label text="Búsqueda:" style="-fx-font-weight: bold; -fx-text-fill: #5D4E37;"/>
+
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <Label text="Nombre o DNI:" style="-fx-text-fill: #5D4E37;"/>
+            <TextField fx:id="txtBuscar"
+                       promptText="Buscar por nombre o DNI..."
+                       prefWidth="300"/>
+
+            <Button fx:id="btnLimpiar"
+                    text="🔄 Limpiar"
+                    onAction="#limpiarFiltros"
+                    style="-fx-background-color: white; -fx-text-fill: #5D4E37; -fx-padding: 8 16; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+
+    <!-- TABLA DE CLIENTES -->
+    <StackPane VBox.vgrow="ALWAYS" style="-fx-padding: 0 20 20 20;">
+        <!-- Indicador de carga -->
+        <VBox fx:id="vboxLoading"
+              alignment="CENTER"
+              visible="false"
+              managed="false"
+              style="-fx-background-color: rgba(232, 220, 196, 0.95);">
+            <ProgressIndicator fx:id="progressIndicator"/>
+            <Label text="Cargando clientes..." style="-fx-font-size: 14px; -fx-text-fill: #5D4E37;">
+                <VBox.margin>
+                    <Insets top="10"/>
+                </VBox.margin>
+            </Label>
+        </VBox>
+
+        <!-- Tabla principal -->
+        <VBox spacing="10">
+            <TableView fx:id="tablaClientes"
+                       VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: white; -fx-background-radius: 8;">
+                <placeholder>
+                    <Label text="No hay clientes registrados" style="-fx-text-fill: #888; -fx-font-size: 14px;"/>
+                </placeholder>
+            </TableView>
+
+            <!-- Estadísticas al pie -->
+            <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #D4A574; -fx-background-radius: 5;">
+                <Label text="Total de clientes:" style="-fx-font-weight: bold; -fx-text-fill: #5D4E37;"/>
+                <Label fx:id="lblTotalClientes" text="0" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;"/>
+            </HBox>
+        </VBox>
+    </StackPane>
+</VBox>

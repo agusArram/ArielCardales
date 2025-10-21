@@ -2,6 +2,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\App.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\AgregarProductoController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\AgregarVarianteController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\AppController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ClientesController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\DashboardController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\EditarProductoController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ExportarController.java
@@ -10,6 +11,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\Produc
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\RentabilidadController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\VentasController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CategoriaDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ClienteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CrudDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\DaoException.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\DashboardDAO.java
@@ -21,6 +23,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\RentabilidadD
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\UnidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\VentaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\Categoria.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\Cliente.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\ItemInventario.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\Producto.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\ProductoVariante.java

@@ -22,8 +22,8 @@
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
             <Button text="Ventas" onAction="#mostrarVentas"
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-            <!-- <Button text="Clientes" onAction="#mostrarClientes"
-                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/> -->
+            <Button text="Clientes" onAction="#mostrarClientes"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
 
             <MenuBar>
                 <!-- Tus menús existentes -->

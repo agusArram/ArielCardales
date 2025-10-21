@@ -12,6 +12,7 @@ com\arielcardales\arielcardales\controller\VentasController$10.class
 com\arielcardales\arielcardales\Updates\UpdateConfig.class
 com\arielcardales\arielcardales\Updates\UpdateDialog.class
 com\arielcardales\arielcardales\Updates\Updater.class
+com\arielcardales\arielcardales\DAO\ClienteDAO.class
 com\arielcardales\arielcardales\DAO\VentaDAO$ProductoVendido.class
 com\arielcardales\arielcardales\Entidades\Categoria.class
 com\arielcardales\arielcardales\controller\RentabilidadController$3.class
@@ -21,6 +22,7 @@ com\arielcardales\arielcardales\controller\VentasController$3.class
 com\arielcardales\arielcardales\service\InventarioService.class
 com\arielcardales\arielcardales\Updates\UpdateManager.class
 com\arielcardales\arielcardales\controller\AgregarProductoController.class
+com\arielcardales\arielcardales\controller\ClientesController$3.class
 com\arielcardales\arielcardales\DAO\DaoException.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller.class
 com\arielcardales\arielcardales\Entidades\Venta$VentaItem.class
@@ -42,8 +44,10 @@ com\arielcardales\arielcardales\Updates\UpdateDownloader.class
 module-info.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$ProgressCallback.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$1.class
+com\arielcardales\arielcardales\controller\ClientesController$2.class
 com\arielcardales\arielcardales\Util\Arboles.class
 com\arielcardales\arielcardales\DAO\RentabilidadDAO.class
+com\arielcardales\arielcardales\controller\ClientesController$1.class
 com\arielcardales\arielcardales\controller\VentasController$5.class
 com\arielcardales\arielcardales\controller\DashboardController$ProductoRanking.class
 com\arielcardales\arielcardales\controller\MetricasController.class
@@ -78,6 +82,7 @@ com\arielcardales\arielcardales\Updates\UpdateException$ErrorType.class
 com\arielcardales\arielcardales\Entidades\Producto.class
 com\arielcardales\arielcardales\DAO\VentaDAO$ItemParaRestaurar.class
 com\arielcardales\arielcardales\Updates\UpdateChecker.class
+com\arielcardales\arielcardales\controller\ClientesController.class
 com\arielcardales\arielcardales\DAO\RentabilidadDAO$ProductoRentabilidad.class
 com\arielcardales\arielcardales\Util\ExportadorExcel.class
 com\arielcardales\arielcardales\Util\Tablas.class
@@ -86,9 +91,11 @@ com\arielcardales\arielcardales\controller\VentasController$12.class
 com\arielcardales\arielcardales\Updates\UpdateManager$UpdatePhase.class
 com\arielcardales\arielcardales\controller\DashboardController.class
 com\arielcardales\arielcardales\controller\AppController$1.class
+com\arielcardales\arielcardales\controller\ClientesController$5.class
 com\arielcardales\arielcardales\App.class
 com\arielcardales\arielcardales\controller\VentasController$7.class
 com\arielcardales\arielcardales\service\InventarioService$ResultadoActualizacion.class
+com\arielcardales\arielcardales\Entidades\Cliente.class
 com\arielcardales\arielcardales\Util\ExportadorVentas.class
 com\arielcardales\arielcardales\Updates\UpdateManager$UpdateProgress.class
 com\arielcardales\arielcardales\controller\EditarProductoController.class
@@ -96,6 +103,7 @@ com\arielcardales\arielcardales\DAO\VentaDAO$VentaEstadisticas.class
 com\arielcardales\arielcardales\controller\VentasController$13.class
 com\arielcardales\arielcardales\DAO\DashboardDAO$ProductoVendido.class
 com\arielcardales\arielcardales\Updates\UpdateTester.class
+com\arielcardales\arielcardales\controller\ClientesController$4.class
 com\arielcardales\arielcardales\controller\VentasController$8.class
 com\arielcardales\arielcardales\controller\VentasController$1.class
 com\arielcardales\arielcardales\DAO\Database.class

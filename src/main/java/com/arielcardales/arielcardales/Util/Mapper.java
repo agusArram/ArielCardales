@@ -1,6 +1,7 @@
 package com.arielcardales.arielcardales.Util;
 
 import com.arielcardales.arielcardales.Entidades.Categoria;
+import com.arielcardales.arielcardales.Entidades.Cliente;
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Entidades.Producto;
 import com.arielcardales.arielcardales.Entidades.ProductoVariante;
@@ -140,6 +141,26 @@ public class Mapper {
                 rs.getInt("qty"),
                 rs.getBigDecimal("precioUnit"),
                 rs.getBigDecimal("subtotal")
+        );
+    }
+
+    // ========================================
+    // CLIENTES
+    // ========================================
+
+    /**
+     * Mapea un cliente desde ResultSet
+     * Espera columnas: id, nombre, dni, telefono, email, notas, createdAt
+     */
+    public static Cliente getCliente(ResultSet rs) throws SQLException {
+        return new Cliente(
+                rs.getLong("id"),
+                rs.getString("nombre"),
+                rs.getString("dni"),
+                rs.getString("telefono"),
+                rs.getString("email"),
+                rs.getString("notas"),
+                rs.getTimestamp("createdAt").toLocalDateTime()
         );
     }
 }
