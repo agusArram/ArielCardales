@@ -22,7 +22,7 @@
 
         <Region HBox.hgrow="ALWAYS"/>
 
-        <Label text="💡 Doble clic en una celda para editar"
+        <Label text="💡 Expandir cliente para ver historial de compras | Doble clic en cliente para editar"
                style="-fx-text-fill: #8B7355; -fx-font-size: 11px; -fx-font-style: italic;"/>
 
         <Region HBox.hgrow="ALWAYS"/>
@@ -83,15 +83,16 @@
             </Label>
         </VBox>
 
-        <!-- Tabla principal -->
+        <!-- Tabla principal (TreeTableView) -->
         <VBox spacing="10">
-            <TableView fx:id="tablaClientes"
-                       VBox.vgrow="ALWAYS"
-                       style="-fx-background-color: white; -fx-background-radius: 8;">
+            <TreeTableView fx:id="tablaClientes"
+                           VBox.vgrow="ALWAYS"
+                           showRoot="false"
+                           style="-fx-background-color: white; -fx-background-radius: 8;">
                 <placeholder>
                     <Label text="No hay clientes registrados" style="-fx-text-fill: #888; -fx-font-size: 14px;"/>
                 </placeholder>
-            </TableView>
+            </TreeTableView>
 
             <!-- Estadísticas al pie -->
             <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10; -fx-background-color: #D4A574; -fx-background-radius: 5;">

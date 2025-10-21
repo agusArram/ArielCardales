@@ -1,14 +1,12 @@
 package com.arielcardales.arielcardales.controller;
 
 import com.arielcardales.arielcardales.DAO.ClienteDAO;
-import com.arielcardales.arielcardales.DAO.VentaDAO;
 import com.arielcardales.arielcardales.Entidades.Cliente;
-import com.arielcardales.arielcardales.Entidades.Venta;
+import com.arielcardales.arielcardales.Entidades.ItemCliente;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -17,214 +15,250 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.control.Notifications;
 
+import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 
 public class ClientesController {
 
     @FXML private TextField txtBuscar;
     @FXML private Button btnNuevoCliente;
-    @FXML private Button btnEditarCliente;
     @FXML private Button btnEliminarCliente;
     @FXML private Button btnLimpiar;
 
-    @FXML private TableView<Cliente> tablaClientes;
+    @FXML private TreeTableView<ItemCliente> tablaClientes;
     @FXML private Label lblTotalClientes;
 
     @FXML private VBox vboxLoading;
     @FXML private ProgressIndicator progressIndicator;
 
-    private ObservableList<Cliente> clientesData;
-    private ClienteDAO clienteDAO;
+    private TreeItem<ItemCliente> rootCompleto;
+    private final ClienteDAO clienteDAO = new ClienteDAO();
+    private Task<TreeItem<ItemCliente>> cargaTask;
+    private javafx.animation.PauseTransition pausaBusqueda = new javafx.animation.PauseTransition(javafx.util.Duration.millis(300));
 
     @FXML
     public void initialize() {
-        clienteDAO = new ClienteDAO();
-        clientesData = FXCollections.observableArrayList();
-
-        configurarTablaClientes();
-        configurarFiltros();
-        cargarClientes();
+        configurarUI();
+        cargarArbolAsync("");
     }
 
-    private void configurarTablaClientes() {
-        // ✅ HACER LA TABLA EDITABLE
-        tablaClientes.setEditable(true);
+    // ============================================================================
+    // CONFIGURACIÓN UI
+    // ============================================================================
 
-        // Columna ID (no editable)
-        TableColumn<Cliente, Long> colId = new TableColumn<>("ID");
-        colId.setCellValueFactory(cd -> cd.getValue().idProperty().asObject());
-        colId.setPrefWidth(50);
-        colId.setStyle("-fx-alignment: CENTER;");
-        colId.setEditable(false);
+    private void configurarUI() {
+        configurarColumnas();
+        configurarPropiedadesTabla();
+        configurarBusqueda();
+        configurarRowFactory();
+    }
 
-        // Columna Nombre (editable)
-        TableColumn<Cliente, String> colNombre = new TableColumn<>("Nombre");
-        colNombre.setCellValueFactory(cd -> cd.getValue().nombreProperty());
-        colNombre.setPrefWidth(200);
-        colNombre.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
-        colNombre.setOnEditCommit(event -> {
-            Cliente cliente = event.getRowValue();
-            String nuevoNombre = event.getNewValue();
+    /**
+     * Configura las columnas del TreeTableView con doble propósito
+     */
+    private void configurarColumnas() {
+        tablaClientes.getColumns().clear();
 
-            if (nuevoNombre == null || nuevoNombre.trim().isEmpty()) {
-                mostrarAlerta("El nombre no puede estar vacío");
-                tablaClientes.refresh();
+        // Columna Nombre / Fecha
+        TreeTableColumn<ItemCliente, String> colNombre = new TreeTableColumn<>("Nombre / Fecha");
+        colNombre.setPrefWidth(250);
+        colNombre.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null) return new SimpleStringProperty("");
+
+            if (item.isEsVenta()) {
+                // Es venta: mostrar fecha con icono
+                if (item.getFecha() != null) {
+                    return new SimpleStringProperty(
+                        "  📅 " + item.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                    );
+                }
+                return new SimpleStringProperty("  📅 (sin fecha)");
+            } else {
+                // Es cliente: mostrar nombre
+                return item.nombreProperty();
+            }
+        });
+
+        // Columna DNI / Medio de Pago
+        TreeTableColumn<ItemCliente, String> colDniMedio = new TreeTableColumn<>("DNI / Medio Pago");
+        colDniMedio.setPrefWidth(130);
+        colDniMedio.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null) return new SimpleStringProperty("");
+
+            if (item.isEsVenta()) {
+                return item.medioPagoProperty();
+            } else {
+                return item.dniProperty();
+            }
+        });
+
+        // Columna Teléfono / Total
+        TreeTableColumn<ItemCliente, String> colTelTotal = new TreeTableColumn<>("Teléfono / Total");
+        colTelTotal.setPrefWidth(140);
+        colTelTotal.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null) return new SimpleStringProperty("");
+
+            if (item.isEsVenta()) {
+                // Mostrar total formateado
+                if (item.getTotal() != null) {
+                    return new SimpleStringProperty(String.format("$%.2f", item.getTotal()));
+                }
+                return new SimpleStringProperty("$0.00");
+            } else {
+                return item.telefonoProperty();
+            }
+        });
+        colTelTotal.setStyle("-fx-alignment: CENTER-RIGHT;");
+
+        // Columna Email
+        TreeTableColumn<ItemCliente, String> colEmail = new TreeTableColumn<>("Email");
+        colEmail.setPrefWidth(200);
+        colEmail.setCellValueFactory(param -> {
+            ItemCliente item = param.getValue().getValue();
+            if (item == null) return new SimpleStringProperty("");
+
+            if (item.isEsVenta()) {
+                return new SimpleStringProperty(""); // Vacío para ventas
+            } else {
+                return item.emailProperty();
+            }
+        });
+
+        tablaClientes.getColumns().setAll(colNombre, colDniMedio, colTelTotal, colEmail);
+    }
+
+    /**
+     * Configura propiedades generales del TreeTableView
+     */
+    private void configurarPropiedadesTabla() {
+        tablaClientes.setShowRoot(false);
+        tablaClientes.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        tablaClientes.setStyle("-fx-background-color: white;");
+
+        // Placeholder con spinner
+        ProgressIndicator pi = new ProgressIndicator();
+        pi.setPrefSize(40, 40);
+        tablaClientes.setPlaceholder(pi);
+    }
+
+    /**
+     * Configura el sistema de búsqueda reactiva
+     */
+    private void configurarBusqueda() {
+        // Búsqueda con debounce
+        txtBuscar.textProperty().addListener((o, oldValue, newValue) -> {
+            pausaBusqueda.stop();
+            pausaBusqueda.setOnFinished(e -> cargarArbolAsync(newValue != null ? newValue : ""));
+            pausaBusqueda.playFromStart();
+
+            // Fallback instantáneo si se borra todo
+            if (newValue == null || newValue.isBlank()) {
+                Platform.runLater(() -> cargarArbolAsync(""));
+            }
+        });
+    }
+
+    /**
+     * Configura el comportamiento de las filas (estilos)
+     */
+    private void configurarRowFactory() {
+        tablaClientes.setRowFactory(tv -> {
+            TreeTableRow<ItemCliente> row = new TreeTableRow<>();
+
+            // Pseudo-clase CSS para filas hijas (ventas)
+            row.treeItemProperty().addListener((obs, oldItem, newItem) -> {
+                boolean esHijo = newItem != null &&
+                        newItem.getParent() != null &&
+                        newItem.getParent().getParent() != null;
+                row.pseudoClassStateChanged(PseudoClass.getPseudoClass("hijo"), esHijo);
+            });
+
+            // Doble clic para editar cliente
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    TreeItem<ItemCliente> item = row.getTreeItem();
+                    if (item != null && item.getValue() != null && !item.getValue().isEsVenta()) {
+                        // Es un cliente, abrir para editar
+                        Cliente cliente = convertirACliente(item.getValue());
+                        mostrarDialogoCliente(cliente);
+                    }
+                }
+            });
+
+            return row;
+        });
+    }
+
+    // ============================================================================
+    // CARGA DE DATOS
+    // ============================================================================
+
+    /**
+     * Carga el árbol de clientes con sus ventas en segundo plano
+     */
+    private void cargarArbolAsync(String filtro) {
+        // Si hay una carga anterior en ejecución, cancelarla
+        if (cargaTask != null && cargaTask.isRunning()) {
+            cargaTask.cancel();
+            try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+        }
+
+        // Spinner de carga
+        ProgressIndicator pi = new ProgressIndicator();
+        pi.setPrefSize(40, 40);
+        tablaClientes.setPlaceholder(pi);
+
+        mostrarLoading(true);
+
+        // Task que carga el árbol en background
+        cargaTask = new Task<>() {
+            @Override
+            protected TreeItem<ItemCliente> call() throws Exception {
+                return clienteDAO.cargarArbol(filtro);
+            }
+        };
+
+        cargaTask.setOnSucceeded(e -> {
+            TreeItem<ItemCliente> root = cargaTask.getValue();
+            if (root == null) {
+                tablaClientes.setPlaceholder(new Label("Sin datos disponibles"));
+                mostrarLoading(false);
                 return;
             }
 
-            cliente.setNombre(nuevoNombre.trim());
-            guardarClienteInline(cliente);
-        });
+            rootCompleto = root;
+            tablaClientes.setRoot(root);
+            tablaClientes.setShowRoot(false);
 
-        // Columna DNI (editable)
-        TableColumn<Cliente, String> colDni = new TableColumn<>("DNI");
-        colDni.setCellValueFactory(cd -> cd.getValue().dniProperty());
-        colDni.setPrefWidth(100);
-        colDni.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
-        colDni.setOnEditCommit(event -> {
-            Cliente cliente = event.getRowValue();
-            String nuevoDni = event.getNewValue();
-
-            // Validar duplicado
-            if (nuevoDni != null && !nuevoDni.trim().isEmpty()) {
-                if (clienteDAO.existeDniDuplicado(nuevoDni.trim(), cliente.getId())) {
-                    mostrarAlerta("Ya existe un cliente con ese DNI");
-                    tablaClientes.refresh();
-                    return;
-                }
-            }
-
-            cliente.setDni(nuevoDni != null && !nuevoDni.trim().isEmpty() ? nuevoDni.trim() : null);
-            guardarClienteInline(cliente);
-        });
-
-        // Columna Teléfono (editable)
-        TableColumn<Cliente, String> colTelefono = new TableColumn<>("Teléfono");
-        colTelefono.setCellValueFactory(cd -> cd.getValue().telefonoProperty());
-        colTelefono.setPrefWidth(120);
-        colTelefono.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
-        colTelefono.setOnEditCommit(event -> {
-            Cliente cliente = event.getRowValue();
-            String nuevoTel = event.getNewValue();
-
-            // Validar duplicado
-            if (nuevoTel != null && !nuevoTel.trim().isEmpty()) {
-                if (clienteDAO.existeTelefonoDuplicado(nuevoTel.trim(), cliente.getId())) {
-                    mostrarAlerta("Ya existe un cliente con ese teléfono");
-                    tablaClientes.refresh();
-                    return;
-                }
-            }
-
-            cliente.setTelefono(nuevoTel != null && !nuevoTel.trim().isEmpty() ? nuevoTel.trim() : null);
-            guardarClienteInline(cliente);
-        });
-
-        // Columna Email (editable)
-        TableColumn<Cliente, String> colEmail = new TableColumn<>("Email");
-        colEmail.setCellValueFactory(cd -> cd.getValue().emailProperty());
-        colEmail.setPrefWidth(180);
-        colEmail.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
-        colEmail.setOnEditCommit(event -> {
-            Cliente cliente = event.getRowValue();
-            String nuevoEmail = event.getNewValue();
-            cliente.setEmail(nuevoEmail != null && !nuevoEmail.trim().isEmpty() ? nuevoEmail.trim() : null);
-            guardarClienteInline(cliente);
-        });
-
-        // Columna Notas (editable)
-        TableColumn<Cliente, String> colNotas = new TableColumn<>("Notas");
-        colNotas.setCellValueFactory(cd -> cd.getValue().notasProperty());
-        colNotas.setPrefWidth(150);
-        colNotas.setCellFactory(javafx.scene.control.cell.TextFieldTableCell.forTableColumn());
-        colNotas.setOnEditCommit(event -> {
-            Cliente cliente = event.getRowValue();
-            String nuevasNotas = event.getNewValue();
-            cliente.setNotas(nuevasNotas != null && !nuevasNotas.trim().isEmpty() ? nuevasNotas.trim() : null);
-            guardarClienteInline(cliente);
-        });
-
-        tablaClientes.getColumns().setAll(colId, colNombre, colDni, colTelefono, colEmail, colNotas);
-
-        tablaClientes.setItems(clientesData);
-        tablaClientes.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-    }
-
-    private void configurarFiltros() {
-        // Búsqueda en tiempo real
-        txtBuscar.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && newVal.length() > 2) {
-                buscarClientes(newVal);
-            } else if (newVal == null || newVal.isEmpty()) {
-                cargarClientes();
-            }
-        });
-    }
-
-    private void cargarClientes() {
-        mostrarLoading(true);
-
-        Task<List<Cliente>> task = new Task<>() {
-            @Override
-            protected List<Cliente> call() throws Exception {
-                return clienteDAO.findAll();
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            clientesData.setAll(task.getValue());
             actualizarEstadisticas();
+
+            tablaClientes.setPlaceholder(new Label("✅ Clientes cargados correctamente."));
             mostrarLoading(false);
         });
 
-        task.setOnFailed(e -> {
-            mostrarError("Error al cargar clientes", task.getException().getMessage());
-            task.getException().printStackTrace();
+        cargaTask.setOnFailed(e -> {
+            tablaClientes.setPlaceholder(new Label("❌ Error al cargar clientes"));
+            if (cargaTask.getException() != null) cargaTask.getException().printStackTrace();
             mostrarLoading(false);
         });
 
-        new Thread(task).start();
+        Thread t = new Thread(cargaTask);
+        t.setDaemon(true);
+        t.start();
     }
 
-    private void buscarClientes(String criterio) {
-        mostrarLoading(true);
-
-        Task<List<Cliente>> task = new Task<>() {
-            @Override
-            protected List<Cliente> call() throws Exception {
-                // Buscar por nombre o DNI
-                List<Cliente> resultados = clienteDAO.buscarPorNombre(criterio);
-
-                // Si no hay resultados y el criterio parece un DNI, buscar por DNI exacto
-                if (resultados.isEmpty() && criterio.matches("\\d+")) {
-                    Optional<Cliente> porDni = clienteDAO.buscarPorDni(criterio);
-                    porDni.ifPresent(resultados::add);
-                }
-
-                return resultados;
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            clientesData.setAll(task.getValue());
-            actualizarEstadisticas();
-            mostrarLoading(false);
-        });
-
-        task.setOnFailed(e -> {
-            mostrarError("Error en la búsqueda", task.getException().getMessage());
-            mostrarLoading(false);
-        });
-
-        new Thread(task).start();
-    }
+    // ============================================================================
+    // ACCIONES
+    // ============================================================================
 
     @FXML
     private void limpiarFiltros() {
         txtBuscar.clear();
-        cargarClientes();
+        cargarArbolAsync("");
     }
 
     @FXML
@@ -234,10 +268,18 @@ public class ClientesController {
 
     @FXML
     private void eliminarClienteSeleccionado() {
-        Cliente seleccionado = tablaClientes.getSelectionModel().getSelectedItem();
+        TreeItem<ItemCliente> selectedItem = tablaClientes.getSelectionModel().getSelectedItem();
 
-        if (seleccionado == null) {
+        if (selectedItem == null || selectedItem.getValue() == null) {
             mostrarAlerta("Selecciona un cliente de la tabla para eliminar");
+            return;
+        }
+
+        ItemCliente item = selectedItem.getValue();
+
+        // Verificar que sea un cliente (no una venta)
+        if (item.isEsVenta()) {
+            mostrarAlerta("No puedes eliminar una venta desde aquí. Selecciona el cliente.");
             return;
         }
 
@@ -246,8 +288,8 @@ public class ClientesController {
         confirmacion.setTitle("⚠️ Confirmar eliminación");
         confirmacion.setHeaderText("¿Eliminar cliente?");
         confirmacion.setContentText(
-                "Cliente: " + seleccionado.getNombre() + "\n" +
-                        "DNI: " + (seleccionado.getDni() != null ? seleccionado.getDni() : "-") + "\n\n" +
+                "Cliente: " + item.getNombre() + "\n" +
+                        "DNI: " + (item.getDni() != null ? item.getDni() : "-") + "\n\n" +
                         "⚠️ Esta acción NO se puede deshacer.\n\n" +
                         "¿Deseas continuar?"
         );
@@ -265,13 +307,13 @@ public class ClientesController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                clienteDAO.deleteById(seleccionado.getId());
+                clienteDAO.deleteById(item.getClienteId());
                 return null;
             }
         };
 
         task.setOnSucceeded(e -> {
-            cargarClientes();
+            cargarArbolAsync(txtBuscar.getText());
             ok("Cliente eliminado correctamente");
         });
 
@@ -284,6 +326,10 @@ public class ClientesController {
         new Thread(task).start();
     }
 
+    // ============================================================================
+    // DIÁLOGO CREAR/EDITAR CLIENTE
+    // ============================================================================
+
     /**
      * Muestra diálogo para crear o editar cliente
      */
@@ -293,7 +339,7 @@ public class ClientesController {
 
         Dialog<Cliente> dialog = new Dialog<>();
         dialog.setTitle(esNuevo ? "👤 Nuevo Cliente" : "✏️ Editar Cliente");
-        dialog.setHeaderText(null); // Sin header, queda más limpio
+        dialog.setHeaderText(null);
 
         // Botones
         ButtonType btnGuardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
@@ -304,7 +350,7 @@ public class ClientesController {
         grid.setHgap(15);
         grid.setVgap(12);
         grid.setPadding(new Insets(20, 20, 20, 20));
-        grid.setStyle("-fx-background-color: #d8b075;"); // Mismo color que form-cuero
+        grid.setStyle("-fx-background-color: #d8b075;");
 
         // Campos con estilo
         TextField txtNombre = new TextField(clienteEdit.getNombre());
@@ -366,26 +412,6 @@ public class ClientesController {
 
             if (btnGuardarNode != null) {
                 btnGuardarNode.setStyle(
-                    "-fx-background-color: #6aad6a; " + // Verde
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10 30; " +
-                    "-fx-min-width: 120px; " +
-                    "-fx-cursor: hand; " +
-                    "-fx-background-radius: 6px;"
-                );
-
-                // Hover effect para Guardar
-                btnGuardarNode.setOnMouseEntered(e -> btnGuardarNode.setStyle(
-                    "-fx-background-color: #4a8a4a; " + // Verde más oscuro
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10 30; " +
-                    "-fx-min-width: 120px; " +
-                    "-fx-cursor: hand; " +
-                    "-fx-background-radius: 6px;"
-                ));
-                btnGuardarNode.setOnMouseExited(e -> btnGuardarNode.setStyle(
                     "-fx-background-color: #6aad6a; " +
                     "-fx-text-fill: white; " +
                     "-fx-font-weight: bold; " +
@@ -393,31 +419,11 @@ public class ClientesController {
                     "-fx-min-width: 120px; " +
                     "-fx-cursor: hand; " +
                     "-fx-background-radius: 6px;"
-                ));
+                );
             }
 
             if (btnCancelarNode != null) {
                 btnCancelarNode.setStyle(
-                    "-fx-background-color: #cfa971; " + // Marrón
-                    "-fx-text-fill: #2b2b2b; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10 30; " +
-                    "-fx-min-width: 120px; " +
-                    "-fx-cursor: hand; " +
-                    "-fx-background-radius: 6px;"
-                );
-
-                // Hover effect para Cancelar
-                btnCancelarNode.setOnMouseEntered(e -> btnCancelarNode.setStyle(
-                    "-fx-background-color: #b88a52; " + // Marrón más oscuro
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10 30; " +
-                    "-fx-min-width: 120px; " +
-                    "-fx-cursor: hand; " +
-                    "-fx-background-radius: 6px;"
-                ));
-                btnCancelarNode.setOnMouseExited(e -> btnCancelarNode.setStyle(
                     "-fx-background-color: #cfa971; " +
                     "-fx-text-fill: #2b2b2b; " +
                     "-fx-font-weight: bold; " +
@@ -425,10 +431,9 @@ public class ClientesController {
                     "-fx-min-width: 120px; " +
                     "-fx-cursor: hand; " +
                     "-fx-background-radius: 6px;"
-                ));
+                );
             }
 
-            // Foco inicial en nombre
             txtNombre.requestFocus();
         });
 
@@ -441,7 +446,7 @@ public class ClientesController {
                 return;
             }
 
-            // Validar DNI duplicado (solo si se ingresó un DNI)
+            // Validar DNI duplicado
             String dniNuevo = txtDni.getText() != null ? txtDni.getText().trim() : null;
             if (dniNuevo != null && !dniNuevo.isEmpty()) {
                 if (clienteDAO.existeDniDuplicado(dniNuevo, clienteEdit.getId())) {
@@ -451,7 +456,7 @@ public class ClientesController {
                 }
             }
 
-            // Validar teléfono duplicado (solo si se ingresó un teléfono)
+            // Validar teléfono duplicado
             String telNuevo = txtTelefono.getText() != null ? txtTelefono.getText().trim() : null;
             if (telNuevo != null && !telNuevo.isEmpty()) {
                 if (clienteDAO.existeTelefonoDuplicado(telNuevo, clienteEdit.getId())) {
@@ -480,34 +485,7 @@ public class ClientesController {
         });
 
         Optional<Cliente> resultado = dialog.showAndWait();
-
         resultado.ifPresent(c -> guardarCliente(c, esNuevo));
-    }
-
-    /**
-     * Guarda cambios de edición inline (sin recargar toda la tabla)
-     */
-    private void guardarClienteInline(Cliente cliente) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                clienteDAO.update(cliente);
-                return null;
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            ok("✓ Cambio guardado");
-            tablaClientes.refresh();
-        });
-
-        task.setOnFailed(e -> {
-            mostrarError("Error al guardar", task.getException().getMessage());
-            task.getException().printStackTrace();
-            cargarClientes(); // Recargar para deshacer cambio
-        });
-
-        new Thread(task).start();
     }
 
     private void guardarCliente(Cliente cliente, boolean esNuevo) {
@@ -526,7 +504,7 @@ public class ClientesController {
         };
 
         task.setOnSucceeded(e -> {
-            cargarClientes();
+            cargarArbolAsync(txtBuscar.getText());
             ok(esNuevo ? "Cliente creado correctamente" : "Cliente actualizado correctamente");
         });
 
@@ -539,8 +517,29 @@ public class ClientesController {
         new Thread(task).start();
     }
 
+    // ============================================================================
+    // HELPERS
+    // ============================================================================
+
+    /**
+     * Convierte un ItemCliente a Cliente (para edición)
+     */
+    private Cliente convertirACliente(ItemCliente item) {
+        Cliente cliente = new Cliente();
+        cliente.setId(item.getClienteId());
+        cliente.setNombre(item.getNombre());
+        cliente.setDni(item.getDni());
+        cliente.setTelefono(item.getTelefono());
+        cliente.setEmail(item.getEmail());
+        return cliente;
+    }
+
     private void actualizarEstadisticas() {
-        lblTotalClientes.setText(String.valueOf(clientesData.size()));
+        if (rootCompleto != null) {
+            lblTotalClientes.setText(String.valueOf(rootCompleto.getChildren().size()));
+        } else {
+            lblTotalClientes.setText("0");
+        }
     }
 
     private void mostrarLoading(boolean mostrar) {
@@ -574,16 +573,13 @@ public class ClientesController {
                 .showConfirm();
     }
 
-    // ========================================
+    // ============================================================================
     // MÉTODOS DE ESTILO
-    // ========================================
+    // ============================================================================
 
-    /**
-     * Aplica estilo unificado a campos de texto y áreas (igual que form-cuero)
-     */
     private void aplicarEstiloCampo(javafx.scene.control.TextInputControl campo) {
         campo.setStyle(
-            "-fx-background-color: #f3d8ad; " + // Mismo color que form-cuero
+            "-fx-background-color: #f3d8ad; " +
             "-fx-border-color: #b88a52; " +
             "-fx-border-width: 1px; " +
             "-fx-border-radius: 5px; " +
@@ -622,9 +618,6 @@ public class ClientesController {
         });
     }
 
-    /**
-     * Crea un label estilizado para formularios
-     */
     private Label crearLabelFormulario(String texto) {
         Label label = new Label(texto);
         label.setStyle(

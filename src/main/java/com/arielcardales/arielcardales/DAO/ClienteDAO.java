@@ -1,11 +1,16 @@
 package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.Cliente;
+import com.arielcardales.arielcardales.Entidades.ItemCliente;
+import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Util.Mapper;
+import javafx.scene.control.TreeItem;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -290,5 +295,90 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
         }
 
         return false;
+    }
+
+    /**
+     * Carga el árbol completo de clientes con sus ventas
+     * Similar a InventarioDAO.cargarArbol()
+     *
+     * @param filtro Criterio de búsqueda (nombre o DNI)
+     * @return TreeItem raíz con clientes como padres y ventas como hijos
+     */
+    public TreeItem<ItemCliente> cargarArbol(String filtro) throws SQLException {
+        String f = filtro == null ? "" : filtro.trim();
+        String like = "%" + f + "%";
+
+        TreeItem<ItemCliente> root = new TreeItem<>();
+        Map<Long, TreeItem<ItemCliente>> padres = new LinkedHashMap<>();
+
+        // Consulta que trae clientes con sus ventas (LEFT JOIN para traer clientes sin ventas)
+        String sql = """
+            SELECT
+                c.id as cliente_id,
+                c.nombre as cliente_nombre,
+                c.dni as cliente_dni,
+                c.telefono as cliente_telefono,
+                c.email as cliente_email,
+                v.id as venta_id,
+                v.fecha as venta_fecha,
+                v.medioPago as venta_medio,
+                v.total as venta_total
+            FROM cliente c
+            LEFT JOIN venta v ON v.clienteId = c.id
+            WHERE (? = ''
+                OR LOWER(c.nombre) LIKE LOWER(?)
+                OR LOWER(COALESCE(c.dni, '')) LIKE LOWER(?))
+            ORDER BY c.nombre, v.fecha DESC
+        """;
+
+        try (Connection cn = Database.get();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, f);
+            ps.setString(2, like);
+            ps.setString(3, like);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long clienteId = rs.getLong("cliente_id");
+                    Long ventaId = (Long) rs.getObject("venta_id");
+
+                    // Si el cliente no existe en el mapa, crearlo
+                    TreeItem<ItemCliente> padre = padres.get(clienteId);
+                    if (padre == null) {
+                        ItemCliente clienteItem = new ItemCliente();
+                        clienteItem.setEsVenta(false);
+                        clienteItem.setClienteId(clienteId);
+                        clienteItem.setNombre(rs.getString("cliente_nombre"));
+                        clienteItem.setDni(rs.getString("cliente_dni"));
+                        clienteItem.setTelefono(rs.getString("cliente_telefono"));
+                        clienteItem.setEmail(rs.getString("cliente_email"));
+
+                        padre = new TreeItem<>(clienteItem);
+                        padres.put(clienteId, padre);
+                        root.getChildren().add(padre);
+                    }
+
+                    // Si hay una venta, agregarla como hijo
+                    if (ventaId != null) {
+                        ItemCliente ventaItem = new ItemCliente();
+                        ventaItem.setEsVenta(true);
+                        ventaItem.setVentaId(ventaId);
+
+                        Timestamp fechaTs = rs.getTimestamp("venta_fecha");
+                        if (fechaTs != null) {
+                            ventaItem.setFecha(fechaTs.toLocalDateTime());
+                        }
+
+                        ventaItem.setMedioPago(rs.getString("venta_medio"));
+                        ventaItem.setTotal(rs.getBigDecimal("venta_total"));
+
+                        padre.getChildren().add(new TreeItem<>(ventaItem));
+                    }
+                }
+            }
+        }
+
+        return root;
     }
 }
