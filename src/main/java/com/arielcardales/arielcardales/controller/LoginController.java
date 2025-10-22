@@ -198,11 +198,12 @@ public class LoginController {
             // Obtener el stage actual (ventana de login)
             Stage stage = (Stage) loginButton.getScene().getWindow();
 
-            // Configurar la nueva escena
-            Scene scene = new Scene(root);
+            // Configurar la nueva escena con tamaño inicial
+            Scene scene = new Scene(root, 1200, 800); // Tamaño inicial: 1200x800
             stage.setScene(scene);
             stage.setTitle("Ariel Cardales - " + SessionManager.getInstance().getNombreUsuario());
-            stage.setMaximized(true);
+            stage.setResizable(true); // Permitir que el usuario redimensione
+            stage.centerOnScreen(); // Centrar en pantalla
             stage.show();
 
             System.out.println("✅ Ventana principal cargada exitosamente");

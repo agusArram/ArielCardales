@@ -76,12 +76,13 @@ public class App extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/principal.fxml"));
         Parent root = fxmlLoader.load();
 
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, 1200, 800); // Tamaño inicial: 1200x800
         scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
 
         stage.setScene(scene);
         stage.setTitle("Ariel Cardales - " + SessionManager.getInstance().getNombreUsuario());
-        stage.setMaximized(true);
+        stage.setResizable(true); // Permitir que el usuario redimensione
+        stage.centerOnScreen(); // Centrar en pantalla
         stage.show();
     }
 
