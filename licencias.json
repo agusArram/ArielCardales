@@ -15,8 +15,8 @@
       "clienteId": "46958104",
       "nombre": "Agus (DESARROLLADOR)",
       "email": "tu@email.com",
-      "estado": "ACTIVO",
-      "plan": "FULL",
+      "estado": "SUSPENDIDO",
+      "plan": "DEMO",
       "expira": "2099-12-31",
       "notas": "Licencia FULL perpetua para el desarrollador - CAMBIAR DNI_TU_DNI_AQUI por tu DNI real"
     },
@@ -57,5 +57,5 @@
       "notas": "Licencia suspendida por falta de pago"
     }
   ],
-  "firma": "866723d72343a3f4f19f9d59cb7e9a9541d6b1834d1236da9aff6352368ba06f"
+  "firma": "93538dd4a8b87b791b5ef033770733f3ce8ecc8da46cca0a1208ac1ba5e29b7c"
 }
