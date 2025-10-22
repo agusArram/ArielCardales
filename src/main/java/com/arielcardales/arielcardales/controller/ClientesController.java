@@ -21,7 +21,13 @@ import java.util.Optional;
 
 public class ClientesController {
 
-    @FXML private TextField txtBuscar;
+    // Campos de filtros avanzados
+    @FXML private TextField txtFiltroNombre;
+    @FXML private TextField txtFiltroDni;
+    @FXML private TextField txtFiltroTelefono;
+    @FXML private TextField txtFiltroEmail;
+    @FXML private Label lblInfoFiltros;
+
     @FXML private Button btnNuevoCliente;
     @FXML private Button btnEliminarCliente;
     @FXML private Button btnLimpiar;
@@ -37,10 +43,14 @@ public class ClientesController {
     private Task<TreeItem<ItemCliente>> cargaTask;
     private javafx.animation.PauseTransition pausaBusqueda = new javafx.animation.PauseTransition(javafx.util.Duration.millis(300));
 
+    // Preferences para persistencia de filtros
+    private final java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(ClientesController.class);
+
     @FXML
     public void initialize() {
         configurarUI();
-        cargarArbolAsync("");
+        cargarFiltrosGuardados();
+        aplicarFiltros();
     }
 
     // ============================================================================
@@ -169,20 +179,27 @@ public class ClientesController {
     }
 
     /**
-     * Configura el sistema de búsqueda reactiva
+     * Configura el sistema de búsqueda reactiva con múltiples filtros
      */
     private void configurarBusqueda() {
-        // Búsqueda con debounce
-        txtBuscar.textProperty().addListener((o, oldValue, newValue) -> {
+        // Listener común para todos los campos con debounce
+        javafx.beans.value.ChangeListener<String> listenerFiltros = (o, oldValue, newValue) -> {
             pausaBusqueda.stop();
-            pausaBusqueda.setOnFinished(e -> cargarArbolAsync(newValue != null ? newValue : ""));
+            pausaBusqueda.setOnFinished(e -> {
+                aplicarFiltros();
+                guardarFiltros();
+            });
             pausaBusqueda.playFromStart();
 
-            // Fallback instantáneo si se borra todo
-            if (newValue == null || newValue.isBlank()) {
-                Platform.runLater(() -> cargarArbolAsync(""));
-            }
-        });
+            // Actualizar label informativo
+            actualizarLabelFiltros();
+        };
+
+        // Aplicar listener a todos los campos de filtro
+        txtFiltroNombre.textProperty().addListener(listenerFiltros);
+        txtFiltroDni.textProperty().addListener(listenerFiltros);
+        txtFiltroTelefono.textProperty().addListener(listenerFiltros);
+        txtFiltroEmail.textProperty().addListener(listenerFiltros);
     }
 
     /**
@@ -217,13 +234,25 @@ public class ClientesController {
     }
 
     // ============================================================================
-    // CARGA DE DATOS
+    // CARGA DE DATOS CON FILTROS
     // ============================================================================
 
     /**
-     * Carga el árbol de clientes con sus ventas en segundo plano
+     * Aplica los filtros actuales y recarga el árbol
      */
-    private void cargarArbolAsync(String filtro) {
+    private void aplicarFiltros() {
+        String nombre = txtFiltroNombre.getText();
+        String dni = txtFiltroDni.getText();
+        String telefono = txtFiltroTelefono.getText();
+        String email = txtFiltroEmail.getText();
+
+        cargarArbolAsync(nombre, dni, telefono, email);
+    }
+
+    /**
+     * Carga el árbol de clientes con sus ventas en segundo plano usando filtros múltiples
+     */
+    private void cargarArbolAsync(String filtroNombre, String filtroDni, String filtroTelefono, String filtroEmail) {
         // Si hay una carga anterior en ejecución, cancelarla
         if (cargaTask != null && cargaTask.isRunning()) {
             cargaTask.cancel();
@@ -241,7 +270,7 @@ public class ClientesController {
         cargaTask = new Task<>() {
             @Override
             protected TreeItem<ItemCliente> call() throws Exception {
-                return clienteDAO.cargarArbol(filtro);
+                return clienteDAO.cargarArbolConFiltros(filtroNombre, filtroDni, filtroTelefono, filtroEmail);
             }
         };
 
@@ -259,7 +288,12 @@ public class ClientesController {
 
             actualizarEstadisticas();
 
-            tablaClientes.setPlaceholder(new Label("✅ Clientes cargados correctamente."));
+            int totalClientes = root.getChildren().size();
+            String mensajePlaceholder = totalClientes > 0
+                    ? "✅ " + totalClientes + " cliente(s) encontrado(s)"
+                    : "No se encontraron clientes con los filtros aplicados";
+
+            tablaClientes.setPlaceholder(new Label(mensajePlaceholder));
             mostrarLoading(false);
         });
 
@@ -280,8 +314,13 @@ public class ClientesController {
 
     @FXML
     private void limpiarFiltros() {
-        txtBuscar.clear();
-        cargarArbolAsync("");
+        txtFiltroNombre.clear();
+        txtFiltroDni.clear();
+        txtFiltroTelefono.clear();
+        txtFiltroEmail.clear();
+        aplicarFiltros();
+        guardarFiltros();
+        actualizarLabelFiltros();
     }
 
     @FXML
@@ -336,7 +375,7 @@ public class ClientesController {
         };
 
         task.setOnSucceeded(e -> {
-            cargarArbolAsync(txtBuscar.getText());
+            aplicarFiltros();
             ok("Cliente eliminado correctamente");
         });
 
@@ -527,7 +566,7 @@ public class ClientesController {
         };
 
         task.setOnSucceeded(e -> {
-            cargarArbolAsync(txtBuscar.getText());
+            aplicarFiltros();
             ok(esNuevo ? "Cliente creado correctamente" : "Cliente actualizado correctamente");
         });
 
@@ -594,6 +633,66 @@ public class ClientesController {
                 .position(javafx.geometry.Pos.BOTTOM_RIGHT)
                 .hideAfter(javafx.util.Duration.seconds(3))
                 .showConfirm();
+    }
+
+    // ============================================================================
+    // PERSISTENCIA DE FILTROS
+    // ============================================================================
+
+    /**
+     * Carga los filtros guardados desde Preferences
+     */
+    private void cargarFiltrosGuardados() {
+        txtFiltroNombre.setText(prefs.get("filtro_nombre", ""));
+        txtFiltroDni.setText(prefs.get("filtro_dni", ""));
+        txtFiltroTelefono.setText(prefs.get("filtro_telefono", ""));
+        txtFiltroEmail.setText(prefs.get("filtro_email", ""));
+    }
+
+    /**
+     * Guarda los filtros actuales en Preferences
+     */
+    private void guardarFiltros() {
+        prefs.put("filtro_nombre", txtFiltroNombre.getText() != null ? txtFiltroNombre.getText() : "");
+        prefs.put("filtro_dni", txtFiltroDni.getText() != null ? txtFiltroDni.getText() : "");
+        prefs.put("filtro_telefono", txtFiltroTelefono.getText() != null ? txtFiltroTelefono.getText() : "");
+        prefs.put("filtro_email", txtFiltroEmail.getText() != null ? txtFiltroEmail.getText() : "");
+    }
+
+    /**
+     * Actualiza el label informativo según los filtros activos
+     */
+    private void actualizarLabelFiltros() {
+        int filtrosActivos = 0;
+        StringBuilder mensaje = new StringBuilder();
+
+        if (txtFiltroNombre.getText() != null && !txtFiltroNombre.getText().isBlank()) {
+            filtrosActivos++;
+            mensaje.append("Nombre: '").append(txtFiltroNombre.getText()).append("' ");
+        }
+
+        if (txtFiltroDni.getText() != null && !txtFiltroDni.getText().isBlank()) {
+            filtrosActivos++;
+            mensaje.append("DNI: '").append(txtFiltroDni.getText()).append("' ");
+        }
+
+        if (txtFiltroTelefono.getText() != null && !txtFiltroTelefono.getText().isBlank()) {
+            filtrosActivos++;
+            mensaje.append("Tel: '").append(txtFiltroTelefono.getText()).append("' ");
+        }
+
+        if (txtFiltroEmail.getText() != null && !txtFiltroEmail.getText().isBlank()) {
+            filtrosActivos++;
+            mensaje.append("Email: '").append(txtFiltroEmail.getText()).append("' ");
+        }
+
+        if (filtrosActivos == 0) {
+            lblInfoFiltros.setText("💡 Puedes usar varios filtros simultáneamente. La búsqueda es en tiempo real.");
+            lblInfoFiltros.setStyle("-fx-text-fill: #5D4E37; -fx-font-size: 11px; -fx-font-style: italic; -fx-padding: 5 0 0 0;");
+        } else {
+            lblInfoFiltros.setText("🔍 Filtros activos (" + filtrosActivos + "): " + mensaje.toString().trim());
+            lblInfoFiltros.setStyle("-fx-text-fill: #2e7d32; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 5 0 0 0;");
+        }
     }
 
     // ============================================================================

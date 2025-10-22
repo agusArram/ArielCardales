@@ -46,25 +46,57 @@
         </Button>
     </HBox>
 
-    <!-- FILTROS -->
-    <VBox spacing="10" style="-fx-background-color: #D4A574; -fx-padding: 15; -fx-background-radius: 8;">
+    <!-- FILTROS AVANZADOS -->
+    <VBox spacing="12" style="-fx-background-color: #D4A574; -fx-padding: 15; -fx-background-radius: 8;">
         <VBox.margin>
             <Insets left="20" right="20" bottom="15"/>
         </VBox.margin>
 
-        <Label text="Búsqueda:" style="-fx-font-weight: bold; -fx-text-fill: #5D4E37;"/>
-
-        <HBox spacing="15" alignment="CENTER_LEFT">
-            <Label text="Nombre o DNI:" style="-fx-text-fill: #5D4E37;"/>
-            <TextField fx:id="txtBuscar"
-                       promptText="Buscar por nombre o DNI..."
-                       prefWidth="300"/>
-
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="🔍 Búsqueda Avanzada" style="-fx-font-weight: bold; -fx-text-fill: #5D4E37; -fx-font-size: 14px;"/>
+            <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="btnLimpiar"
-                    text="🔄 Limpiar"
+                    text="🔄 Limpiar filtros"
                     onAction="#limpiarFiltros"
-                    style="-fx-background-color: white; -fx-text-fill: #5D4E37; -fx-padding: 8 16; -fx-cursor: hand;"/>
+                    style="-fx-background-color: white; -fx-text-fill: #5D4E37; -fx-padding: 8 16; -fx-cursor: hand; -fx-font-weight: bold;"/>
         </HBox>
+
+        <GridPane hgap="15" vgap="10">
+            <!-- Fila 1 -->
+            <Label text="Nombre:" style="-fx-text-fill: #5D4E37; -fx-font-weight: bold;"
+                   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="txtFiltroNombre"
+                       promptText="Buscar por nombre..."
+                       prefWidth="250"
+                       GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+            <Label text="DNI:" style="-fx-text-fill: #5D4E37; -fx-font-weight: bold;"
+                   GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+            <TextField fx:id="txtFiltroDni"
+                       promptText="Buscar por DNI..."
+                       prefWidth="180"
+                       GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+            <!-- Fila 2 -->
+            <Label text="Teléfono:" style="-fx-text-fill: #5D4E37; -fx-font-weight: bold;"
+                   GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="txtFiltroTelefono"
+                       promptText="Buscar por teléfono..."
+                       prefWidth="250"
+                       GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+            <Label text="Email:" style="-fx-text-fill: #5D4E37; -fx-font-weight: bold;"
+                   GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+            <TextField fx:id="txtFiltroEmail"
+                       promptText="Buscar por email..."
+                       prefWidth="250"
+                       GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+        </GridPane>
+
+        <!-- Info de búsqueda activa -->
+        <Label fx:id="lblInfoFiltros"
+               text="💡 Puedes usar varios filtros simultáneamente. La búsqueda es en tiempo real."
+               style="-fx-text-fill: #5D4E37; -fx-font-size: 11px; -fx-font-style: italic; -fx-padding: 5 0 0 0;"/>
     </VBox>
 
     <!-- TABLA DE CLIENTES -->

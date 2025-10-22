@@ -301,18 +301,39 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Carga el árbol completo de clientes con sus ventas
      * Similar a InventarioDAO.cargarArbol()
      *
-     * @param filtro Criterio de búsqueda (nombre o DNI)
+     * @param filtro Criterio de búsqueda (nombre o DNI) - DEPRECATED, usar cargarArbolConFiltros()
      * @return TreeItem raíz con clientes como padres y ventas como hijos
      */
     public TreeItem<ItemCliente> cargarArbol(String filtro) throws SQLException {
-        String f = filtro == null ? "" : filtro.trim();
-        String like = "%" + f + "%";
+        return cargarArbolConFiltros(filtro, null, null, null);
+    }
+
+    /**
+     * Carga el árbol de clientes con filtros múltiples e independientes
+     *
+     * @param filtroNombre Búsqueda parcial por nombre (case-insensitive)
+     * @param filtroDni Búsqueda parcial por DNI
+     * @param filtroTelefono Búsqueda parcial por teléfono
+     * @param filtroEmail Búsqueda parcial por email
+     * @return TreeItem raíz con clientes como padres y ventas como hijos
+     */
+    public TreeItem<ItemCliente> cargarArbolConFiltros(
+            String filtroNombre,
+            String filtroDni,
+            String filtroTelefono,
+            String filtroEmail) throws SQLException {
+
+        // Normalizar filtros
+        String fNombre = (filtroNombre == null || filtroNombre.isBlank()) ? null : filtroNombre.trim();
+        String fDni = (filtroDni == null || filtroDni.isBlank()) ? null : filtroDni.trim();
+        String fTelefono = (filtroTelefono == null || filtroTelefono.isBlank()) ? null : filtroTelefono.trim();
+        String fEmail = (filtroEmail == null || filtroEmail.isBlank()) ? null : filtroEmail.trim();
 
         TreeItem<ItemCliente> root = new TreeItem<>();
         Map<Long, TreeItem<ItemCliente>> padres = new LinkedHashMap<>();
 
-        // Consulta que trae clientes con sus ventas (LEFT JOIN para traer clientes sin ventas)
-        String sql = """
+        // Construir query dinámica con filtros opcionales
+        StringBuilder sql = new StringBuilder("""
             SELECT
                 c.id as cliente_id,
                 c.nombre as cliente_nombre,
@@ -326,18 +347,42 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
                 v.total as venta_total
             FROM cliente c
             LEFT JOIN venta v ON v.clienteId = c.id
-            WHERE (? = ''
-                OR LOWER(c.nombre) LIKE LOWER(?)
-                OR LOWER(COALESCE(c.dni, '')) LIKE LOWER(?))
-            ORDER BY c.nombre, v.fecha DESC
-        """;
+            WHERE 1=1
+        """);
+
+        // Lista de parámetros para PreparedStatement
+        List<String> parametros = new ArrayList<>();
+
+        // Agregar condiciones según filtros activos
+        if (fNombre != null) {
+            sql.append(" AND LOWER(c.nombre) LIKE LOWER(?)");
+            parametros.add("%" + fNombre + "%");
+        }
+
+        if (fDni != null) {
+            sql.append(" AND LOWER(COALESCE(c.dni, '')) LIKE LOWER(?)");
+            parametros.add("%" + fDni + "%");
+        }
+
+        if (fTelefono != null) {
+            sql.append(" AND LOWER(COALESCE(c.telefono, '')) LIKE LOWER(?)");
+            parametros.add("%" + fTelefono + "%");
+        }
+
+        if (fEmail != null) {
+            sql.append(" AND LOWER(COALESCE(c.email, '')) LIKE LOWER(?)");
+            parametros.add("%" + fEmail + "%");
+        }
+
+        sql.append(" ORDER BY c.nombre, v.fecha DESC");
 
         try (Connection cn = Database.get();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
 
-            ps.setString(1, f);
-            ps.setString(2, like);
-            ps.setString(3, like);
+            // Setear parámetros dinámicamente
+            for (int i = 0; i < parametros.size(); i++) {
+                ps.setString(i + 1, parametros.get(i));
+            }
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
