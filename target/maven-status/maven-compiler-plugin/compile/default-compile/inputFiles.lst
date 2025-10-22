@@ -6,11 +6,13 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\Client
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\DashboardController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\EditarProductoController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ExportarController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\LoginController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\MetricasController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\PrincipalViewController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ProductoTreeController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\RentabilidadController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\VentasController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\AutenticacionDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CategoriaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ClienteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CrudDAO.java
@@ -38,6 +40,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\Licencia
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\LicenciaManager.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\InventarioService.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\VentanaProducto.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\SessionManager.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateChecker.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateConfig.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateDialog.java
@@ -55,6 +58,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorEx
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorPDF.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\ExportadorVentas.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\Mapper.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\PasswordUtil.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\Tablas.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\TablasDialog.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Util\Transiciones.java

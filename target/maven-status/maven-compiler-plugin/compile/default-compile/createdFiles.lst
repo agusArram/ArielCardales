@@ -16,6 +16,7 @@ com\arielcardales\arielcardales\Updates\Updater.class
 com\arielcardales\arielcardales\DAO\ClienteDAO.class
 com\arielcardales\arielcardales\DAO\VentaDAO$ProductoVendido.class
 com\arielcardales\arielcardales\Entidades\Categoria.class
+com\arielcardales\arielcardales\controller\AppController$2.class
 com\arielcardales\arielcardales\controller\RentabilidadController$3.class
 com\arielcardales\arielcardales\Util\Arboles$1.class
 com\arielcardales\arielcardales\controller\DashboardController$1.class
@@ -33,6 +34,7 @@ com\arielcardales\arielcardales\controller\AgregarVarianteController.class
 com\arielcardales\arielcardales\controller\VentasController$6.class
 com\arielcardales\arielcardales\Updates\UpdateDownloader$ProgressCallback.class
 com\arielcardales\arielcardales\controller\EditarProductoController$2.class
+com\arielcardales\arielcardales\DAO\AutenticacionDAO.class
 com\arielcardales\arielcardales\DAO\CategoriaDAO.class
 com\arielcardales\arielcardales\Util\EdicionCeldas$1.class
 com\arielcardales\arielcardales\controller\EditarProductoController$1.class
@@ -60,11 +62,13 @@ com\arielcardales\arielcardales\controller\MetricasController.class
 com\arielcardales\arielcardales\Updates\UpdateChecker$ReleaseInfo.class
 com\arielcardales\arielcardales\Util\Tablas$1.class
 com\arielcardales\arielcardales\DAO\ProductoVarianteDAO.class
+com\arielcardales\arielcardales\session\SessionManager.class
 com\arielcardales\arielcardales\controller\VentasController.class
 com\arielcardales\arielcardales\Util\TablasDialog.class
 com\arielcardales\arielcardales\Updates\Updater$ProgressCallback.class
 com\arielcardales\arielcardales\controller\ExportarController.class
 com\arielcardales\arielcardales\Util\Mapper.class
+com\arielcardales\arielcardales\DAO\AutenticacionDAO$1.class
 com\arielcardales\arielcardales\Entidades\Unidad.class
 com\arielcardales\arielcardales\DAO\VentaDAO.class
 com\arielcardales\arielcardales\DAO\DashboardDAO.class
@@ -102,6 +106,7 @@ com\arielcardales\arielcardales\Updates\UpdateManager$UpdatePhase.class
 com\arielcardales\arielcardales\Util\Transiciones.class
 com\arielcardales\arielcardales\controller\DashboardController.class
 com\arielcardales\arielcardales\controller\AppController$1.class
+com\arielcardales\arielcardales\controller\LoginController.class
 com\arielcardales\arielcardales\App.class
 com\arielcardales\arielcardales\controller\VentasController$7.class
 com\arielcardales\arielcardales\service\InventarioService$ResultadoActualizacion.class
@@ -115,6 +120,8 @@ com\arielcardales\arielcardales\DAO\DashboardDAO$ProductoVendido.class
 com\arielcardales\arielcardales\Updates\UpdateTester.class
 com\arielcardales\arielcardales\controller\VentasController$8.class
 com\arielcardales\arielcardales\controller\VentasController$1.class
+com\arielcardales\arielcardales\controller\LoginController$1.class
 com\arielcardales\arielcardales\DAO\Database.class
 com\arielcardales\arielcardales\controller\ProductoTreeController.class
 com\arielcardales\arielcardales\Util\Arboles$2.class
+com\arielcardales\arielcardales\Util\PasswordUtil.class

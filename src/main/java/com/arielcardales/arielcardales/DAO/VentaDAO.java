@@ -3,6 +3,7 @@ package com.arielcardales.arielcardales.DAO;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -13,29 +14,34 @@ import java.util.List;
 public class VentaDAO {
 
     public static List<Venta> obtenerTodasLasVentas() throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT 
+            SELECT
                 id, clienteNombre, fecha, medioPago, total,
                 totalItems, cantidadProductos
             FROM vVentasResumen
+            WHERE cliente_id = ?
             ORDER BY fecha DESC
         """;
 
         List<Venta> ventas = new ArrayList<>();
 
         try (Connection conn = Database.get();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                Venta venta = new Venta(
-                        rs.getLong("id"),
-                        rs.getString("clienteNombre"),
-                        rs.getTimestamp("fecha").toLocalDateTime(),
-                        rs.getString("medioPago"),
-                        rs.getBigDecimal("total")
-                );
-                ventas.add(venta);
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Venta venta = new Venta(
+                            rs.getLong("id"),
+                            rs.getString("clienteNombre"),
+                            rs.getTimestamp("fecha").toLocalDateTime(),
+                            rs.getString("medioPago"),
+                            rs.getBigDecimal("total")
+                    );
+                    ventas.add(venta);
+                }
             }
         }
 
@@ -44,10 +50,12 @@ public class VentaDAO {
 
     public static List<Venta> obtenerVentasPorFecha(LocalDate fechaInicio, LocalDate fechaFin)
             throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, clienteNombre, fecha, medioPago, total
             FROM vVentasResumen
             WHERE DATE(fecha) BETWEEN ? AND ?
+              AND cliente_id = ?
             ORDER BY fecha DESC
         """;
 
@@ -58,6 +66,7 @@ public class VentaDAO {
 
             ps.setDate(1, Date.valueOf(fechaInicio));
             ps.setDate(2, Date.valueOf(fechaFin));
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -77,6 +86,7 @@ public class VentaDAO {
     }
 
     public static List<VentaItem> obtenerItemsDeVenta(Long ventaId) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         // 🔹 Consulta directa a las tablas para obtener color y talle
         String sql = """
             SELECT
@@ -92,9 +102,12 @@ public class VentaDAO {
                 pv.color,
                 pv.talle
             FROM ventaItem vi
+            JOIN venta v ON v.id = vi.ventaId
             JOIN producto p ON p.id = vi.productoId
             LEFT JOIN producto_variante pv ON pv.id = vi.variante_id
             WHERE vi.ventaId = ?
+              AND v.cliente_id = ?
+              AND p.cliente_id = ?
             ORDER BY vi.id
         """;
 
@@ -104,6 +117,8 @@ public class VentaDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, ventaId);
+            ps.setString(2, clienteId);
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -137,10 +152,12 @@ public class VentaDAO {
     }
 
     public static List<Venta> buscarVentasPorCliente(String nombreCliente) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT v.id, v.clienteNombre, v.fecha, v.medioPago, v.total
             FROM venta v
             WHERE LOWER(v.clienteNombre) LIKE LOWER(?)
+              AND v.cliente_id = ?
             ORDER BY v.fecha DESC
         """;
 
@@ -150,6 +167,7 @@ public class VentaDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, "%" + nombreCliente + "%");
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -170,8 +188,9 @@ public class VentaDAO {
 
     public static VentaEstadisticas obtenerEstadisticas(LocalDate fechaInicio, LocalDate fechaFin)
             throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT 
+            SELECT
                 COUNT(*) as totalVentas,
                 COALESCE(SUM(total), 0) as totalMonto,
                 COALESCE(AVG(total), 0) as promedioVenta,
@@ -179,6 +198,7 @@ public class VentaDAO {
                 COALESCE(MIN(total), 0) as ventaMenor
             FROM venta
             WHERE DATE(fecha) BETWEEN ? AND ?
+              AND cliente_id = ?
         """;
 
         try (Connection conn = Database.get();
@@ -186,6 +206,7 @@ public class VentaDAO {
 
             ps.setDate(1, Date.valueOf(fechaInicio));
             ps.setDate(2, Date.valueOf(fechaFin));
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -199,7 +220,6 @@ public class VentaDAO {
                 }
             }
         }
-
         return new VentaEstadisticas(0, BigDecimal.ZERO, BigDecimal.ZERO,
                 BigDecimal.ZERO, BigDecimal.ZERO);
     }
@@ -209,14 +229,15 @@ public class VentaDAO {
      * ⚠️ Si falla cualquier paso, hace rollback automático
      */
     public static Long registrarVentaCompleta(Venta venta) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         // ✅ CRÍTICO: Usar try-with-resources para cerrar la conexión automáticamente
         try (Connection conn = Database.get()) {
             conn.setAutoCommit(false);
 
             // 1️⃣ Insertar venta
             String sqlVenta = """
-            INSERT INTO venta (clienteId, clienteNombre, fecha, medioPago, total)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO venta (clienteId, clienteNombre, fecha, medioPago, total, cliente_id)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
 
             long ventaId;
@@ -226,6 +247,7 @@ public class VentaDAO {
                 ps.setTimestamp(3, Timestamp.valueOf(venta.getFecha()));
                 ps.setString(4, venta.getMedioPago());
                 ps.setBigDecimal(5, venta.getTotal());
+                ps.setString(6, clienteId);
 
                 int affectedRows = ps.executeUpdate();
 
@@ -246,9 +268,9 @@ public class VentaDAO {
             // 🔹 IMPORTANTE: Si la tabla ventaItem NO tiene columna productoNombre,
             // ejecuta este SQL primero: ALTER TABLE ventaItem ADD COLUMN productoNombre VARCHAR(255);
             String sqlItem = """
-            INSERT INTO ventaItem (ventaId, productoId, variante_id, qty, precioUnit, productoNombre)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """;
+                INSERT INTO ventaItem (ventaId, productoId, variante_id, qty, precioUnit, productoNombre, cliente_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
 
             // ✅ DEBUG: Imprimir cuántos items se van a insertar
             System.out.println("🔍 DEBUG: Items en la venta: " + venta.getItems().size());
@@ -263,6 +285,16 @@ public class VentaDAO {
 
                     ps.setLong(1, ventaId);
                     ps.setLong(2, item.getProductoId());
+                    if (item.getVarianteId() != null)
+                        ps.setLong(3, item.getVarianteId());
+                    else
+                        ps.setNull(3, Types.BIGINT);
+
+                    ps.setInt(4, item.getQty());
+                    ps.setBigDecimal(5, item.getPrecioUnit());
+                    ps.setString(6, item.getProductoNombre());
+                    ps.setString(7, clienteId); // 🔹 Agregá esta línea
+
 
                     // ✅ Insertar varianteId si existe
                     if (item.getVarianteId() != null) {
@@ -329,8 +361,9 @@ public class VentaDAO {
     public static List<ProductoVendido> obtenerProductosMasVendidos(
             LocalDate fechaInicio, LocalDate fechaFin, int limite) throws SQLException {
 
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-        SELECT 
+        SELECT
             p.etiqueta,
             p.nombre,
             SUM(vi.qty) as totalVendido,
@@ -339,6 +372,8 @@ public class VentaDAO {
         JOIN producto p ON p.id = vi.productoId
         JOIN venta v ON v.id = vi.ventaId
         WHERE DATE(v.fecha) BETWEEN ? AND ?
+          AND v.cliente_id = ?
+          AND p.cliente_id = ?
         GROUP BY p.id, p.etiqueta, p.nombre
         ORDER BY totalVendido DESC
         LIMIT ?
@@ -351,7 +386,9 @@ public class VentaDAO {
 
             ps.setDate(1, Date.valueOf(fechaInicio));
             ps.setDate(2, Date.valueOf(fechaFin));
-            ps.setInt(3, limite);
+            ps.setString(3, clienteId);
+            ps.setString(4, clienteId);
+            ps.setInt(5, limite);
 
             try (ResultSet rs = ps.executeQuery()) {
                 int posicion = 1;
@@ -398,14 +435,16 @@ public class VentaDAO {
     }
 
     public static List<Venta> obtenerVentasPaginadas(int offset, int limit) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         List<Venta> ventas = new ArrayList<>();
-        String sql = "SELECT * FROM venta ORDER BY fecha DESC OFFSET ? LIMIT ?";
+        String sql = "SELECT * FROM venta WHERE cliente_id = ? ORDER BY fecha DESC OFFSET ? LIMIT ?";
 
         try (Connection conn =Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, offset);
-            stmt.setInt(2, limit);
+            stmt.setString(1, clienteId);
+            stmt.setInt(2, offset);
+            stmt.setInt(3, limit);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -419,12 +458,15 @@ public class VentaDAO {
     }
 
     public static int contarVentas() throws SQLException {
-        String sql = "SELECT COUNT(*) FROM venta";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "SELECT COUNT(*) FROM venta WHERE cliente_id = ?";
         try (Connection conn = Database.get();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, clienteId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         }
         return 0;
@@ -436,6 +478,7 @@ public class VentaDAO {
      * Obtiene ventas que contienen un producto específico (optimizado)
      */
     public static List<Venta> obtenerVentasPorProducto(String etiqueta) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
         SELECT DISTINCT
             v.id,
@@ -447,6 +490,8 @@ public class VentaDAO {
         INNER JOIN ventaItem vi ON vi.ventaId = v.id
         INNER JOIN producto p ON p.id = vi.productoId
         WHERE p.etiqueta = ?
+          AND v.cliente_id = ?
+          AND p.cliente_id = ?
         ORDER BY v.fecha DESC
     """;
 
@@ -456,6 +501,8 @@ public class VentaDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, etiqueta);
+            ps.setString(2, clienteId);
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -481,16 +528,24 @@ public class VentaDAO {
      * ⚠️ Transacción completa con rollback automático si falla
      */
     public static boolean anularVenta(Long ventaId) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         try (Connection conn = Database.get()) {
             conn.setAutoCommit(false);
 
             try {
                 // 1️⃣ Obtener items de la venta para restaurar stock
-                String sqlItems = "SELECT productoId, qty FROM ventaItem WHERE ventaId = ?";
+                String sqlItems = """
+                    SELECT vi.productoId, vi.qty
+                    FROM ventaItem vi
+                    JOIN venta v ON v.id = vi.ventaId
+                    WHERE vi.ventaId = ?
+                      AND v.cliente_id = ?
+                """;
                 List<ItemParaRestaurar> items = new ArrayList<>();
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlItems)) {
                     ps.setLong(1, ventaId);
+                    ps.setString(2, clienteId);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             items.add(new ItemParaRestaurar(
@@ -503,31 +558,40 @@ public class VentaDAO {
 
                 // 2️⃣ Restaurar stock de cada producto
                 String sqlRestaurarStock = """
-                UPDATE producto 
+                UPDATE producto
                 SET stockOnHand = stockOnHand + ?
-                WHERE id = ?
+                WHERE id = ? AND cliente_id = ?
             """;
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlRestaurarStock)) {
                     for (ItemParaRestaurar item : items) {
                         ps.setInt(1, item.cantidad);
                         ps.setLong(2, item.productoId);
+                        ps.setString(3, clienteId);
                         ps.addBatch();
                     }
                     ps.executeBatch();
                 }
 
-                // 3️⃣ Eliminar items de la venta
-                String sqlDeleteItems = "DELETE FROM ventaItem WHERE ventaId = ?";
+                // 3️⃣ Eliminar items de la venta (verificar que pertenezca al cliente)
+                String sqlDeleteItems = """
+                    DELETE FROM ventaItem vi
+                    USING venta v
+                    WHERE vi.ventaId = v.id
+                      AND vi.ventaId = ?
+                      AND v.cliente_id = ?
+                """;
                 try (PreparedStatement ps = conn.prepareStatement(sqlDeleteItems)) {
                     ps.setLong(1, ventaId);
+                    ps.setString(2, clienteId);
                     ps.executeUpdate();
                 }
 
                 // 4️⃣ Eliminar la venta
-                String sqlDeleteVenta = "DELETE FROM venta WHERE id = ?";
+                String sqlDeleteVenta = "DELETE FROM venta WHERE id = ? AND cliente_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(sqlDeleteVenta)) {
                     ps.setLong(1, ventaId);
+                    ps.setString(2, clienteId);
                     int rows = ps.executeUpdate();
 
                     if (rows == 0) {

@@ -17,6 +17,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -479,5 +480,183 @@ public class AppController {
                 .position(Pos.BOTTOM_RIGHT)
                 .hideAfter(javafx.util.Duration.seconds(4))
                 .showWarning();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ADMINISTRACIÓN DE USUARIOS
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Muestra diálogo para registrar un nuevo usuario/licencia
+     */
+    @FXML
+    private void mostrarRegistroUsuario() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Administración - Registrar Nuevo Usuario");
+        dialog.setHeaderText("Crear una nueva licencia/usuario en el sistema");
+
+        // Botones
+        ButtonType btnRegistrar = new ButtonType("Registrar", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnRegistrar, ButtonType.CANCEL);
+
+        // Campos del formulario
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField txtClienteId = new TextField();
+        txtClienteId.setPromptText("ej: tienda_juan, cliente001");
+
+        TextField txtNombre = new TextField();
+        txtNombre.setPromptText("Nombre del negocio/cliente");
+
+        TextField txtEmail = new TextField();
+        txtEmail.setPromptText("email@ejemplo.com");
+
+        PasswordField txtPassword = new PasswordField();
+        txtPassword.setPromptText("Contraseña (mín. 6 caracteres)");
+
+        PasswordField txtPasswordConfirm = new PasswordField();
+        txtPasswordConfirm.setPromptText("Confirmar contraseña");
+
+        ComboBox<String> cbEstado = new ComboBox<>();
+        cbEstado.getItems().addAll("ACTIVO", "SUSPENDIDO", "EXPIRADO", "VENCIDO");
+        cbEstado.setValue("ACTIVA");
+
+        ComboBox<String> cbPlan = new ComboBox<>();
+        cbPlan.getItems().addAll("DEMO", "BASE", "FULL", "NO");
+        cbPlan.setValue("PREMIUM");
+
+        DatePicker dpExpiracion = new DatePicker();
+        dpExpiracion.setValue(java.time.LocalDate.now().plusYears(1));
+
+        TextArea txtNotas = new TextArea();
+        txtNotas.setPromptText("Notas opcionales");
+        txtNotas.setPrefRowCount(2);
+
+        // Layout
+        grid.add(new Label("*Cliente ID:"), 0, 0);
+        grid.add(txtClienteId, 1, 0);
+        grid.add(new Label("*Nombre:"), 0, 1);
+        grid.add(txtNombre, 1, 1);
+        grid.add(new Label("*Email:"), 0, 2);
+        grid.add(txtEmail, 1, 2);
+        grid.add(new Label("*Contraseña:"), 0, 3);
+        grid.add(txtPassword, 1, 3);
+        grid.add(new Label("*Confirmar:"), 0, 4);
+        grid.add(txtPasswordConfirm, 1, 4);
+        grid.add(new Label("Estado:"), 0, 5);
+        grid.add(cbEstado, 1, 5);
+        grid.add(new Label("Plan:"), 0, 6);
+        grid.add(cbPlan, 1, 6);
+        grid.add(new Label("Fecha Expiración:"), 0, 7);
+        grid.add(dpExpiracion, 1, 7);
+        grid.add(new Label("Notas:"), 0, 8);
+        grid.add(txtNotas, 1, 8);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Focus en primer campo
+        Platform.runLater(() -> txtClienteId.requestFocus());
+
+        // Procesar resultado
+        dialog.showAndWait().ifPresent(response -> {
+            if (response == btnRegistrar) {
+                registrarNuevoUsuario(
+                    txtClienteId.getText().trim(),
+                    txtNombre.getText().trim(),
+                    txtEmail.getText().trim(),
+                    txtPassword.getText(),
+                    txtPasswordConfirm.getText(),
+                    cbEstado.getValue(),
+                    cbPlan.getValue(),
+                    dpExpiracion.getValue(),
+                    txtNotas.getText().trim()
+                );
+            }
+        });
+    }
+
+    /**
+     * Registra un nuevo usuario en la base de datos
+     */
+    private void registrarNuevoUsuario(String clienteId, String nombre, String email,
+                                       String password, String passwordConfirm,
+                                       String estado, String plan,
+                                       java.time.LocalDate fechaExpiracion, String notas) {
+        // Validaciones
+        if (clienteId.isEmpty() || nombre.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            mostrarError("Campos requeridos", "Por favor complete todos los campos marcados con *");
+            return;
+        }
+
+        if (!password.equals(passwordConfirm)) {
+            mostrarError("Error de contraseña", "Las contraseñas no coinciden");
+            return;
+        }
+
+        if (password.length() < 6) {
+            mostrarError("Contraseña débil", "La contraseña debe tener al menos 6 caracteres");
+            return;
+        }
+
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            mostrarError("Email inválido", "Por favor ingrese un email válido");
+            return;
+        }
+
+        // Validar cliente_id (solo letras, números, guiones bajos)
+        if (!clienteId.matches("^[a-zA-Z0-9_]+$")) {
+            mostrarError("Cliente ID inválido",
+                "El Cliente ID solo puede contener letras, números y guiones bajos.\n" +
+                "Ejemplos: tienda_juan, cliente001, negocio123");
+            return;
+        }
+
+        // Registrar en background
+        Task<Boolean> registroTask = new Task<>() {
+            @Override
+            protected Boolean call() throws Exception {
+                com.arielcardales.arielcardales.DAO.AutenticacionDAO dao =
+                    new com.arielcardales.arielcardales.DAO.AutenticacionDAO();
+
+                return dao.registrar(
+                    clienteId,
+                    nombre,
+                    email,
+                    password,
+                    estado,
+                    plan,
+                    fechaExpiracion,
+                    notas.isEmpty() ? null : notas
+                );
+            }
+        };
+
+        registroTask.setOnSucceeded(event -> {
+            if (registroTask.getValue()) {
+                mostrarExito("Usuario registrado exitosamente!\n\n" +
+                    "Cliente ID: " + clienteId + "\n" +
+                    "Email: " + email + "\n" +
+                    "Plan: " + plan + "\n" +
+                    "Expira: " + fechaExpiracion);
+            } else {
+                mostrarError("Error de registro",
+                    "No se pudo registrar el usuario.\n" +
+                    "Posibles causas:\n" +
+                    "• El email ya está registrado\n" +
+                    "• El cliente_id ya existe");
+            }
+        });
+
+        registroTask.setOnFailed(event -> {
+            Throwable ex = registroTask.getException();
+            mostrarError("Error al registrar",
+                "Error: " + (ex != null ? ex.getMessage() : "Desconocido"));
+            ex.printStackTrace();
+        });
+
+        new Thread(registroTask).start();
     }
 }

@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.Categoria;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -11,8 +12,9 @@ import java.util.Optional;
 
 public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
-    // Lista con self-join para mostrar nombre del padre
+    // Lista con self-join para mostrar nombre del padre (filtrado por cliente_id)
     public List<Categoria> findAllWithParent() {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             select c.id,
                    c.nombre,
@@ -20,16 +22,21 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
                    p.nombre as parentNombre,
                    c.createdAt
               from categoria c
-              left join categoria p on p.id = c.parentId
+              left join categoria p on p.id = c.parentId AND p.cliente_id = ?
+             where c.cliente_id = ?
              order by c.nombre asc
         """;
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
 
-            List<Categoria> out = new ArrayList<>();
-            while (rs.next()) out.add(Mapper.getCategoriaConPadre(rs));
-            return out;
+            ps.setString(1, clienteId);
+            ps.setString(2, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Categoria> out = new ArrayList<>();
+                while (rs.next()) out.add(Mapper.getCategoriaConPadre(rs));
+                return out;
+            }
 
         } catch (SQLException e) {
             throw new DaoException("Error listando categorías", e);
@@ -38,13 +45,18 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
     @Override
     public List<Categoria> findAll() {
-        String sql = "select id, nombre, parentId, createdAt from categoria order by nombre";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "select id, nombre, parentId, createdAt from categoria where cliente_id = ? order by nombre";
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            List<Categoria> out = new ArrayList<>();
-            while (rs.next()) out.add(Mapper.getCategoria(rs));
-            return out;
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Categoria> out = new ArrayList<>();
+                while (rs.next()) out.add(Mapper.getCategoria(rs));
+                return out;
+            }
         } catch (SQLException e) {
             throw new DaoException("Error listando categorías (básico)", e);
         }
@@ -52,10 +64,12 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
     @Override
     public Optional<Categoria> findById(Long id) {
-        String sql = "select id, nombre, parentId, createdAt from categoria where id = ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "select id, nombre, parentId, createdAt from categoria where id = ? AND cliente_id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return Optional.of(Mapper.getCategoria(rs));
                 return Optional.empty();
@@ -67,12 +81,14 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
     @Override
     public Long insert(Categoria cat) {
-        String sql = "insert into categoria (nombre, parentId) values (?, ?) returning id";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "insert into categoria (nombre, parentId, cliente_id) values (?, ?, ?) returning id";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, cat.getNombre());
             if (cat.getParentId() == null) ps.setNull(2, Types.BIGINT);
             else ps.setLong(2, cat.getParentId());
+            ps.setString(3, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getLong(1);
@@ -86,13 +102,15 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
     @Override
     public boolean update(Categoria cat) {
-        String sql = "update categoria set nombre = ?, parentId = ? where id = ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "update categoria set nombre = ?, parentId = ? where id = ? AND cliente_id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, cat.getNombre());
             if (cat.getParentId() == null) ps.setNull(2, Types.BIGINT);
             else ps.setLong(2, cat.getParentId());
             ps.setLong(3, cat.getId());
+            ps.setString(4, clienteId);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             throw new DaoException("Error actualizando categoría id=" + cat.getId(), e);
@@ -101,10 +119,12 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
 
     @Override
     public boolean deleteById(Long id) {
-        String sql = "delete from categoria where id = ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "delete from categoria where id = ? AND cliente_id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             // Si tiene hijos o productos, fallará por FK. Podés capturar el SQLState si querés mensaje más claro.
@@ -113,13 +133,18 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     }
 
     public Map<String, Long> mapNombreId() {
-        String sql = "select id, nombre from categoria order by nombre";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "select id, nombre from categoria where cliente_id = ? order by nombre";
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            Map<String, Long> out = new java.util.LinkedHashMap<>();
-            while (rs.next()) out.put(rs.getString("nombre"), rs.getLong("id"));
-            return out;
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                Map<String, Long> out = new java.util.LinkedHashMap<>();
+                while (rs.next()) out.put(rs.getString("nombre"), rs.getLong("id"));
+                return out;
+            }
         } catch (SQLException e) {
             throw new DaoException("Error listando categorías", e);
         }

@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 import javafx.scene.control.TreeItem;
 
 import java.sql.*;
@@ -20,6 +21,7 @@ public class InventarioDAO {
                     ") order by producto_nombre, color, talle";
 
     public static TreeItem<ItemInventario> cargarArbol(String filtro) throws SQLException {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String f = filtro == null ? "" : filtro.trim();
         boolean porEtiqueta = f.matches("p\\d+");  // heurística p###
 
@@ -33,6 +35,7 @@ public class InventarioDAO {
              PreparedStatement ps = cn.prepareStatement(
                      "SELECT * FROM vInventario_variantes " +
                              "WHERE active = true " +  // Filtra productos/variantes inactivos
+                             "AND cliente_id = ? " +  // Filtrar por cliente
                              "AND (? = '' " +
                              "OR lower(producto_etiqueta) LIKE lower(?) " +
                              "OR lower(producto_nombre) LIKE lower(?) " +
@@ -40,11 +43,12 @@ public class InventarioDAO {
                              "OR lower(coalesce(talle,'')) LIKE lower(?)) " +
                              "ORDER BY producto_nombre, color, talle")) {
 
-            ps.setString(1, f);
-            ps.setString(2, likeEtiqueta);
-            ps.setString(3, like);
+            ps.setString(1, clienteId);
+            ps.setString(2, f);
+            ps.setString(3, likeEtiqueta);
             ps.setString(4, like);
             ps.setString(5, like);
+            ps.setString(6, like);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

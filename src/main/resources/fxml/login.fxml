@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arielcardales.arielcardales.controller.LoginController"
+      alignment="CENTER" spacing="20" styleClass="login-container"
+      stylesheets="@../Estilos/Estilos.css">
+
+    <padding>
+        <Insets top="40" right="40" bottom="40" left="40"/>
+    </padding>
+
+    <!-- Logo/Título -->
+    <VBox alignment="CENTER" spacing="10">
+        <Label text="Sistema de Inventario" styleClass="login-title">
+            <font>
+                <Font name="Lora Bold" size="32"/>
+            </font>
+        </Label>
+        <Label text="SORT_PROYECTS" styleClass="login-subtitle">
+            <font>
+                <Font name="Lora" size="18"/>
+            </font>
+        </Label>
+    </VBox>
+
+    <!-- Formulario de Login -->
+    <VBox spacing="15" maxWidth="350" styleClass="login-form">
+        <!-- Email -->
+        <VBox spacing="5">
+            <Label text="Email:" styleClass="login-label">
+                <font>
+                    <Font name="Lora" size="14"/>
+                </font>
+            </Label>
+            <TextField fx:id="emailField" promptText="usuario@ejemplo.com"
+                       styleClass="login-input" onAction="#handleLogin"/>
+        </VBox>
+
+        <!-- Password -->
+        <VBox spacing="5">
+            <Label text="Contraseña:" styleClass="login-label">
+                <font>
+                    <Font name="Lora" size="14"/>
+                </font>
+            </Label>
+            <PasswordField fx:id="passwordField" promptText="••••••••"
+                           styleClass="login-input" onAction="#handleLogin"/>
+        </VBox>
+
+        <!-- Mensaje de error -->
+        <Label fx:id="errorLabel" styleClass="login-error" visible="false" managed="false"
+               wrapText="true" textAlignment="CENTER">
+            <font>
+                <Font name="Lora" size="12"/>
+            </font>
+        </Label>
+
+        <!-- Botones -->
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="loginButton" text="Iniciar Sesión" defaultButton="true"
+                    onAction="#handleLogin" styleClass="btn-primary" prefWidth="150">
+                <font>
+                    <Font name="Lora" size="14"/>
+                </font>
+            </Button>
+
+            <Button fx:id="cancelButton" text="Salir" cancelButton="true"
+                    onAction="#handleCancel" styleClass="btn-secondary" prefWidth="100">
+                <font>
+                    <Font name="Lora" size="14"/>
+                </font>
+            </Button>
+        </HBox>
+
+        <!-- Loading indicator -->
+        <HBox fx:id="loadingBox" alignment="CENTER" spacing="10" visible="false" managed="false">
+            <ProgressIndicator prefWidth="30" prefHeight="30"/>
+            <Label text="Autenticando..." styleClass="login-loading">
+                <font>
+                    <Font name="Lora" size="12"/>
+                </font>
+            </Label>
+        </HBox>
+    </VBox>
+
+    <!-- Información adicional -->
+    <VBox alignment="CENTER" spacing="5" VBox.vgrow="ALWAYS">
+        <VBox.margin>
+            <Insets top="30"/>
+        </VBox.margin>
+
+        <Label text="¿Olvidó su contraseña?" styleClass="login-link" underline="true">
+            <font>
+                <Font name="Lora" size="11"/>
+            </font>
+        </Label>
+
+        <Label text="Versión 2.3.0 - AppInventario" styleClass="login-version">
+            <font>
+                <Font name="Lora" size="10"/>
+            </font>
+        </Label>
+    </VBox>
+</VBox>

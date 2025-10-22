@@ -24,11 +24,11 @@ public class LicenciaDAO implements CrudDAO<Licencia, String> {
     @Override
     public Optional<Licencia> findById(String dni) {
         String sql = """
-            SELECT id, dni, nombre, email, estado::text as estado,
+            SELECT id, cliente_id, nombre, email, estado::text as estado,
                    plan::text as plan, fecha_expiracion, notas,
                    createdAt, updatedAt
             FROM licencia
-            WHERE dni = ?
+            WHERE cliente_id = ?
         """;
 
         try (Connection c = Database.get();

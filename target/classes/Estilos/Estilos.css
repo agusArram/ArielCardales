@@ -722,3 +722,99 @@
     -fx-border-color: transparent;
     -fx-padding: 0;
 }
+
+
+/* =======================
+   LOGIN SCREEN - Multi-tenant
+   ======================= */
+
+.login-container {
+    -fx-background-color: linear-gradient(to bottom, #e5cba1, #cfa971);
+    -fx-padding: 40;
+}
+
+.login-title {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+}
+
+.login-subtitle {
+    -fx-text-fill: #6b5b47;
+}
+
+.login-form {
+    -fx-background-color: #f5e5d0;
+    -fx-background-radius: 15;
+    -fx-padding: 30;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 3);
+}
+
+.login-label {
+    -fx-text-fill: #2b2b2b;
+    -fx-font-weight: bold;
+}
+
+.login-input {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #cfa971;
+    -fx-border-radius: 8;
+    -fx-border-width: 2;
+    -fx-padding: 10;
+    -fx-font-size: 14px;
+}
+
+.login-input:focused {
+    -fx-border-color: #b88a52;
+    -fx-effect: dropshadow(three-pass-box, rgba(207,169,113,0.4), 5, 0, 0, 0);
+}
+
+.login-error {
+    -fx-text-fill: #d32f2f;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+    -fx-background-color: rgba(255,205,210,0.5);
+    -fx-background-radius: 8;
+}
+
+.login-loading {
+    -fx-text-fill: #6b5b47;
+}
+
+.login-link {
+    -fx-text-fill: #6b5b47;
+    -fx-cursor: hand;
+}
+
+.login-link:hover {
+    -fx-text-fill: #b88a52;
+}
+
+.login-version {
+    -fx-text-fill: #9b8b77;
+    -fx-font-style: italic;
+}
+
+.btn-primary {
+    -fx-background-color: #b88a52;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #9a6f3e;
+}
+
+.btn-secondary {
+    -fx-background-color: #e5cba1;
+    -fx-text-fill: #2b2b2b;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #d4ba8a;
+}
+

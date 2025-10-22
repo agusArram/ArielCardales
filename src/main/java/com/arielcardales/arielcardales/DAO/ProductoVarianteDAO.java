@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.ProductoVariante;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,23 +17,29 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public List<ProductoVariante> findAll() {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT id, producto_id, color, talle, precio, costo, stock,
-                   etiqueta, active, createdAt, updatedAt
-            FROM producto_variante
-            WHERE active = true
-            ORDER BY producto_id, color, talle
+            SELECT pv.id, pv.producto_id, pv.color, pv.talle, pv.precio, pv.costo, pv.stock,
+                   pv.etiqueta, pv.active, pv.createdAt, pv.updatedAt
+            FROM producto_variante pv
+            JOIN producto p ON p.id = pv.producto_id
+            WHERE pv.active = true
+              AND p.cliente_id = ?
+            ORDER BY pv.producto_id, pv.color, pv.talle
         """;
 
         try (Connection conn = Database.get();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            List<ProductoVariante> resultado = new ArrayList<>();
-            while (rs.next()) {
-                resultado.add(Mapper.getProductoVariante(rs));
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<ProductoVariante> resultado = new ArrayList<>();
+                while (rs.next()) {
+                    resultado.add(Mapper.getProductoVariante(rs));
+                }
+                return resultado;
             }
-            return resultado;
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -42,17 +49,21 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public Optional<ProductoVariante> findById(Long id) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT id, producto_id, color, talle, precio, costo, stock,
-                   etiqueta, active, createdAt, updatedAt
-            FROM producto_variante
-            WHERE id = ?
+            SELECT pv.id, pv.producto_id, pv.color, pv.talle, pv.precio, pv.costo, pv.stock,
+                   pv.etiqueta, pv.active, pv.createdAt, pv.updatedAt
+            FROM producto_variante pv
+            JOIN producto p ON p.id = pv.producto_id
+            WHERE pv.id = ?
+              AND p.cliente_id = ?
         """;
 
         try (Connection conn = Database.get();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -69,29 +80,48 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public Long insert(ProductoVariante v) {
+        String clienteId = SessionManager.getInstance().getClienteId();
+
+        // Verificar que el producto pertenece al cliente
+        String sqlCheck = "SELECT 1 FROM producto WHERE id = ? AND cliente_id = ?";
         String sql = """
-            INSERT INTO producto_variante (producto_id, color, talle, precio, costo, stock, active)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO producto_variante (producto_id, color, talle, precio, costo, stock, active, cliente_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
         """;
 
-        try (Connection conn = Database.get();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setLong(1, v.getProductoId());
-            ps.setString(2, v.getColor());
-            ps.setString(3, v.getTalle());
-            ps.setBigDecimal(4, v.getPrecio());
-            ps.setBigDecimal(5, v.getCosto());
-            ps.setInt(6, v.getStock());
-            ps.setBoolean(7, v.isActive());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
+        try (Connection conn = Database.get()) {
+            // Verificar propiedad del producto
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                psCheck.setLong(1, v.getProductoId());
+                psCheck.setString(2, clienteId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new DaoException("El producto no pertenece al cliente actual");
+                    }
                 }
-                throw new DaoException("No se pudo obtener el ID de la variante insertada");
             }
+
+            // Insertar variante
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, v.getProductoId());
+                ps.setString(2, v.getColor());
+                ps.setString(3, v.getTalle());
+                ps.setBigDecimal(4, v.getPrecio());
+                ps.setBigDecimal(5, v.getCosto());
+                ps.setInt(6, v.getStock());
+                ps.setBoolean(7, v.isActive());
+                ps.setString(8, clienteId); // 🔹 Agregado aquí
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    }
+                    throw new DaoException("No se pudo obtener el ID de la variante insertada");
+                }
+            }
+
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -104,10 +134,14 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public boolean update(ProductoVariante v) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            UPDATE producto_variante
+            UPDATE producto_variante pv
             SET color = ?, talle = ?, precio = ?, costo = ?, stock = ?, active = ?
-            WHERE id = ?
+            FROM producto p
+            WHERE pv.id = ?
+              AND pv.producto_id = p.id
+              AND p.cliente_id = ?
         """;
 
         try (Connection conn = Database.get();
@@ -120,6 +154,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             ps.setInt(5, v.getStock());
             ps.setBoolean(6, v.isActive());
             ps.setLong(7, v.getId());
+            ps.setString(8, clienteId);
 
             return ps.executeUpdate() == 1;
 
@@ -131,13 +166,22 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
 
     @Override
     public boolean deleteById(Long id) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         // Soft delete: marcar como inactivo en lugar de eliminar físicamente
-        String sql = "UPDATE producto_variante SET active = false WHERE id = ?";
+        String sql = """
+            UPDATE producto_variante pv
+            SET active = false
+            FROM producto p
+            WHERE pv.id = ?
+              AND pv.producto_id = p.id
+              AND p.cliente_id = ?
+        """;
 
         try (Connection conn = Database.get();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             return ps.executeUpdate() == 1;
 
         } catch (SQLException e) {
@@ -154,18 +198,23 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
      * Obtiene todas las variantes de un producto específico
      */
     public List<ProductoVariante> findByProductoId(Long productoId) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT id, producto_id, color, talle, precio, costo, stock,
-                   etiqueta, active, createdAt, updatedAt
-            FROM producto_variante
-            WHERE producto_id = ? AND active = true
-            ORDER BY color, talle
+            SELECT pv.id, pv.producto_id, pv.color, pv.talle, pv.precio, pv.costo, pv.stock,
+                   pv.etiqueta, pv.active, pv.createdAt, pv.updatedAt
+            FROM producto_variante pv
+            JOIN producto p ON p.id = pv.producto_id
+            WHERE pv.producto_id = ?
+              AND pv.active = true
+              AND p.cliente_id = ?
+            ORDER BY pv.color, pv.talle
         """;
 
         try (Connection conn = Database.get();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, productoId);
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 List<ProductoVariante> resultado = new ArrayList<>();
@@ -186,10 +235,15 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
      * Retorna true solo si había suficiente stock
      */
     public boolean descontarStock(long idVariante, int cantidad) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            UPDATE producto_variante
+            UPDATE producto_variante pv
             SET stock = stock - ?
-            WHERE id = ? AND stock >= ?
+            FROM producto p
+            WHERE pv.id = ?
+              AND pv.stock >= ?
+              AND pv.producto_id = p.id
+              AND p.cliente_id = ?
         """;
 
         try (Connection conn = Database.get();
@@ -198,6 +252,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             ps.setInt(1, cantidad);
             ps.setLong(2, idVariante);
             ps.setInt(3, cantidad);
+            ps.setString(4, clienteId);
 
             int filas = ps.executeUpdate();
             return filas > 0;
@@ -218,6 +273,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
      * @return true si la actualización fue exitosa, false si falló o hay duplicado
      */
     public boolean updateCampo(Long idVariante, String campo, String valor) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String columna = campo.trim().toLowerCase();
 
         // Mapear nombres del modelo Java a columnas reales de la BD
@@ -226,13 +282,19 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
         try (Connection conn = Database.get()) {
             // ✅ VALIDACIÓN: Si edita color o talle, verificar duplicados
             if (columna.equalsIgnoreCase("color") || columna.equalsIgnoreCase("talle")) {
-                // 1. Obtener datos actuales de la variante
-                String sqlActual = "SELECT producto_id, color, talle FROM producto_variante WHERE id = ?";
+                // 1. Obtener datos actuales de la variante (con cliente_id check)
+                String sqlActual = """
+                    SELECT pv.producto_id, pv.color, pv.talle
+                    FROM producto_variante pv
+                    JOIN producto p ON p.id = pv.producto_id
+                    WHERE pv.id = ? AND p.cliente_id = ?
+                """;
                 Long productoId;
                 String colorActual, talleActual;
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlActual)) {
                     ps.setLong(1, idVariante);
+                    ps.setString(2, clienteId);
                     try (ResultSet rs = ps.executeQuery()) {
                         if (!rs.next()) return false;
                         productoId = rs.getLong("producto_id");
@@ -266,11 +328,19 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             }
 
             // 4. Si pasó la validación, hacer el UPDATE
-            String sql = "UPDATE producto_variante SET " + columna + " = ? WHERE id = ?";
+            String sql = """
+                UPDATE producto_variante pv
+                SET %s = ?
+                FROM producto p
+                WHERE pv.id = ?
+                  AND pv.producto_id = p.id
+                  AND p.cliente_id = ?
+            """.formatted(columna);
 
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, valor);
                 stmt.setLong(2, idVariante);
+                stmt.setString(3, clienteId);
                 int filas = stmt.executeUpdate();
                 return filas > 0;
             }
@@ -285,9 +355,14 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
      * Verifica si existe una variante con el mismo color y talle para un producto
      */
     public boolean existeVariante(Long productoId, String color, String talle) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT 1 FROM producto_variante
-            WHERE producto_id = ? AND LOWER(color) = LOWER(?) AND LOWER(talle) = LOWER(?)
+            SELECT 1 FROM producto_variante pv
+            JOIN producto p ON p.id = pv.producto_id
+            WHERE pv.producto_id = ?
+              AND LOWER(pv.color) = LOWER(?)
+              AND LOWER(pv.talle) = LOWER(?)
+              AND p.cliente_id = ?
         """;
 
         try (Connection conn = Database.get();
@@ -296,6 +371,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             ps.setLong(1, productoId);
             ps.setString(2, color);
             ps.setString(3, talle);
+            ps.setString(4, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();

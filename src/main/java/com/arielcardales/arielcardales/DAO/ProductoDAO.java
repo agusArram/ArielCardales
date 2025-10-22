@@ -2,6 +2,7 @@ package com.arielcardales.arielcardales.DAO;
 
 import com.arielcardales.arielcardales.Entidades.Producto;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -29,14 +30,18 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     @Override
     public List<Producto> findAll() {
-        String sql = sqlBase + " where p.active = true order by p.nombre asc";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = sqlBase + " where p.active = true AND p.cliente_id = ? order by p.nombre asc";
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
 
-            List<Producto> resultado = new ArrayList<>();
-            while (rs.next()) resultado.add(Mapper.getProducto(rs));
-            return resultado;
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Producto> resultado = new ArrayList<>();
+                while (rs.next()) resultado.add(Mapper.getProducto(rs));
+                return resultado;
+            }
 
         }catch (SQLException e) {
             e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
@@ -46,11 +51,13 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     // Búsqueda usando ilike + similarity (pg_trgm), por ahora sin usos
     public List<Producto> search(String q, int limit) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String like = "%" + (q == null ? "" : q.trim()) + "%";
         int lim = (limit <= 0) ? 50 : limit;
 
         String sql = sqlBase + """
             where p.active = true
+            and p.cliente_id = ?
             and (p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?)
             order by similarity(p.nombre, ?) desc, p.nombre asc
             limit ?
@@ -59,11 +66,12 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             //podria usar mapper aca, para los set
-            ps.setString(1, like);
+            ps.setString(1, clienteId);
             ps.setString(2, like);
             ps.setString(3, like);
-            ps.setString(4, q);
-            ps.setInt(5, lim);
+            ps.setString(4, like);
+            ps.setString(5, q);
+            ps.setInt(6, lim);
 
             try (ResultSet rs = ps.executeQuery()) {
                 List<Producto> resultado = new ArrayList<>();
@@ -75,34 +83,37 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             throw new DaoException("Error buscando productos: " + e.getMessage(), e);
         }
     }
-    // ----- CRUD “real” contra tabla producto (para ABM) -----
+    // ----- CRUD "real" contra tabla producto (para ABM) -----
     @Override
     public Optional<Producto> findById(Long id) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
            select p.id, p.etiqueta, p.nombre, p.descripcion,
                   p.categoriaId, p.unidadId, p.precio, p.costo,
                   p.stockOnHand, p.active, p.updatedAt
              from producto p
-            where p.id = ?
+            where p.id = ? AND p.cliente_id = ?
         """;
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return Optional.of(Mapper.getProductoBasico(rs));
                 return Optional.empty();
             }
         } catch (SQLException e) {
             e.printStackTrace(); // Esto imprime la causa real
-            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+            throw new DaoException("Error buscando producto: " + e.getMessage(), e);
         }
     }
 
     @Override
     public Long insert(Producto p) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            insert into producto (etiqueta, nombre, descripcion, categoriaId, unidadId, precio, costo, stockOnHand, active)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            insert into producto (etiqueta, nombre, descripcion, categoriaId, unidadId, precio, costo, stockOnHand, active, cliente_id)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             returning id
         """;
         try (Connection c = Database.get();
@@ -117,6 +128,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setBigDecimal(7, p.getCosto());
             ps.setInt(8, p.getStockOnHand());
             ps.setBoolean(9, p.isActive());
+            ps.setString(10, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -130,6 +142,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     @Override
     public boolean update(Producto p) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
         update producto
            set nombre = ?,
@@ -137,7 +150,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                categoriaId = ?,
                precio = ?,
                stockOnHand = ?
-         where id = ?
+         where id = ? AND cliente_id = ?
     """;
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -161,21 +174,24 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             ps.setBigDecimal(4, p.getPrecio());
             ps.setInt(5, p.getStockOnHand());
             ps.setLong(6, p.getId());
+            ps.setString(7, clienteId);
 
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             if (e.getSQLState().equals("23505")) { // unique_violation
                 throw new DaoException("Ya existe un producto con la etiqueta: " + p.getEtiqueta(), e);
             }
-            throw new DaoException("Error insertando producto: " + e.getMessage(), e);
+            throw new DaoException("Error actualizando producto: " + e.getMessage(), e);
         }
     }
 
     public boolean existsByEtiqueta(String etiqueta) {
-        String sql = "select 1 from producto where etiqueta = ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "select 1 from producto where etiqueta = ? AND cliente_id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, etiqueta);
+            ps.setString(2, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
@@ -185,15 +201,17 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     }
 
     public String getUltimaEtiqueta() {
-        String sql = "select etiqueta from producto order by id desc limit 1";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "select etiqueta from producto where cliente_id = ? order by id desc limit 1";
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            if (rs.next()) {
-                return rs.getString("etiqueta");
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, clienteId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("etiqueta");
+                }
+                return null; // no hay productos todavía
             }
-            return null; // no hay productos todavía
         } catch (SQLException e) {
             throw new DaoException("Error obteniendo última etiqueta", e);
         }
@@ -201,11 +219,13 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
     @Override
     public boolean deleteById(Long id) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         // Soft delete: marcar como inactivo en lugar de eliminar físicamente
-        String sql = "UPDATE producto SET active = false WHERE id = ?";
+        String sql = "UPDATE producto SET active = false WHERE id = ? AND cliente_id = ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -214,13 +234,15 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     }
 
     public boolean descontarStock(long idProducto, int cantidadVendida) {
-        String sql = "UPDATE producto SET stockOnHand = stockOnHand - ? WHERE id = ? AND stockOnHand >= ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "UPDATE producto SET stockOnHand = stockOnHand - ? WHERE id = ? AND cliente_id = ? AND stockOnHand >= ?";
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setInt(1, cantidadVendida);
             ps.setLong(2, idProducto);
-            ps.setInt(3, cantidadVendida);
+            ps.setString(3, clienteId);
+            ps.setInt(4, cantidadVendida);
 
             int filas = ps.executeUpdate();
             return filas == 1; // devuelve true si se actualizó correctamente
@@ -232,6 +254,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
 
 
     public boolean updateCampo(long idProducto, String campo, String valor) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         boolean actualizado = false;
 
         try (Connection conn = Database.get()) {
@@ -241,23 +264,32 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             // 🔧 Normaliza nombres de campos según la BD real
             switch (campo) {
                 case "categoria", "categoría" ->
-                        sql = "UPDATE producto SET categoriaid = (SELECT id FROM categoria WHERE LOWER(nombre) = LOWER(?)) WHERE id = ?";
+                        sql = "UPDATE producto SET categoriaid = (SELECT id FROM categoria WHERE LOWER(nombre) = LOWER(?) AND cliente_id = ?) WHERE id = ? AND cliente_id = ?";
                 case "stock", "stockonhand" ->
-                        sql = "UPDATE producto SET stockonhand = ? WHERE id = ?";
+                        sql = "UPDATE producto SET stockonhand = ? WHERE id = ? AND cliente_id = ?";
                 case "precio" ->
-                        sql = "UPDATE producto SET precio = ? WHERE id = ?";
+                        sql = "UPDATE producto SET precio = ? WHERE id = ? AND cliente_id = ?";
                 case "costo" ->
-                        sql = "UPDATE producto SET costo = ? WHERE id = ?";
+                        sql = "UPDATE producto SET costo = ? WHERE id = ? AND cliente_id = ?";
                 default ->
-                        sql = "UPDATE producto SET " + campo + " = ? WHERE id = ?";
+                        sql = "UPDATE producto SET " + campo + " = ? WHERE id = ? AND cliente_id = ?";
             }
 
             System.out.println("🔧 Ejecutando SQL: " + sql);
             System.out.println("📦 Parámetros → valor='" + valor + "' | id=" + idProducto);
 
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, valor);
-                stmt.setLong(2, idProducto);
+                if (campo.equals("categoria") || campo.equals("categoría")) {
+                    // Caso especial con subquery
+                    stmt.setString(1, valor);
+                    stmt.setString(2, clienteId);
+                    stmt.setLong(3, idProducto);
+                    stmt.setString(4, clienteId);
+                } else {
+                    stmt.setString(1, valor);
+                    stmt.setLong(2, idProducto);
+                    stmt.setString(3, clienteId);
+                }
                 int filas = stmt.executeUpdate();
                 actualizado = filas > 0;
             }

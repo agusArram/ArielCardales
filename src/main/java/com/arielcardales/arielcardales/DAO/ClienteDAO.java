@@ -4,6 +4,7 @@ import com.arielcardales.arielcardales.Entidades.Cliente;
 import com.arielcardales.arielcardales.Entidades.ItemCliente;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Util.Mapper;
+import com.arielcardales.arielcardales.session.SessionManager;
 import javafx.scene.control.TreeItem;
 
 import java.sql.*;
@@ -20,21 +21,26 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
     @Override
     public List<Cliente> findAll() {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, nombre, dni, telefono, email, notas, createdAt
             FROM cliente
+            WHERE cliente_id = ?
             ORDER BY nombre ASC
         """;
 
         try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
 
-            List<Cliente> clientes = new ArrayList<>();
-            while (rs.next()) {
-                clientes.add(Mapper.getCliente(rs));
+            ps.setString(1, clienteId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Cliente> clientes = new ArrayList<>();
+                while (rs.next()) {
+                    clientes.add(Mapper.getCliente(rs));
+                }
+                return clientes;
             }
-            return clientes;
 
         } catch (SQLException e) {
             throw new DaoException("Error listando clientes", e);
@@ -43,16 +49,18 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
     @Override
     public Optional<Cliente> findById(Long id) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, nombre, dni, telefono, email, notas, createdAt
             FROM cliente
-            WHERE id = ?
+            WHERE id = ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -69,9 +77,10 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
     @Override
     public Long insert(Cliente cliente) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            INSERT INTO cliente (nombre, dni, telefono, email, notas)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO cliente (nombre, dni, telefono, email, notas, cliente_id)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection c = Database.get();
@@ -82,6 +91,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
             ps.setString(3, cliente.getTelefono());
             ps.setString(4, cliente.getEmail());
             ps.setString(5, cliente.getNotas());
+            ps.setString(6, clienteId);
 
             int rows = ps.executeUpdate();
 
@@ -106,10 +116,11 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
     @Override
     public boolean update(Cliente cliente) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             UPDATE cliente
             SET nombre = ?, dni = ?, telefono = ?, email = ?, notas = ?
-            WHERE id = ?
+            WHERE id = ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
@@ -121,6 +132,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
             ps.setString(4, cliente.getEmail());
             ps.setString(5, cliente.getNotas());
             ps.setLong(6, cliente.getId());
+            ps.setString(7, clienteId);
 
             int rows = ps.executeUpdate();
 
@@ -137,12 +149,14 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
     @Override
     public boolean deleteById(Long id) {
-        String sql = "DELETE FROM cliente WHERE id = ?";
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = "DELETE FROM cliente WHERE id = ? AND cliente_id = ?";
 
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setLong(1, id);
+            ps.setString(2, clienteId);
             int rows = ps.executeUpdate();
 
             if (rows == 0) {
@@ -160,10 +174,12 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Busca clientes por nombre (búsqueda parcial, insensible a mayúsculas)
      */
     public List<Cliente> buscarPorNombre(String nombre) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, nombre, dni, telefono, email, notas, createdAt
             FROM cliente
             WHERE LOWER(nombre) LIKE LOWER(?)
+              AND cliente_id = ?
             ORDER BY nombre ASC
         """;
 
@@ -171,6 +187,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, "%" + nombre + "%");
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 List<Cliente> clientes = new ArrayList<>();
@@ -189,16 +206,18 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Busca un cliente por DNI exacto
      */
     public Optional<Cliente> buscarPorDni(String dni) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, nombre, dni, telefono, email, notas, createdAt
             FROM cliente
-            WHERE dni = ?
+            WHERE dni = ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, dni);
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -217,16 +236,18 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Busca un cliente por teléfono exacto
      */
     public Optional<Cliente> buscarPorTelefono(String telefono) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT id, nombre, dni, telefono, email, notas, createdAt
             FROM cliente
-            WHERE telefono = ?
+            WHERE telefono = ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, telefono);
+            ps.setString(2, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -245,9 +266,10 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Verifica si existe un cliente con el mismo DNI (excluyendo un ID específico, útil para updates)
      */
     public boolean existeDniDuplicado(String dni, Long idExcluido) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT COUNT(*) FROM cliente
-            WHERE dni = ? AND id != ?
+            WHERE dni = ? AND id != ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
@@ -255,6 +277,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
             ps.setString(1, dni);
             ps.setLong(2, idExcluido != null ? idExcluido : -1L);
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -273,9 +296,10 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
      * Verifica si existe un cliente con el mismo teléfono (excluyendo un ID específico)
      */
     public boolean existeTelefonoDuplicado(String telefono, Long idExcluido) {
+        String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT COUNT(*) FROM cliente
-            WHERE telefono = ? AND id != ?
+            WHERE telefono = ? AND id != ? AND cliente_id = ?
         """;
 
         try (Connection c = Database.get();
@@ -283,6 +307,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
             ps.setString(1, telefono);
             ps.setLong(2, idExcluido != null ? idExcluido : -1L);
+            ps.setString(3, clienteId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -323,6 +348,8 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
             String filtroTelefono,
             String filtroEmail) throws SQLException {
 
+        String clienteId = SessionManager.getInstance().getClienteId();
+
         // Normalizar filtros
         String fNombre = (filtroNombre == null || filtroNombre.isBlank()) ? null : filtroNombre.trim();
         String fDni = (filtroDni == null || filtroDni.isBlank()) ? null : filtroDni.trim();
@@ -346,12 +373,14 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
                 v.medioPago as venta_medio,
                 v.total as venta_total
             FROM cliente c
-            LEFT JOIN venta v ON v.clienteId = c.id
-            WHERE 1=1
+            LEFT JOIN venta v ON v.clienteId = c.id AND v.cliente_id = ?
+            WHERE c.cliente_id = ?
         """);
 
-        // Lista de parámetros para PreparedStatement
+        // Lista de parámetros para PreparedStatement (primero cliente_id)
         List<String> parametros = new ArrayList<>();
+        parametros.add(clienteId); // Para el JOIN
+        parametros.add(clienteId); // Para el WHERE
 
         // Agregar condiciones según filtros activos
         if (fNombre != null) {
@@ -386,15 +415,15 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    long clienteId = rs.getLong("cliente_id");
+                    long clienteId1 = rs.getLong("cliente_id");
                     Long ventaId = (Long) rs.getObject("venta_id");
 
                     // Si el cliente no existe en el mapa, crearlo
-                    TreeItem<ItemCliente> padre = padres.get(clienteId);
+                    TreeItem<ItemCliente> padre = padres.get(clienteId1);
                     if (padre == null) {
                         ItemCliente clienteItem = new ItemCliente();
                         clienteItem.setEsVenta(false);
-                        clienteItem.setClienteId(clienteId);
+                        clienteItem.setClienteId(clienteId1);
                         clienteItem.setNombre(rs.getString("cliente_nombre"));
                         clienteItem.setDni(rs.getString("cliente_dni"));
                         clienteItem.setTelefono(rs.getString("cliente_telefono"));
@@ -402,7 +431,7 @@ public class ClienteDAO implements CrudDAO<Cliente, Long> {
                         clienteItem.setNotas(rs.getString("cliente_notas"));
 
                         padre = new TreeItem<>(clienteItem);
-                        padres.put(clienteId, padre);
+                        padres.put(clienteId1, padre);
                         root.getChildren().add(padre);
                     }
 

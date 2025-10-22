@@ -33,7 +33,8 @@ module com.arielcardales.arielcardales {
     requires javafx.graphics;
     requires javafx.base;
     requires java.prefs;
-    requires org.json; // Solo si usás logging con SLF4J.
+    requires org.json;
+    requires bcrypt; // Solo si usás logging con SLF4J.
 
     // requires jdk.compiler; // ⚠️ Esto es para generar código dinámicamente (annotation processors, etc.)
 

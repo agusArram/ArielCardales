@@ -9,12 +9,12 @@
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.arielcardales.arielcardales.controller.PrincipalViewController"
       spacing="0"
-      style="-fx-background-color: linear-gradient(to bottom, #E8DCC4, #D4A574);"
+      style="-fx-background-color: #E8DCC4;"
       VBox.vgrow="ALWAYS">
 
     <!-- HEADER -->
     <VBox alignment="CENTER" spacing="10" style="-fx-padding: 40 20 30 20;">
-        <Label text="Sistema de Gestión Integral" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+        <Label text="AppInventario" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
             <font>
                 <Font name="System Bold" size="32.0"/>
             </font>

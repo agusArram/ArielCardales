@@ -7,7 +7,9 @@
       "Bash(mvn clean javafx:run)",
       "Bash(mvn clean compile)",
       "Bash(psql \"$PG_URL\" -c \"\\d vInventario_variantes\")",
-      "Bash(python generar_firma_licencias.py:*)"
+      "Bash(python generar_firma_licencias.py:*)",
+      "Bash(java:*)",
+      "Bash(mvn exec:java:*)"
     ],
     "deny": [],
     "ask": []

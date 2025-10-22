@@ -20,21 +20,23 @@ public class App extends Application {
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Regular.ttf"), 14);
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Bold.ttf"), 14);
 
-        // 🔹 Cargar interfaz principal
-        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/principal.fxml"));
-        Parent root = fxmlLoader.load(); //aca la 25
+        // 🔹 Cargar pantalla de LOGIN (multi-tenant)
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/login.fxml"));
+        Parent root = fxmlLoader.load();
 
-        Scene scene = new Scene(root, 1450, 830); // tamaño ventana
+        Scene scene = new Scene(root, 500, 600); // Ventana de login más pequeña
 
         // 🔹 Aplicar tu CSS
         scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
 
         stage.setScene(scene);
-        stage.setTitle("Ariel Cardales - Gestión de Inventario");
+        stage.setTitle("Ariel Cardales - Iniciar Sesión");
+        stage.setResizable(false); // Ventana de login no redimensionable
+        stage.centerOnScreen();
         stage.show();
 
-        // ⭐ Inicializar sistema de actualizaciones
-        initUpdateSystem(stage);
+        // ⭐ Sistema de actualizaciones se inicializa después del login
+        // (Ver AppController.initialize())
     }
 
     /**

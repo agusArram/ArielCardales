@@ -170,12 +170,12 @@ public class Mapper {
 
     /**
      * Mapea una licencia desde ResultSet
-     * Espera columnas: id, dni, nombre, email, estado, plan, fecha_expiracion, notas, createdAt, updatedAt
+     * Espera columnas: cliente_id, nombre, email, estado, plan, fecha_expiracion, notas, createdAt, updatedAt
      */
     public static com.arielcardales.arielcardales.Licencia.Licencia getLicencia(ResultSet rs) throws SQLException {
         com.arielcardales.arielcardales.Licencia.Licencia lic = new com.arielcardales.arielcardales.Licencia.Licencia();
 
-        lic.setClienteId(rs.getString("dni"));
+        lic.setClienteId(rs.getString("cliente_id"));
         lic.setNombre(rs.getString("nombre"));
         lic.setEmail(rs.getString("email"));
 
