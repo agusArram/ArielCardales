@@ -119,8 +119,9 @@ public class AppController {
         if (lic != null) {
             String mensaje = LicenciaManager.getMensajeEstado();
 
-            // Solo mostrar en planes DEMO o si está en modo offline
-            if (lic.getPlan() == Licencia.PlanLicencia.DEMO || LicenciaManager.isModoOffline()) {
+            // Solo mostrar en planes DEMO o si quedan pocos días
+            long diasRestantes = LicenciaManager.getDiasRestantes();
+            if (lic.getPlan() == Licencia.PlanLicencia.DEMO || diasRestantes <= 7) {
                 Notifications.create()
                     .title("ℹ Información de Licencia")
                     .text(mensaje + "\nCliente: " + lic.getNombre())

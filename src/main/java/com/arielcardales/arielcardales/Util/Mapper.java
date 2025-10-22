@@ -163,4 +163,34 @@ public class Mapper {
                 rs.getTimestamp("createdAt").toLocalDateTime()
         );
     }
+
+    // ========================================
+    // LICENCIAS
+    // ========================================
+
+    /**
+     * Mapea una licencia desde ResultSet
+     * Espera columnas: id, dni, nombre, email, estado, plan, fecha_expiracion, notas, createdAt, updatedAt
+     */
+    public static com.arielcardales.arielcardales.Licencia.Licencia getLicencia(ResultSet rs) throws SQLException {
+        com.arielcardales.arielcardales.Licencia.Licencia lic = new com.arielcardales.arielcardales.Licencia.Licencia();
+
+        lic.setClienteId(rs.getString("dni"));
+        lic.setNombre(rs.getString("nombre"));
+        lic.setEmail(rs.getString("email"));
+
+        // Mapear estado
+        String estadoStr = rs.getString("estado");
+        lic.setEstado(com.arielcardales.arielcardales.Licencia.Licencia.EstadoLicencia.valueOf(estadoStr));
+
+        // Mapear plan
+        String planStr = rs.getString("plan");
+        lic.setPlan(com.arielcardales.arielcardales.Licencia.Licencia.PlanLicencia.valueOf(planStr));
+
+        // Mapear fecha de expiración
+        java.sql.Date sqlDate = rs.getDate("fecha_expiracion");
+        lic.setFechaExpiracion(sqlDate.toLocalDate());
+
+        return lic;
+    }
 }

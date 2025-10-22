@@ -39,7 +39,7 @@ No test suite currently exists. The project includes JUnit 5 dependencies but `s
 - Generic CRUD interface: `CrudDAO<T, ID>` defines `findAll()`, `findById()`, `insert()`, `update()`, `deleteById()`
 - Database connection: `Database.get()` returns HikariCP pooled connection
 - Connection configured via environment variables (`PG_URL`, `PG_USER`, `PG_PASSWORD`) with hardcoded defaults
-- DAOs: `ProductoDAO`, `ProductoVarianteDAO`, `CategoriaDAO`, `UnidadDAO`, `VentaDAO`, `InventarioDAO`
+- DAOs: `ProductoDAO`, `ProductoVarianteDAO`, `CategoriaDAO`, `UnidadDAO`, `VentaDAO`, `InventarioDAO`, `LicenciaDAO`
 
 **Service Layer** (`com.arielcardales.arielcardales.service`)
 - `InventarioService`: Business logic for inventory operations, product selection dialogs, tree loading with filters
@@ -183,3 +183,31 @@ Or modify hardcoded defaults in `Database.java` static initializer.
 - Java 21 with preview features enabled (`--enable-preview`)
 - UTF-8 encoding
 - Main class: `com.arielcardales.arielcardales.Launcher`
+
+## License System
+
+The application includes a database-based license validation system:
+
+**Components:**
+- `LicenciaDAO`: Database access for license records
+- `LicenciaManager`: License validation logic (validates on startup in <100ms)
+- `LicenciaConfig`: Configuration loader from `cliente.properties`
+- `Licencia`: Entity with `EstadoLicencia` (ACTIVO/SUSPENDIDO/EXPIRADO/DEMO) and `PlanLicencia` (DEMO/BASE/FULL)
+
+**Database table:** `licencia` (see `CrearDB.md` for schema)
+- Primary key: `dni` (client's DNI as unique identifier)
+- Validates: `estado = 'ACTIVO'` AND `fecha_expiracion >= CURRENT_DATE`
+
+**Configuration:** Set client DNI in `src/main/resources/cliente.properties`:
+```properties
+cliente.id=46958104
+cliente.nombre=Client Name
+cliente.email=client@example.com
+```
+
+**Validation flow:**
+1. App startup → `LicenciaManager.validarLicencia()`
+2. Single SQL query: `SELECT * FROM licencia WHERE dni = ?`
+3. If valid → continue; if invalid/expired → exit app
+
+**Administration:** Manage licenses directly in Supabase or via SQL queries. See `SISTEMA_LICENCIAS_DB.md` for details.

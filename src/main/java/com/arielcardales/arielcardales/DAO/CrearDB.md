@@ -872,4 +872,77 @@ COMMENT ON COLUMN cliente.notas IS 'Notas adicionales sobre el cliente';
 SELECT 'Tabla cliente creada exitosamente' as resultado;
 
 
+-- ========================================
+-- MIGRACIÓN: Agregar tabla LICENCIA
+-- Sistema de Licencias - Ariel Cardales
+-- PostgreSQL 14+
+-- ========================================
+
+-- Crear tipo ENUM para estado de licencia
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_licencia') THEN
+        CREATE TYPE estado_licencia AS ENUM (
+            'ACTIVO',
+            'SUSPENDIDO',
+            'EXPIRADO',
+            'DEMO'
+        );
+    END IF;
+END$$;
+
+-- Crear tipo ENUM para plan de licencia
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'plan_licencia') THEN
+        CREATE TYPE plan_licencia AS ENUM (
+            'DEMO',
+            'BASE',
+            'FULL'
+        );
+    END IF;
+END$$;
+
+-- Crear tabla licencia
+CREATE TABLE IF NOT EXISTS licencia (
+    id bigserial PRIMARY KEY,
+    dni text NOT NULL UNIQUE,  -- DNI como identificador único del cliente
+    nombre citext NOT NULL,
+    email citext,
+    estado estado_licencia NOT NULL DEFAULT 'DEMO',
+    plan plan_licencia NOT NULL DEFAULT 'DEMO',
+    fecha_expiracion date NOT NULL,
+    notas text,
+    createdAt timestamptz NOT NULL DEFAULT now(),
+    updatedAt timestamptz NOT NULL DEFAULT now()
+);
+
+-- Índices para búsquedas rápidas
+CREATE INDEX IF NOT EXISTS idx_licencia_dni ON licencia(dni);
+CREATE INDEX IF NOT EXISTS idx_licencia_estado ON licencia(estado);
+CREATE INDEX IF NOT EXISTS idx_licencia_expiracion ON licencia(fecha_expiracion);
+
+-- Trigger para actualizar updatedAt automáticamente
+DROP TRIGGER IF EXISTS trgLicenciaUpdatedAt ON licencia;
+CREATE TRIGGER trgLicenciaUpdatedAt
+    BEFORE UPDATE ON licencia
+    FOR EACH ROW EXECUTE FUNCTION setUpdatedAt();
+
+-- Comentarios informativos
+COMMENT ON TABLE licencia IS 'Licencias del sistema - control de acceso por DNI';
+COMMENT ON COLUMN licencia.dni IS 'DNI único del cliente - identificador principal';
+COMMENT ON COLUMN licencia.estado IS 'Estado actual de la licencia (ACTIVO, SUSPENDIDO, EXPIRADO, DEMO)';
+COMMENT ON COLUMN licencia.plan IS 'Plan de la licencia (DEMO, BASE, FULL) - define permisos y límites';
+COMMENT ON COLUMN licencia.fecha_expiracion IS 'Fecha de expiración de la licencia';
+
+-- Datos de ejemplo (licencia DEMO y desarrollador)
+INSERT INTO licencia (dni, nombre, email, estado, plan, fecha_expiracion, notas) VALUES
+    ('DEMO_CLIENT', 'Cliente Demo', 'demo@ejemplo.com', 'DEMO', 'DEMO', CURRENT_DATE + INTERVAL '15 days', 'Licencia de demostración - 15 días'),
+    ('46958104', 'Agustin desarrollador', 'agus@ejemplo.com', 'ACTIVO', 'FULL', '2030-12-31', 'Desarrollador - Licencia permanente')
+ON CONFLICT (dni) DO NOTHING;
+
+-- Verificar que se creó correctamente
+SELECT 'Tabla licencia creada exitosamente' as resultado;
+
+
 ```

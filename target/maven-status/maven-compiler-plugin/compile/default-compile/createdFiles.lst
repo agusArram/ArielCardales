@@ -46,6 +46,7 @@ com\arielcardales\arielcardales\controller\RentabilidadController$ProductoRentab
 com\arielcardales\arielcardales\controller\RentabilidadController.class
 com\arielcardales\arielcardales\DAO\UnidadDAO.class
 com\arielcardales\arielcardales\Updates\UpdateDownloader.class
+com\arielcardales\arielcardales\DAO\LicenciaDAO.class
 module-info.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$ProgressCallback.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$1.class
