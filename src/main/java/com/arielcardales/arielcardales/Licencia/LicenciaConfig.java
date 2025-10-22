@@ -10,7 +10,7 @@ public class LicenciaConfig {
     // ============================================================================
     // IMPORTANTE: Cambiar esta URL por tu repositorio real
     public static final String LICENCIAS_JSON_URL =
-            "https://raw.githubusercontent.com/agusArram/ArielCardales/main/licencias.json";
+            "https://raw.githubusercontent.com/agusArram/ArielCardales/refs/heads/Dev/licencias.json";
 
     // ============================================================================
     // API DE FECHA EXTERNA (para evitar manipulación de reloj del sistema)

@@ -7,7 +7,7 @@
       "nombre": "Cliente Demo",
       "email": "demo@ejemplo.com",
       "estado": "ACTIVO",
-      "plan": "DEMO",
+      "plan": "FULL",
       "expira": "2025-11-30",
       "notas": "Licencia de demostración con 15 productos y 10 ventas máximo"
     },
