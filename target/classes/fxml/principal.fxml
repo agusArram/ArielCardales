@@ -13,7 +13,7 @@
             <!-- BOTÓN INICIO -->
             <Button text="🏠 Inicio"
                     onAction="#volverInicio"
-                    style="-fx-background-color: #D4A574; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20; -fx-background-radius: 5;"/>
+                    style="-fx-background-color: #e6c89b; -fx-text-fill: #2b2b2b; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20; -fx-background-radius: 5;"/>
 
             <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
 

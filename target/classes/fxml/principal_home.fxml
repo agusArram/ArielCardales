@@ -23,7 +23,7 @@
     </VBox>
 
     <!-- CARDS CONTAINER -->
-    <GridPane hgap="30" vgap="30" alignment="CENTER" VBox.vgrow="ALWAYS" style="-fx-padding: 20 60 60 60;">
+    <GridPane hgap="40" vgap="40" alignment="CENTER" VBox.vgrow="ALWAYS" style="-fx-padding: 20 100 60 100;">
         <columnConstraints>
             <ColumnConstraints percentWidth="50" />
             <ColumnConstraints percentWidth="50" />
@@ -34,30 +34,29 @@
         </rowConstraints>
 
         <!-- CARD: PRODUCTOS -->
-        <VBox alignment="CENTER" spacing="15"
+        <VBox fx:id="cardProductos"
+              alignment="CENTER" spacing="15"
               onMouseClicked="#abrirProductos"
               GridPane.columnIndex="0" GridPane.rowIndex="0"
               styleClass="module-card"
               style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3); -fx-cursor: hand; -fx-padding: 30;">
 
-            <!-- Icono grande -->
             <Label text="📦" style="-fx-font-size: 64px;"/>
 
-            <!-- Título -->
             <Label text="INVENTARIO" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
                 <font>
                     <Font name="System Bold" size="24.0"/>
                 </font>
             </Label>
 
-            <!-- Descripción -->
             <Label text="Gestiona productos, variantes y stock"
                    style="-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-text-alignment: center;"
                    wrapText="true" maxWidth="250"/>
         </VBox>
 
         <!-- CARD: VENTAS -->
-        <VBox alignment="CENTER" spacing="15"
+        <VBox fx:id="cardVentas"
+              alignment="CENTER" spacing="15"
               onMouseClicked="#abrirVentas"
               GridPane.columnIndex="1" GridPane.rowIndex="0"
               styleClass="module-card"
@@ -77,7 +76,8 @@
         </VBox>
 
         <!-- CARD: CLIENTES -->
-        <VBox alignment="CENTER" spacing="15"
+        <VBox fx:id="cardClientes"
+              alignment="CENTER" spacing="15"
               onMouseClicked="#abrirClientes"
               GridPane.columnIndex="0" GridPane.rowIndex="1"
               styleClass="module-card"
@@ -97,7 +97,8 @@
         </VBox>
 
         <!-- CARD: MÉTRICAS -->
-        <VBox alignment="CENTER" spacing="15"
+        <VBox fx:id="cardMetricas"
+              alignment="CENTER" spacing="15"
               onMouseClicked="#abrirMetricas"
               GridPane.columnIndex="1" GridPane.rowIndex="1"
               styleClass="module-card"

@@ -14,6 +14,10 @@ import javafx.util.Duration;
 public class PrincipalViewController {
 
     @FXML private Label lblVersion;
+    @FXML private VBox cardProductos;
+    @FXML private VBox cardVentas;
+    @FXML private VBox cardClientes;
+    @FXML private VBox cardMetricas;
 
     // Referencia al AppController para navegación
     private AppController appController;
@@ -22,9 +26,14 @@ public class PrincipalViewController {
     public void initialize() {
         // Cargar versión actual
         if (lblVersion != null) {
-            // Usar el método estático getCurrentVersion() en lugar del campo privado
             lblVersion.setText("v1.0.0");
         }
+
+        // Configurar efectos hover sutiles en los cards
+        configurarHover(cardProductos);
+        configurarHover(cardVentas);
+        configurarHover(cardClientes);
+        configurarHover(cardMetricas);
     }
 
     /**
@@ -40,7 +49,6 @@ public class PrincipalViewController {
 
     @FXML
     private void abrirProductos(MouseEvent event) {
-        animarClick((VBox) event.getSource());
         if (appController != null) {
             appController.mostrarProductosPublic();
         }
@@ -48,7 +56,6 @@ public class PrincipalViewController {
 
     @FXML
     private void abrirVentas(MouseEvent event) {
-        animarClick((VBox) event.getSource());
         if (appController != null) {
             appController.mostrarVentasPublic();
         }
@@ -56,7 +63,6 @@ public class PrincipalViewController {
 
     @FXML
     private void abrirClientes(MouseEvent event) {
-        animarClick((VBox) event.getSource());
         if (appController != null) {
             appController.mostrarClientesPublic();
         }
@@ -64,49 +70,33 @@ public class PrincipalViewController {
 
     @FXML
     private void abrirMetricas(MouseEvent event) {
-        animarClick((VBox) event.getSource());
         if (appController != null) {
             appController.mostrarMetricasPublic();
         }
     }
 
     // ============================================================================
-    // ANIMACIONES
+    // EFECTOS HOVER
     // ============================================================================
 
     /**
-     * Animación de click/hover para los cards
+     * Configura efecto hover sutil (solo escala) para un card
      */
-    private void animarClick(VBox card) {
-        ScaleTransition scale = new ScaleTransition(Duration.millis(100), card);
-        scale.setToX(0.95);
-        scale.setToY(0.95);
-        scale.setAutoReverse(true);
-        scale.setCycleCount(2);
-        scale.play();
-    }
+    private void configurarHover(VBox card) {
+        if (card == null) return;
 
-    /**
-     * Configura efectos hover para un card
-     */
-    public void configurarHoverCard(VBox card) {
         card.setOnMouseEntered(e -> {
-            ScaleTransition scale = new ScaleTransition(Duration.millis(150), card);
-            scale.setToX(1.05);
-            scale.setToY(1.05);
+            ScaleTransition scale = new ScaleTransition(Duration.millis(200), card);
+            scale.setToX(1.03);
+            scale.setToY(1.03);
             scale.play();
-
-            card.setStyle(card.getStyle() + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 15, 0, 0, 5);");
         });
 
         card.setOnMouseExited(e -> {
-            ScaleTransition scale = new ScaleTransition(Duration.millis(150), card);
+            ScaleTransition scale = new ScaleTransition(Duration.millis(200), card);
             scale.setToX(1.0);
             scale.setToY(1.0);
             scale.play();
-
-            card.setStyle(card.getStyle().replace("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 15, 0, 0, 5);",
-                                                   "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);"));
         });
     }
 }
