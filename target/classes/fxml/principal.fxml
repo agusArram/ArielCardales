@@ -33,8 +33,6 @@
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
 
             <MenuBar>
-
-
                 <!-- Menú de Ayuda -->
                 <Menu text="Ayuda">
                     <MenuItem text="Buscar actualizaciones" onAction="#onBuscarActualizaciones">
@@ -56,14 +54,23 @@
                             <Label text="🐛" />
                         </graphic>
                     </MenuItem>
-                    <!-- Menú de Administración -->
-                    <Menu text="Administración">
-                        <MenuItem text="Registrar nuevo usuario" onAction="#mostrarRegistroUsuario">
-                            <graphic>
-                                <Label text="👤➕" />
-                            </graphic>
-                        </MenuItem>
-                    </Menu>
+
+                    <SeparatorMenuItem />
+
+                    <MenuItem text="Cerrar sesión" onAction="#onCerrarSesion">
+                        <graphic>
+                            <Label text="🚪" />
+                        </graphic>
+                    </MenuItem>
+                </Menu>
+
+                <!-- Menú de Administración (separado, solo para plan DEV) -->
+                <Menu fx:id="menuAdministracion" text="Administración" visible="false">
+                    <MenuItem text="Registrar nuevo usuario" onAction="#mostrarRegistroUsuario">
+                        <graphic>
+                            <Label text="👤➕" />
+                        </graphic>
+                    </MenuItem>
                 </Menu>
             </MenuBar>
         </HBox>

@@ -4,6 +4,7 @@ import com.arielcardales.arielcardales.App;
 import com.arielcardales.arielcardales.DAO.AutenticacionDAO;
 import com.arielcardales.arielcardales.Licencia.Licencia;
 import com.arielcardales.arielcardales.session.SessionManager;
+import com.arielcardales.arielcardales.session.SessionPersistence;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -150,6 +151,9 @@ public class LoginController {
 
                 // Iniciar sesión en SessionManager
                 SessionManager.getInstance().login(licencia);
+
+                // Guardar sesión en disco para persistencia (60 días)
+                SessionPersistence.guardarSesion(licencia);
 
                 // Cargar ventana principal
                 cargarVentanaPrincipal();

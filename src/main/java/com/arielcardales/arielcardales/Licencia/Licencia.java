@@ -133,18 +133,21 @@ public class Licencia {
      * Planes de licencia con permisos
      */
     public enum PlanLicencia {
-        DEMO(15, 10, false),
-        BASE(Integer.MAX_VALUE, Integer.MAX_VALUE, false),
-        FULL(Integer.MAX_VALUE, Integer.MAX_VALUE, true);
+        DEMO(15, 10, false, false),
+        BASE(Integer.MAX_VALUE, Integer.MAX_VALUE, false, false),
+        FULL(Integer.MAX_VALUE, Integer.MAX_VALUE, true, false),
+        DEV(Integer.MAX_VALUE, Integer.MAX_VALUE, true, true); // Plan especial para desarrollador
 
         private final int maxProductos;
         private final int maxVentas;
         private final boolean metricasAvanzadas;
+        private final boolean accesoAdministracion;
 
-        PlanLicencia(int maxProductos, int maxVentas, boolean metricasAvanzadas) {
+        PlanLicencia(int maxProductos, int maxVentas, boolean metricasAvanzadas, boolean accesoAdministracion) {
             this.maxProductos = maxProductos;
             this.maxVentas = maxVentas;
             this.metricasAvanzadas = metricasAvanzadas;
+            this.accesoAdministracion = accesoAdministracion;
         }
 
         public int getMaxProductos() {
@@ -159,6 +162,10 @@ public class Licencia {
             return metricasAvanzadas;
         }
 
+        public boolean tieneAccesoAdministracion() {
+            return accesoAdministracion;
+        }
+
         /**
          * Verifica si este plan permite acceso a una funcionalidad
          */
@@ -171,9 +178,11 @@ public class Licencia {
                 case "exportar_excel":
                     return this != DEMO;
                 case "multi_usuario":
-                    return this == FULL;
+                    return this == FULL || this == DEV;
                 case "backup_auto":
-                    return this == FULL;
+                    return this == FULL || this == DEV;
+                case "administracion":
+                    return accesoAdministracion;
                 default:
                     return true; // Funcionalidad básica siempre disponible
             }

@@ -1,7 +1,10 @@
 package com.arielcardales.arielcardales;
 
+import com.arielcardales.arielcardales.Licencia.Licencia;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
+import com.arielcardales.arielcardales.session.SessionManager;
+import com.arielcardales.arielcardales.session.SessionPersistence;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -9,6 +12,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+
+import java.util.Optional;
 
 public class App extends Application {
 
@@ -20,23 +25,64 @@ public class App extends Application {
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Regular.ttf"), 14);
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Bold.ttf"), 14);
 
-        // 🔹 Cargar pantalla de LOGIN (multi-tenant)
+        // 🔐 Verificar si hay sesión guardada
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🔐 VERIFICANDO SESIÓN PERSISTENTE");
+
+        Optional<Licencia> sesionGuardada = SessionPersistence.cargarSesion();
+
+        if (sesionGuardada.isPresent()) {
+            // Hay sesión guardada válida - cargar app directamente
+            Licencia licencia = sesionGuardada.get();
+            SessionManager.getInstance().login(licencia);
+
+            System.out.println("✅ Sesión restaurada - cargando aplicación");
+            System.out.println("   Usuario: " + licencia.getNombre());
+            System.out.println("   Plan: " + licencia.getPlan());
+            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            cargarVentanaPrincipal(stage);
+
+        } else {
+            // No hay sesión - mostrar login
+            System.out.println("ℹ️ No hay sesión válida - mostrando login");
+            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            cargarVentanaLogin(stage);
+        }
+    }
+
+    /**
+     * Carga la ventana de login
+     */
+    private void cargarVentanaLogin(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/login.fxml"));
         Parent root = fxmlLoader.load();
 
-        Scene scene = new Scene(root, 500, 600); // Ventana de login más pequeña
-
-        // 🔹 Aplicar tu CSS
+        Scene scene = new Scene(root, 500, 600);
         scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
 
         stage.setScene(scene);
         stage.setTitle("Ariel Cardales - Iniciar Sesión");
-        stage.setResizable(false); // Ventana de login no redimensionable
+        stage.setResizable(false);
         stage.centerOnScreen();
         stage.show();
+    }
 
-        // ⭐ Sistema de actualizaciones se inicializa después del login
-        // (Ver AppController.initialize())
+    /**
+     * Carga la ventana principal de la aplicación
+     */
+    private void cargarVentanaPrincipal(Stage stage) throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/principal.fxml"));
+        Parent root = fxmlLoader.load();
+
+        Scene scene = new Scene(root);
+        scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
+
+        stage.setScene(scene);
+        stage.setTitle("Ariel Cardales - " + SessionManager.getInstance().getNombreUsuario());
+        stage.setMaximized(true);
+        stage.show();
     }
 
     /**

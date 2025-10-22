@@ -4,7 +4,8 @@ import com.arielcardales.arielcardales.App;
 import com.arielcardales.arielcardales.DAO.InventarioDAO;
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
 import com.arielcardales.arielcardales.Licencia.Licencia;
-import com.arielcardales.arielcardales.Licencia.LicenciaManager;
+import com.arielcardales.arielcardales.session.SessionManager;
+import com.arielcardales.arielcardales.session.SessionPersistence;
 import com.arielcardales.arielcardales.Updates.UpdateConfig;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
@@ -16,6 +17,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -34,102 +36,119 @@ public class AppController {
     @FXML
     private VBox contenedorPrincipal;
 
+    @FXML
+    private Menu menuAdministracion;
+
     private Parent vistaProductos;
     private UpdateManager updateManager;
 
     @FXML
     public void initialize() {
-        // 1. Validar licencia PRIMERO
-        if (!validarLicenciaInicial()) {
-            // Si no hay licencia válida, mostrar error y cerrar
+        // 1. Verificar que haya sesión activa (el login ya validó todo)
+        if (!SessionManager.getInstance().isAutenticado()) {
+            System.err.println("⚠️ ADVERTENCIA: AppController cargado sin sesión activa");
+            Platform.exit();
             return;
         }
 
-        // 2. Cargar la vista principal/hub
+        // 2. Configurar visibilidad del menú de administración según el plan
+        configurarMenuAdministracion();
+
+        // 3. Cargar la vista principal/hub
         mostrarVistaPrincipal();
 
-        // 3. Inicializar update manager
+        // 4. Inicializar update manager
         updateManager = new UpdateManager();
 
-        // 4. Mostrar info de licencia después de cargar
+        // 5. Mostrar info de licencia después de cargar
         Platform.runLater(this::mostrarInfoLicencia);
     }
 
     /**
-     * Valida la licencia al iniciar la aplicación
-     * @return true si la licencia es válida, false si debe cerrarse la app
+     * Configura la visibilidad del menú de administración según el plan de licencia
+     * Solo el plan DEV tiene acceso a funciones de administración
      */
-    private boolean validarLicenciaInicial() {
-        try {
-            boolean licenciaValida = LicenciaManager.validarLicencia();
+    private void configurarMenuAdministracion() {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🔐 CONFIGURANDO MENÚ DE ADMINISTRACIÓN");
 
-            if (!licenciaValida) {
-                // Mostrar error y cerrar
-                Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Licencia no válida");
-                    alert.setHeaderText("No se pudo validar la licencia");
-                    alert.setContentText(
-                        "El sistema no pudo verificar su licencia.\n\n" +
-                        "Posibles causas:\n" +
-                        "• Licencia expirada\n" +
-                        "• Cliente no registrado\n" +
-                        "• Sin conexión a internet por más de 7 días\n\n" +
-                        "Contacte al administrador del sistema."
-                    );
-                    alert.showAndWait();
-                    Platform.exit();
-                });
-                return false;
+        SessionManager session = SessionManager.getInstance();
+        Licencia licencia = session.getLicenciaSafe();
+
+        System.out.println("   menuAdministracion: " + (menuAdministracion != null ? "✓ Inyectado" : "✗ NULL"));
+        System.out.println("   Sesión autenticada: " + (session.isAutenticado() ? "✓ SÍ" : "✗ NO"));
+        System.out.println("   licencia: " + (licencia != null ? "✓ Cargada" : "✗ NULL"));
+
+        if (menuAdministracion != null && licencia != null) {
+            Licencia.PlanLicencia plan = licencia.getPlan();
+            System.out.println("   Plan actual: " + plan);
+            System.out.println("   Cliente: " + licencia.getNombre() + " (" + licencia.getEmail() + ")");
+            System.out.println("   Cliente ID: " + licencia.getClienteId());
+
+            // Solo mostrar el menú de administración si el plan es DEV
+            boolean tieneAcceso = plan == Licencia.PlanLicencia.DEV;
+
+            System.out.println("   ¿Es plan DEV?: " + (tieneAcceso ? "SÍ" : "NO"));
+
+            // Ocultar el menú si no tiene acceso, además de deshabilitarlo
+            menuAdministracion.setVisible(tieneAcceso);
+            menuAdministracion.setDisable(!tieneAcceso);
+
+            if (tieneAcceso) {
+                System.out.println("   ✅ RESULTADO: Menú de administración VISIBLE y HABILITADO");
+            } else {
+                System.out.println("   🔒 RESULTADO: Menú de administración OCULTO y DESHABILITADO");
             }
-
-            // Verificar si está por expirar (menos de 7 días)
-            long diasRestantes = LicenciaManager.getDiasRestantes();
-            if (diasRestantes > 0 && diasRestantes <= 7) {
-                Platform.runLater(() -> {
-                    Notifications.create()
-                        .title("⚠ Licencia por expirar")
-                        .text("Su licencia vence en " + diasRestantes + " días.\n" +
-                              "Contacte al administrador para renovar.")
-                        .position(Pos.TOP_RIGHT)
-                        .showWarning();
-                });
+        } else {
+            System.out.println("   ⚠️ ERROR: No se pudo configurar el menú");
+            if (menuAdministracion == null) {
+                System.out.println("      - menuAdministracion es NULL (problema de fx:id)");
             }
-
-            return true;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Platform.runLater(() -> {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error del sistema");
-                alert.setHeaderText("Error al validar licencia");
-                alert.setContentText("Error: " + e.getMessage());
-                alert.showAndWait();
-                Platform.exit();
-            });
-            return false;
+            if (licencia == null) {
+                System.out.println("      - licencia es NULL (sin sesión activa)");
+            }
         }
+
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 
     /**
-     * Muestra información de la licencia actual (solo en modo DEBUG)
+     * Muestra información de la licencia actual (solo planes DEMO o próximos a vencer)
      */
     private void mostrarInfoLicencia() {
-        Licencia lic = LicenciaManager.getLicencia();
-        if (lic != null) {
-            String mensaje = LicenciaManager.getMensajeEstado();
+        SessionManager session = SessionManager.getInstance();
 
-            // Solo mostrar en planes DEMO o si quedan pocos días
-            long diasRestantes = LicenciaManager.getDiasRestantes();
-            if (lic.getPlan() == Licencia.PlanLicencia.DEMO || diasRestantes <= 7) {
-                Notifications.create()
-                    .title("ℹ Información de Licencia")
-                    .text(mensaje + "\nCliente: " + lic.getNombre())
-                    .position(Pos.BOTTOM_RIGHT)
-                    .hideAfter(javafx.util.Duration.seconds(10))
-                    .showInformation();
-            }
+        if (!session.isAutenticado()) {
+            return;
+        }
+
+        Licencia lic = session.getLicencia();
+        long diasRestantes = session.getDiasRestantes();
+
+        // Verificar si está por expirar (menos de 7 días)
+        if (diasRestantes > 0 && diasRestantes <= 7) {
+            Notifications.create()
+                .title("⚠ Licencia por expirar")
+                .text("Su licencia vence en " + diasRestantes + " días.\n" +
+                      "Contacte al administrador para renovar.")
+                .position(Pos.TOP_RIGHT)
+                .showWarning();
+        }
+
+        // Solo mostrar info en planes DEMO o si quedan pocos días
+        if (lic.getPlan() == Licencia.PlanLicencia.DEMO || diasRestantes <= 7) {
+            String estado = diasRestantes < 0 ? "❌ Expirada" :
+                           diasRestantes <= 7 ? "⚠ " + diasRestantes + " días restantes" :
+                           "✅ Activa";
+
+            Notifications.create()
+                .title("ℹ Información de Licencia")
+                .text("Plan: " + lic.getPlan() + "\n" +
+                      "Estado: " + estado + "\n" +
+                      "Cliente: " + lic.getNombre())
+                .position(Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(10))
+                .showInformation();
         }
     }
 
@@ -407,6 +426,73 @@ public class AppController {
     }
 
     /**
+     * Cierra la sesión actual y vuelve a la pantalla de login
+     */
+    @FXML
+    private void onCerrarSesion(ActionEvent event) {
+        // Confirmar con el usuario
+        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacion.setTitle("Cerrar sesión");
+        confirmacion.setHeaderText("¿Está seguro que desea cerrar sesión?");
+        confirmacion.setContentText("Deberá iniciar sesión nuevamente para volver a usar la aplicación.");
+
+        ButtonType btnSi = new ButtonType("Sí, cerrar sesión");
+        ButtonType btnNo = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmacion.getButtonTypes().setAll(btnSi, btnNo);
+
+        confirmacion.showAndWait().ifPresent(response -> {
+            if (response == btnSi) {
+                cerrarSesion();
+            }
+        });
+    }
+
+    /**
+     * Cierra la sesión y vuelve al login
+     */
+    private void cerrarSesion() {
+        try {
+            SessionManager session = SessionManager.getInstance();
+            String nombreUsuario = session.getNombreUsuario();
+
+            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            System.out.println("🚪 CERRANDO SESIÓN");
+            System.out.println("   Usuario: " + nombreUsuario);
+
+            // 1. Borrar sesión del disco
+            SessionPersistence.borrarSesion();
+
+            // 2. Limpiar SessionManager
+            session.logout();
+
+            System.out.println("✅ Sesión cerrada exitosamente");
+            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            // 3. Cargar ventana de login
+            Stage stage = getStage();
+            if (stage != null) {
+                FXMLLoader loader = new FXMLLoader(App.class.getResource("/fxml/login.fxml"));
+                Parent root = loader.load();
+
+                Scene scene = new Scene(root, 500, 600);
+                scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
+
+                stage.setScene(scene);
+                stage.setTitle("Ariel Cardales - Iniciar Sesión");
+                stage.setResizable(false);
+                stage.centerOnScreen();
+
+                mostrarInfo("Sesión cerrada. Hasta pronto!");
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al cerrar sesión: " + e.getMessage());
+            e.printStackTrace();
+            mostrarError("Error", "No se pudo cerrar la sesión correctamente");
+        }
+    }
+
+    /**
      * Obtiene el Stage actual desde el componente FXML
      */
     private Stage getStage() {
@@ -488,9 +574,25 @@ public class AppController {
 
     /**
      * Muestra diálogo para registrar un nuevo usuario/licencia
+     * SOLO ACCESIBLE PARA PLAN DEV
      */
     @FXML
     private void mostrarRegistroUsuario() {
+        // PROTECCIÓN: Verificar que el usuario tenga plan DEV
+        SessionManager session = SessionManager.getInstance();
+        Licencia licencia = session.getLicenciaSafe();
+
+        if (licencia == null || licencia.getPlan() != Licencia.PlanLicencia.DEV) {
+            mostrarError("Acceso Denegado",
+                "Esta función solo está disponible para administradores del sistema.\n\n" +
+                "Plan actual: " + (licencia != null ? licencia.getPlan() : "DESCONOCIDO") + "\n" +
+                "Requerido: DEV");
+            System.out.println("🚫 Intento de acceso a administración sin plan DEV");
+            System.out.println("   Usuario: " + (licencia != null ? licencia.getNombre() : "Sin sesión"));
+            System.out.println("   Plan: " + (licencia != null ? licencia.getPlan() : "null"));
+            return;
+        }
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Administración - Registrar Nuevo Usuario");
         dialog.setHeaderText("Crear una nueva licencia/usuario en el sistema");
@@ -525,8 +627,8 @@ public class AppController {
         cbEstado.setValue("ACTIVA");
 
         ComboBox<String> cbPlan = new ComboBox<>();
-        cbPlan.getItems().addAll("DEMO", "BASE", "FULL", "NO");
-        cbPlan.setValue("PREMIUM");
+        cbPlan.getItems().addAll("DEMO", "BASE", "FULL", "DEV");
+        cbPlan.setValue("BASE");
 
         DatePicker dpExpiracion = new DatePicker();
         dpExpiracion.setValue(java.time.LocalDate.now().plusYears(1));

@@ -100,6 +100,69 @@ public class AutenticacionDAO {
         }
     }
 
+    /**
+     * Carga una licencia solo por email (sin verificar password)
+     * SOLO para revalidación de sesión persistente
+     *
+     * @param email Email del usuario
+     * @return Optional con la Licencia si existe y está activa
+     */
+    public Optional<Licencia> loginPorEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            log("❌ Email vacío en revalidación");
+            return Optional.empty();
+        }
+
+        String sql = """
+            SELECT cliente_id, nombre, email, password_hash,
+                   estado::text as estado, plan::text as plan,
+                   fecha_expiracion, notas, createdAt, updatedAt
+            FROM licencia
+            WHERE LOWER(email) = LOWER(?)
+        """;
+
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setString(1, email.trim());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    log("❌ Usuario no encontrado en revalidación: " + email);
+                    return Optional.empty();
+                }
+
+                // Cargar licencia
+                Licencia licencia = Mapper.getLicencia(rs);
+
+                // Validar que la licencia esté activa y vigente
+                if (licencia.getEstado() == Licencia.EstadoLicencia.SUSPENDIDO) {
+                    log("❌ Cuenta suspendida en revalidación: " + email);
+                    return Optional.empty();
+                }
+
+                if (licencia.getEstado() == Licencia.EstadoLicencia.EXPIRADO) {
+                    log("❌ Cuenta expirada en revalidación: " + email);
+                    return Optional.empty();
+                }
+
+                // Verificar fecha de expiración
+                if (!licencia.isValida(java.time.LocalDate.now())) {
+                    log("❌ Licencia vencida en revalidación: " + email);
+                    return Optional.empty();
+                }
+
+                log("✅ Revalidación exitosa: " + email);
+                return Optional.of(licencia);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            log("❌ Error en revalidación: " + e.getMessage());
+            throw new DaoException("Error en revalidación: " + e.getMessage(), e);
+        }
+    }
+
     // ============================================================================
     // REGISTRO
     // ============================================================================

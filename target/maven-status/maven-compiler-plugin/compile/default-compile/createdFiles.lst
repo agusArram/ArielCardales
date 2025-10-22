@@ -36,6 +36,7 @@ com\arielcardales\arielcardales\Updates\UpdateDownloader$ProgressCallback.class
 com\arielcardales\arielcardales\controller\EditarProductoController$2.class
 com\arielcardales\arielcardales\DAO\AutenticacionDAO.class
 com\arielcardales\arielcardales\DAO\CategoriaDAO.class
+com\arielcardales\arielcardales\session\SessionPersistence.class
 com\arielcardales\arielcardales\Util\EdicionCeldas$1.class
 com\arielcardales\arielcardales\controller\EditarProductoController$1.class
 com\arielcardales\arielcardales\controller\VentasController$4.class
