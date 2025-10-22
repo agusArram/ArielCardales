@@ -3,6 +3,7 @@ package com.arielcardales.arielcardales;
 import com.arielcardales.arielcardales.Licencia.Licencia;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
+import com.arielcardales.arielcardales.session.LicenseMonitor;
 import com.arielcardales.arielcardales.session.SessionManager;
 import com.arielcardales.arielcardales.session.SessionPersistence;
 import javafx.application.Application;
@@ -21,35 +22,72 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        // 🔹 Registrar las fuentes manualmente
+        // 🔹 Registrar las fuentes manualmente (rápido - ~50ms)
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Regular.ttf"), 14);
         Font.loadFont(getClass().getResourceAsStream("/Fuentes/static/Lora-Bold.ttf"), 14);
 
-        // 🔐 Verificar si hay sesión guardada
-        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        System.out.println("🔐 VERIFICANDO SESIÓN PERSISTENTE");
+        // 🚀 Mostrar pantalla de carga inmediatamente
+        mostrarPantallaCarga(stage);
 
-        Optional<Licencia> sesionGuardada = SessionPersistence.cargarSesion();
+        // ⚡ Validar sesión en background (no bloquea la UI)
+        javafx.concurrent.Task<Optional<Licencia>> validarTask = new javafx.concurrent.Task<>() {
+            @Override
+            protected Optional<Licencia> call() {
+                System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                System.out.println("🔐 VERIFICANDO SESIÓN PERSISTENTE (async)");
+                return SessionPersistence.cargarSesion();
+            }
+        };
 
-        if (sesionGuardada.isPresent()) {
-            // Hay sesión guardada válida - cargar app directamente
-            Licencia licencia = sesionGuardada.get();
-            SessionManager.getInstance().login(licencia);
+        validarTask.setOnSucceeded(event -> {
+            Optional<Licencia> sesionGuardada = validarTask.getValue();
 
-            System.out.println("✅ Sesión restaurada - cargando aplicación");
-            System.out.println("   Usuario: " + licencia.getNombre());
-            System.out.println("   Plan: " + licencia.getPlan());
-            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            if (sesionGuardada.isPresent()) {
+                // Hay sesión guardada válida - cargar app directamente
+                Licencia licencia = sesionGuardada.get();
+                SessionManager.getInstance().login(licencia);
 
-            cargarVentanaPrincipal(stage);
+                System.out.println("✅ Sesión restaurada - cargando aplicación");
+                System.out.println("   Usuario: " + licencia.getNombre());
+                System.out.println("   Plan: " + licencia.getPlan());
+                System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        } else {
-            // No hay sesión - mostrar login
-            System.out.println("ℹ️ No hay sesión válida - mostrando login");
-            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                try {
+                    cargarVentanaPrincipal(stage);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mostrarErrorYCerrar(stage, "Error al cargar la aplicación");
+                }
 
-            cargarVentanaLogin(stage);
-        }
+            } else {
+                // No hay sesión - mostrar login
+                System.out.println("ℹ️ No hay sesión válida - mostrando login");
+                System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+                try {
+                    cargarVentanaLogin(stage);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mostrarErrorYCerrar(stage, "Error al cargar el login");
+                }
+            }
+        });
+
+        validarTask.setOnFailed(event -> {
+            System.err.println("❌ Error validando sesión: " + validarTask.getException().getMessage());
+            validarTask.getException().printStackTrace();
+
+            // Mostrar login en caso de error
+            try {
+                cargarVentanaLogin(stage);
+            } catch (Exception e) {
+                e.printStackTrace();
+                mostrarErrorYCerrar(stage, "Error crítico al iniciar");
+            }
+        });
+
+        // Ejecutar validación en thread separado
+        new Thread(validarTask).start();
     }
 
     /**
@@ -84,6 +122,9 @@ public class App extends Application {
         stage.setResizable(true); // Permitir que el usuario redimensione
         stage.centerOnScreen(); // Centrar en pantalla
         stage.show();
+
+        // 🔒 Iniciar monitor de licencias en background
+        LicenseMonitor.getInstance().iniciar();
     }
 
     /**
@@ -174,8 +215,42 @@ public class App extends Application {
                 });
     }
 
+    /**
+     * Muestra la pantalla de carga mientras se valida la sesión
+     */
+    private void mostrarPantallaCarga(Stage stage) throws Exception {
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/loading.fxml"));
+        Parent root = fxmlLoader.load();
+
+        Scene scene = new Scene(root, 500, 400);
+        scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
+
+        stage.setScene(scene);
+        stage.setTitle("Ariel Cardales - Cargando...");
+        stage.setResizable(false);
+        stage.centerOnScreen();
+        stage.show();
+    }
+
+    /**
+     * Muestra un error y cierra la aplicación
+     */
+    private void mostrarErrorYCerrar(Stage stage, String mensaje) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.ERROR
+        );
+        alert.setTitle("Error");
+        alert.setHeaderText("Error al iniciar la aplicación");
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+        Platform.exit();
+    }
+
     @Override
     public void stop() throws Exception {
+        // Detener monitor de licencias
+        LicenseMonitor.getInstance().detener();
+
         super.stop();
         // Cleanup si es necesario
     }

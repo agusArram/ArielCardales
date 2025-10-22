@@ -6,12 +6,15 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\Client
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\DashboardController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\EditarProductoController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ExportarController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\LoadingController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\LoginController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\MetricasController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\PrincipalViewController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\ProductoTreeController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\RentabilidadController.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\controller\VentasController.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\AccountExpiredException.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\AccountSuspendedException.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\AutenticacionDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CategoriaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ClienteDAO.java
@@ -19,6 +22,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\CrudDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\DaoException.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\DashboardDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\Database.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\InvalidCredentialsException.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\InventarioDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\LicenciaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoDAO.java
@@ -40,6 +44,7 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\Licencia
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\LicenciaManager.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\InventarioService.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\VentanaProducto.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\LicenseMonitor.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\SessionManager.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\SessionPersistence.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Updates\UpdateChecker.java

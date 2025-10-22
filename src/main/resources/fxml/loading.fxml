@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.arielcardales.arielcardales.controller.LoadingController"
+      alignment="CENTER" spacing="25" styleClass="login-container"
+      stylesheets="@../Estilos/Estilos.css">
+
+    <!-- Logo/Título -->
+    <VBox alignment="CENTER" spacing="10">
+        <Label text="Sistema de Inventario" styleClass="login-title">
+            <font>
+                <Font name="Lora Bold" size="32"/>
+            </font>
+        </Label>
+        <Label text="SORT_PROYECTS" styleClass="login-subtitle">
+            <font>
+                <Font name="Lora" size="18"/>
+            </font>
+        </Label>
+    </VBox>
+
+    <!-- Indicador de carga -->
+    <VBox alignment="CENTER" spacing="15">
+        <ProgressIndicator fx:id="progressIndicator" prefWidth="60" prefHeight="60"/>
+        <Label fx:id="loadingLabel" text="Verificando sesión..." styleClass="login-label">
+            <font>
+                <Font name="Lora" size="16"/>
+            </font>
+        </Label>
+    </VBox>
+
+</VBox>

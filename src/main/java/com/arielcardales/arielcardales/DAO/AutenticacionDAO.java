@@ -52,7 +52,7 @@ public class AutenticacionDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     log("❌ Usuario no encontrado: " + email);
-                    return Optional.empty();
+                    throw new InvalidCredentialsException("Email o contraseña incorrectos");
                 }
 
                 // Obtener hash de la DB
@@ -60,13 +60,13 @@ public class AutenticacionDAO {
 
                 if (passwordHash == null || passwordHash.trim().isEmpty()) {
                     log("❌ Usuario sin password configurado: " + email);
-                    return Optional.empty();
+                    throw new InvalidCredentialsException("Usuario sin contraseña configurada");
                 }
 
                 // Verificar password con BCrypt
                 if (!PasswordUtil.verifyPassword(password, passwordHash)) {
                     log("❌ Password incorrecto para: " + email);
-                    return Optional.empty();
+                    throw new InvalidCredentialsException("Email o contraseña incorrectos");
                 }
 
                 // Password correcto, cargar licencia
@@ -75,18 +75,27 @@ public class AutenticacionDAO {
                 // Validar que la licencia esté activa y vigente
                 if (licencia.getEstado() == Licencia.EstadoLicencia.SUSPENDIDO) {
                     log("❌ Cuenta suspendida: " + email);
-                    return Optional.empty();
+                    throw new AccountSuspendedException(
+                        "Tu cuenta ha sido suspendida.\n\n" +
+                        "Por favor, contacta al administrador para más información."
+                    );
                 }
 
                 if (licencia.getEstado() == Licencia.EstadoLicencia.EXPIRADO) {
                     log("❌ Cuenta expirada: " + email);
-                    return Optional.empty();
+                    throw new AccountExpiredException(
+                        "Tu licencia ha expirado.\n\n" +
+                        "Por favor, renueva tu suscripción para continuar."
+                    );
                 }
 
                 // Verificar fecha de expiración
                 if (!licencia.isValida(java.time.LocalDate.now())) {
                     log("❌ Licencia vencida: " + email);
-                    return Optional.empty();
+                    throw new AccountExpiredException(
+                        "Tu licencia ha expirado el " + licencia.getFechaExpiracion() + ".\n\n" +
+                        "Por favor, renueva tu suscripción para continuar."
+                    );
                 }
 
                 log("✅ Login exitoso: " + email + " (" + licencia.getNombre() + ")");
@@ -423,6 +432,46 @@ public class AutenticacionDAO {
             e.printStackTrace();
             log("❌ Error reseteando password: " + e.getMessage());
             throw new DaoException("Error al resetear password: " + e.getMessage(), e);
+        }
+    }
+
+    // ============================================================================
+    // MONITOREO DE ESTADO
+    // ============================================================================
+
+    /**
+     * Verifica únicamente el estado de una licencia (query ligera)
+     * Usado por el monitor en background para detectar suspensiones
+     *
+     * @param email Email del usuario
+     * @return Estado actual de la licencia, o null si no existe
+     */
+    public Licencia.EstadoLicencia verificarEstado(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+
+        String sql = "SELECT estado::text FROM licencia WHERE LOWER(email) = LOWER(?)";
+
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setString(1, email.trim());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    log("⚠️ Usuario no encontrado en verificación de estado: " + email);
+                    return null;
+                }
+
+                String estadoStr = rs.getString("estado");
+                return Licencia.EstadoLicencia.valueOf(estadoStr);
+            }
+
+        } catch (SQLException e) {
+            log("❌ Error verificando estado: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 

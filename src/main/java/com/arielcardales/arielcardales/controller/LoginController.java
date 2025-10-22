@@ -1,8 +1,12 @@
 package com.arielcardales.arielcardales.controller;
 
 import com.arielcardales.arielcardales.App;
+import com.arielcardales.arielcardales.DAO.AccountExpiredException;
+import com.arielcardales.arielcardales.DAO.AccountSuspendedException;
 import com.arielcardales.arielcardales.DAO.AutenticacionDAO;
+import com.arielcardales.arielcardales.DAO.InvalidCredentialsException;
 import com.arielcardales.arielcardales.Licencia.Licencia;
+import com.arielcardales.arielcardales.session.LicenseMonitor;
 import com.arielcardales.arielcardales.session.SessionManager;
 import com.arielcardales.arielcardales.session.SessionPersistence;
 import javafx.application.Platform;
@@ -125,19 +129,12 @@ public class LoginController {
         // Crear task de autenticación
         Task<Optional<Licencia>> loginTask = new Task<>() {
             @Override
-            protected Optional<Licencia> call() {
-                try {
-                    // Pequeña pausa para UX (opcional)
-                    Thread.sleep(300);
+            protected Optional<Licencia> call() throws Exception {
+                // Pequeña pausa para UX (opcional)
+                Thread.sleep(300);
 
-                    // Autenticar
-                    return autenticacionDAO.login(email, password);
-
-                } catch (Exception e) {
-                    System.err.println("Error en autenticación: " + e.getMessage());
-                    e.printStackTrace();
-                    return Optional.empty();
-                }
+                // Autenticar (puede lanzar excepciones específicas)
+                return autenticacionDAO.login(email, password);
             }
         };
 
@@ -173,9 +170,27 @@ public class LoginController {
             hideLoading();
             setUIEnabled(true);
             Throwable exception = loginTask.getException();
-            showError("Error al autenticar: " + exception.getMessage());
-            System.err.println("Error en task de login:");
-            exception.printStackTrace();
+
+            // Mostrar mensaje específico según el tipo de excepción
+            if (exception instanceof AccountSuspendedException) {
+                showError(exception.getMessage());
+                System.err.println("Cuenta suspendida: " + email);
+
+            } else if (exception instanceof AccountExpiredException) {
+                showError(exception.getMessage());
+                System.err.println("Cuenta expirada: " + email);
+
+            } else if (exception instanceof InvalidCredentialsException) {
+                showError(exception.getMessage());
+                passwordField.clear();
+                passwordField.requestFocus();
+
+            } else {
+                // Error genérico (DB, red, etc.)
+                showError("Error al autenticar:\n" + exception.getMessage());
+                System.err.println("Error en task de login:");
+                exception.printStackTrace();
+            }
         });
 
         // Ejecutar en thread separado
@@ -206,6 +221,9 @@ public class LoginController {
             stage.centerOnScreen(); // Centrar en pantalla
             stage.show();
 
+            // 🔒 Iniciar monitor de licencias en background
+            LicenseMonitor.getInstance().iniciar();
+
             System.out.println("✅ Ventana principal cargada exitosamente");
 
         } catch (IOException e) {
@@ -223,9 +241,15 @@ public class LoginController {
      * Muestra un mensaje de error
      */
     private void showError(String message) {
-        errorLabel.setText("❌ " + message);
+        String fullMessage = "❌ " + message;
+        errorLabel.setText(fullMessage);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
+
+        // Debug log
+        System.out.println("[LoginController] Mostrando error: " + fullMessage);
+        System.out.println("[LoginController] errorLabel visible=" + errorLabel.isVisible() +
+                          ", managed=" + errorLabel.isManaged());
     }
 
     /**

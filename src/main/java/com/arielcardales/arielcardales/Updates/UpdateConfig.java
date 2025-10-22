@@ -10,7 +10,7 @@ import java.util.Properties;
 public class UpdateConfig {
 
     // ⚠️ ACTUALIZAR ESTOS VALORES EN CADA RELEASE
-    private static final String CURRENT_VERSION = "v2.3.0";
+    private static final String CURRENT_VERSION = "v2.3.2";
     private static final String GITHUB_USER = "agusArram";
     private static final String REPO_NAME = "ArielCardales";
 

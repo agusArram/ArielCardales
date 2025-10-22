@@ -54,7 +54,7 @@
 
         <!-- Mensaje de error -->
         <Label fx:id="errorLabel" styleClass="login-error" visible="false" managed="false"
-               wrapText="true" textAlignment="CENTER">
+               wrapText="true" textAlignment="CENTER" maxWidth="350" minHeight="60" prefHeight="80">
             <font>
                 <Font name="Lora" size="12"/>
             </font>

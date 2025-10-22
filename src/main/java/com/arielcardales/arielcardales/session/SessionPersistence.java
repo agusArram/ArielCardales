@@ -55,6 +55,11 @@ public class SessionPersistence {
             props.setProperty("nombre", licencia.getNombre());
             props.setProperty("ultimo_acceso", LocalDateTime.now().toString());
             props.setProperty("plan", licencia.getPlan().name());
+            props.setProperty("estado", licencia.getEstado().name());
+            props.setProperty("fecha_expiracion", licencia.getFechaExpiracion().toString());
+            if (licencia.getFirma() != null) {
+                props.setProperty("firma", licencia.getFirma());
+            }
 
             // Guardar en archivo (ofuscado con Base64)
             Path sessionFile = dirPath.resolve(SESSION_FILE);
@@ -124,10 +129,52 @@ public class SessionPersistence {
                 return Optional.empty();
             }
 
-            // Revalidar con la base de datos (puede que la licencia haya sido suspendida)
-            log("🔄 Revalidando sesión: " + email);
-            AutenticacionDAO dao = new AutenticacionDAO();
-            Optional<Licencia> licenciaOpt = dao.loginPorEmail(email);
+            // ⚡ OPTIMIZACIÓN: Skip revalidación si el último acceso fue hace menos de 1 hora
+            long horasDesdeUltimoAcceso = ChronoUnit.HOURS.between(ultimoAcceso, LocalDateTime.now());
+
+            Optional<Licencia> licenciaOpt;
+
+            if (horasDesdeUltimoAcceso < 1) {
+                // Sesión reciente - confiar sin revalidar con DB (optimización de rendimiento)
+                log("⚡ Sesión reciente (hace " + ChronoUnit.MINUTES.between(ultimoAcceso, LocalDateTime.now()) + " minutos) - skip revalidación DB");
+
+                // Reconstruir licencia completa desde props guardados
+                Licencia licencia = new Licencia();
+                licencia.setEmail(email);
+                licencia.setClienteId(props.getProperty("cliente_id"));
+                licencia.setNombre(props.getProperty("nombre"));
+                licencia.setPlan(Licencia.PlanLicencia.valueOf(props.getProperty("plan")));
+                licencia.setEstado(Licencia.EstadoLicencia.valueOf(props.getProperty("estado")));
+                licencia.setFechaExpiracion(java.time.LocalDate.parse(props.getProperty("fecha_expiracion")));
+                if (props.getProperty("firma") != null) {
+                    licencia.setFirma(props.getProperty("firma"));
+                }
+
+                // 🔒 VALIDACIÓN DE SEGURIDAD: Verificar estado y fecha (sin consultar DB)
+                if (!licencia.isValida(java.time.LocalDate.now())) {
+                    log("⚠️ Sesión inválida detectada en archivo (estado=" + licencia.getEstado() +
+                        ", expira=" + licencia.getFechaExpiracion() + ")");
+                    log("🔄 Forzando revalidación con DB por seguridad...");
+
+                    // Revalidar con DB para confirmar estado actual
+                    AutenticacionDAO dao = new AutenticacionDAO();
+                    licenciaOpt = dao.loginPorEmail(email);
+
+                    if (licenciaOpt.isEmpty() || !licenciaOpt.get().isValida(java.time.LocalDate.now())) {
+                        log("❌ Licencia confirmada como inválida - borrando sesión");
+                        borrarSesion();
+                        return Optional.empty();
+                    }
+                } else {
+                    // Licencia válida en archivo
+                    licenciaOpt = Optional.of(licencia);
+                }
+            } else {
+                // Revalidar con la base de datos (puede que la licencia haya sido suspendida)
+                log("🔄 Revalidando sesión con DB: " + email + " (hace " + horasDesdeUltimoAcceso + " horas)");
+                AutenticacionDAO dao = new AutenticacionDAO();
+                licenciaOpt = dao.loginPorEmail(email);
+            }
 
             if (licenciaOpt.isEmpty()) {
                 log("❌ Sesión inválida (usuario no encontrado o suspendido)");
@@ -137,11 +184,13 @@ public class SessionPersistence {
 
             Licencia licencia = licenciaOpt.get();
 
-            // Verificar que la licencia esté activa y vigente
-            if (!licencia.isValida(java.time.LocalDate.now())) {
-                log("❌ Sesión inválida (licencia expirada o suspendida)");
-                borrarSesion();
-                return Optional.empty();
+            // Verificar que la licencia esté activa y vigente (solo si revalidamos con DB)
+            if (horasDesdeUltimoAcceso >= 1) {
+                if (!licencia.isValida(java.time.LocalDate.now())) {
+                    log("❌ Sesión inválida (licencia expirada o suspendida)");
+                    borrarSesion();
+                    return Optional.empty();
+                }
             }
 
             // Actualizar último acceso
