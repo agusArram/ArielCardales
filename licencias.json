@@ -3,8 +3,8 @@
   "actualizacion": "2025-10-21",
   "usuarios": [
     {
-      "clienteId": "DEMO_CLIENT",
-      "nombre": "Cliente Demo",
+      "clienteId": "SUSPENDIDOooo",
+      "nombre": "Cliente no pago - SANTI",
       "email": "demo@ejemplo.com",
       "estado": "SUSPENDIDO",
       "plan": "FULL",
@@ -57,5 +57,5 @@
       "notas": "Licencia suspendida por falta de pago"
     }
   ],
-  "firma": "99164d8d50ad2767a361516e57aa30e61150a286c2db512c2d53842f1cd72f43"
+  "firma": "866723d72343a3f4f19f9d59cb7e9a9541d6b1834d1236da9aff6352368ba06f"
 }
