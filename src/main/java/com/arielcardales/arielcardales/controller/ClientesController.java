@@ -346,21 +346,10 @@ public class ClientesController {
         }
 
         // Confirmación
-        Alert confirmacion = new Alert(Alert.AlertType.WARNING);
-        confirmacion.setTitle("⚠️ Confirmar eliminación");
-        confirmacion.setHeaderText("¿Eliminar cliente?");
-        confirmacion.setContentText(
-                "Cliente: " + item.getNombre() + "\n" +
-                        "DNI: " + (item.getDni() != null ? item.getDni() : "-") + "\n\n" +
-                        "⚠️ Esta acción NO se puede deshacer.\n\n" +
-                        "¿Deseas continuar?"
-        );
+        String mensaje = "Cliente: " + item.getNombre() +
+                       "\nDNI: " + (item.getDni() != null ? item.getDni() : "-");
 
-        ButtonType btnConfirmar = new ButtonType("Sí, eliminar", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-        confirmacion.getButtonTypes().setAll(btnConfirmar, btnCancelar);
-
-        if (confirmacion.showAndWait().orElse(btnCancelar) != btnConfirmar) {
+        if (!com.arielcardales.arielcardales.Util.DialogosUtil.confirmarEliminacion("Eliminar cliente", mensaje)) {
             return;
         }
 

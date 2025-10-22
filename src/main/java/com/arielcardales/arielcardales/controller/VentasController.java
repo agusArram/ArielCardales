@@ -997,27 +997,25 @@ public class VentasController {
         }
 
         // Confirmación con detalles
-        Alert confirmacion = new Alert(Alert.AlertType.WARNING);
-        confirmacion.setTitle("⚠️ Confirmar anulación");
-        confirmacion.setHeaderText("¿Anular venta #" + ventaSeleccionada.getId() + "?");
-
         NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-        confirmacion.setContentText(
-                "Cliente: " + ventaSeleccionada.getClienteNombre() + "\n" +
-                        "Fecha: " + ventaSeleccionada.getFecha().format(formatoFecha) + "\n" +
-                        "Total: " + formato.format(ventaSeleccionada.getTotal()) + "\n\n" +
-                        "⚠️ Esta acción:\n" +
-                        "• Eliminará la venta permanentemente\n" +
-                        "• Restaurará el stock de los productos\n" +
-                        "• NO se puede deshacer\n\n" +
-                        "¿Deseas continuar?"
+        String mensaje = "Venta #" + ventaSeleccionada.getId() +
+                       "\nCliente: " + ventaSeleccionada.getClienteNombre() +
+                       "\nFecha: " + ventaSeleccionada.getFecha().format(formatoFecha) +
+                       "\nTotal: " + formato.format(ventaSeleccionada.getTotal()) +
+                       "\n\n⚠️ Esta acción:" +
+                       "\n• Eliminará la venta permanentemente" +
+                       "\n• Restaurará el stock de los productos" +
+                       "\n• NO se puede deshacer";
+
+        java.util.Optional<ButtonType> resultado = com.arielcardales.arielcardales.Util.DialogosUtil.confirmarAccion(
+            "Anular venta",
+            "⚠️ Confirmar anulación de venta",
+            mensaje,
+            "Sí, anular",
+            "Cancelar"
         );
 
-        ButtonType btnConfirmar = new ButtonType("Sí, anular", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-        confirmacion.getButtonTypes().setAll(btnConfirmar, btnCancelar);
-
-        if (confirmacion.showAndWait().orElse(btnCancelar) != btnConfirmar) {
+        if (!resultado.isPresent() || resultado.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) {
             return;
         }
 

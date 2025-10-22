@@ -68,6 +68,7 @@ com\arielcardales\arielcardales\DAO\DashboardDAO.class
 com\arielcardales\arielcardales\Entidades\ItemInventario.class
 com\arielcardales\arielcardales\Entidades\ProductoVariante.class
 com\arielcardales\arielcardales\controller\DashboardController$2.class
+com\arielcardales\arielcardales\Util\DialogosUtil.class
 com\arielcardales\arielcardales\controller\VentasController$14.class
 com\arielcardales\arielcardales\Util\TablasDialog$1.class
 com\arielcardales\arielcardales\View\VentanaProducto.class

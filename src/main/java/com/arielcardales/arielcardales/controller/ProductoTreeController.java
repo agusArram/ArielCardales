@@ -471,12 +471,14 @@ public class ProductoTreeController {
      */
     @FXML
     private void agregarCategoria() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Nueva categoría");
-        dialog.setHeaderText("Agregar nueva categoría");
-        dialog.setContentText("Nombre de la categoría:");
+        Optional<String> resultado = DialogosUtil.solicitarTexto(
+            "Nueva categoría",
+            "➕ Agregar nueva categoría",
+            "Nombre de la categoría:",
+            ""
+        );
 
-        dialog.showAndWait().ifPresent(nombre -> {
+        resultado.ifPresent(nombre -> {
             if (nombre == null || nombre.trim().isEmpty()) {
                 error("El nombre no puede estar vacío");
                 return;
@@ -515,49 +517,35 @@ public class ProductoTreeController {
 
         // 🧩 Si es una variante (nodo hijo)
         if (item.isEsVariante()) {
-            ButtonType eliminar = new ButtonType("Eliminar", ButtonBar.ButtonData.OK_DONE);
-            ButtonType cancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-            Alert alert = new Alert(Alert.AlertType.WARNING,
-                    "¿Eliminar la variante seleccionada?\n\nColor: " + item.getColor() +
-                            "\nTalle: " + item.getTalle(),
-                    eliminar, cancelar);
-            alert.setTitle("Confirmar eliminación");
-            alert.setHeaderText("Eliminar variante");
+            String mensaje = "Variante: " + item.getEtiquetaProducto() +
+                           "\nColor: " + item.getColor() +
+                           "\nTalle: " + item.getTalle();
 
-            alert.showAndWait().ifPresent(res -> {
-                if (res == eliminar) {
-                    try {
-                        new ProductoVarianteDAO().deleteById(item.getVarianteId());
-                        ok("Variante eliminada correctamente");
-                        recargarArbol(txtBuscarEtiqueta.getText());
-                    } catch (Exception e) {
-                        error("Error al eliminar variante: " + e.getMessage());
-                    }
+            if (com.arielcardales.arielcardales.Util.DialogosUtil.confirmarEliminacion("Eliminar variante", mensaje)) {
+                try {
+                    new ProductoVarianteDAO().deleteById(item.getVarianteId());
+                    ok("Variante eliminada correctamente");
+                    recargarArbol(txtBuscarEtiqueta.getText());
+                } catch (Exception e) {
+                    error("Error al eliminar variante: " + e.getMessage());
                 }
-            });
+            }
             return; // ⚠️ Importante: evitar que siga al bloque de producto base
         }
 
         // 🧩 Si es un producto normal (base)
-        ButtonType eliminar = new ButtonType("Eliminar", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-        Alert alert = new Alert(Alert.AlertType.WARNING,
-                "¿Eliminar el producto?\n\n" + item.getNombreProducto(),
-                eliminar, cancelar);
-        alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText(null);
+        String mensaje = "Producto: " + item.getNombreProducto() +
+                       "\nEtiqueta: " + item.getEtiquetaProducto();
 
-        alert.showAndWait().ifPresent(res -> {
-            if (res == eliminar) {
-                try {
-                    inventarioService.eliminarProducto(item.getProductoId());
-                    ok("Producto eliminado");
-                    recargarArbol(txtBuscarEtiqueta.getText());
-                } catch (Exception e) {
-                    error("No se pudo eliminar: " + e.getMessage());
-                }
+        if (com.arielcardales.arielcardales.Util.DialogosUtil.confirmarEliminacion("Eliminar producto", mensaje)) {
+            try {
+                inventarioService.eliminarProducto(item.getProductoId());
+                ok("Producto eliminado");
+                recargarArbol(txtBuscarEtiqueta.getText());
+            } catch (Exception e) {
+                error("No se pudo eliminar: " + e.getMessage());
             }
-        });
+        }
     }
 
     @FXML
