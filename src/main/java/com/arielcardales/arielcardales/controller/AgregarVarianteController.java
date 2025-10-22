@@ -29,10 +29,10 @@ public class AgregarVarianteController {
             v.setActive(true);
 
             new ProductoVarianteDAO().insert(v);
-            new Alert(Alert.AlertType.INFORMATION, "Variante agregada correctamente.").showAndWait();
+            mostrarOk("Variante agregada correctamente.");
             limpiarCampos();
         } catch (Exception e) {
-            new Alert(Alert.AlertType.ERROR, "Error al guardar variante: " + e.getMessage()).showAndWait();
+            mostrarError("Error al guardar variante: " + e.getMessage());
         }
     }
 
@@ -48,5 +48,24 @@ public class AgregarVarianteController {
     private void cerrar() {
         Stage stage = (Stage) txtColor.getScene().getWindow();
         stage.close();
+    }
+
+    // --- Métodos auxiliares de notificaciones ---
+    private void mostrarOk(String msg) {
+        org.controlsfx.control.Notifications.create()
+                .title("✅ Éxito")
+                .text(msg)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(3))
+                .showConfirm();
+    }
+
+    private void mostrarError(String msg) {
+        org.controlsfx.control.Notifications.create()
+                .title("❌ Error")
+                .text(msg)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(5))
+                .showError();
     }
 }

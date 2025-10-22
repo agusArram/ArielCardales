@@ -7,16 +7,19 @@ import com.arielcardales.arielcardales.Updates.UpdateConfig;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
 import com.arielcardales.arielcardales.Util.Arboles;
+import com.arielcardales.arielcardales.Util.Transiciones;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;  // ✅ JavaFX ActionEvent
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.stage.Stage;
+import org.controlsfx.control.Notifications;
 
 import java.net.URI;
 import java.sql.SQLException;
@@ -40,14 +43,17 @@ public class AppController {
         updateManager = new UpdateManager();
     }
 
-    /** Método genérico: carga rápida de vistas simples (sin Task) **/
+    /** Método genérico: carga rápida de vistas simples con transición fade **/
     private void cargarVista(String rutaFXML) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(rutaFXML));
             Parent vista = loader.load();
-            contenedorPrincipal.getChildren().setAll(vista);
+
+            // Aplicar transición suave
+            Transiciones.cambiarVistaConFade(contenedorPrincipal, vista);
         } catch (Exception e) {
             e.printStackTrace();
+            mostrarError("Error al cargar vista", "No se pudo cargar la vista: " + rutaFXML);
         }
     }
 
@@ -77,7 +83,9 @@ public class AppController {
         tareaCarga.setOnSucceeded(e -> {
             vistaProductos = tareaCarga.getValue();
             VBox.setMargin(vistaProductos, new Insets(0));
-            contenedorPrincipal.getChildren().setAll(vistaProductos);
+
+            // Aplicar transición suave
+            Transiciones.cambiarVistaConFade(contenedorPrincipal, vistaProductos);
         });
 
         tareaCarga.setOnFailed(e -> {
@@ -113,7 +121,7 @@ public class AppController {
             tree.setRoot(InventarioDAO.cargarArbol(""));
         } catch (SQLException e) {
             e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Error cargando inventario: " + e.getMessage()).showAndWait();
+            mostrarError("Error cargando inventario", e.getMessage());
         }
 
         // Filtrar con reconsulta simple
@@ -283,5 +291,57 @@ public class AppController {
             System.err.println("⚠️ No se pudo obtener Stage: " + e.getMessage());
             return null;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // NOTIFICACIONES
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * Muestra notificación de éxito
+     */
+    private void mostrarExito(String mensaje) {
+        Notifications.create()
+                .title("✅ Éxito")
+                .text(mensaje)
+                .position(Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(3))
+                .showConfirm();
+    }
+
+    /**
+     * Muestra notificación de error
+     */
+    private void mostrarError(String titulo, String mensaje) {
+        Notifications.create()
+                .title("❌ " + titulo)
+                .text(mensaje)
+                .position(Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(5))
+                .showError();
+    }
+
+    /**
+     * Muestra notificación informativa
+     */
+    private void mostrarInfo(String mensaje) {
+        Notifications.create()
+                .title("ℹ️ Información")
+                .text(mensaje)
+                .position(Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(4))
+                .showInformation();
+    }
+
+    /**
+     * Muestra notificación de advertencia
+     */
+    private void mostrarAdvertencia(String mensaje) {
+        Notifications.create()
+                .title("⚠️ Advertencia")
+                .text(mensaje)
+                .position(Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(4))
+                .showWarning();
     }
 }

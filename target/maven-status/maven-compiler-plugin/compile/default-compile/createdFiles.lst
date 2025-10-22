@@ -91,6 +91,7 @@ com\arielcardales\arielcardales\Util\Tablas.class
 com\arielcardales\arielcardales\DAO\ProductoDAO.class
 com\arielcardales\arielcardales\controller\VentasController$12.class
 com\arielcardales\arielcardales\Updates\UpdateManager$UpdatePhase.class
+com\arielcardales\arielcardales\Util\Transiciones.class
 com\arielcardales\arielcardales\controller\DashboardController.class
 com\arielcardales\arielcardales\controller\AppController$1.class
 com\arielcardales\arielcardales\App.class

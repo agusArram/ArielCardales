@@ -134,16 +134,31 @@ public class AgregarProductoController {
         stage.close();
     }
 
-    // --- Métodos auxiliares de alertas ---
+    // --- Métodos auxiliares de notificaciones ---
     private void mostrarOk(String msg) {
-        new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
+        org.controlsfx.control.Notifications.create()
+                .title("✅ Éxito")
+                .text(msg)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(3))
+                .showConfirm();
     }
 
     private void mostrarError(String msg) {
-        new Alert(Alert.AlertType.ERROR, msg).showAndWait();
+        org.controlsfx.control.Notifications.create()
+                .title("❌ Error")
+                .text(msg)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(5))
+                .showError();
     }
 
     private void mostrarInfo(String msg) {
-        new Alert(Alert.AlertType.CONFIRMATION, msg).showAndWait();
+        org.controlsfx.control.Notifications.create()
+                .title("ℹ️ Información")
+                .text(msg)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(4))
+                .showInformation();
     }
 }

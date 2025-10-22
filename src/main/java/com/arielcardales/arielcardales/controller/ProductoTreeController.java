@@ -709,11 +709,12 @@ public class ProductoTreeController {
 
             // 🚫 Si no hay resultados, informar al usuario
             if (copia.getChildren().isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Stock bajo");
-                alert.setHeaderText(null);
-                alert.setContentText("No hay productos con stock menor o igual a 2.");
-                alert.showAndWait();
+                Notifications.create()
+                        .title("ℹ️ Stock bajo")
+                        .text("No hay productos con stock menor o igual a 2.")
+                        .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                        .hideAfter(javafx.util.Duration.seconds(4))
+                        .showInformation();
                 return;
             }
 

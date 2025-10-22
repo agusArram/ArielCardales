@@ -670,28 +670,52 @@ public class VentasController {
         }
     }
 
+    /**
+     * Muestra notificación informativa (no bloqueante)
+     */
     private void mostrarAlerta(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+        Notifications.create()
+                .title("ℹ️ Información")
+                .text(mensaje)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(4))
+                .showInformation();
     }
 
+    /**
+     * Muestra notificación de error (no bloqueante)
+     */
     private void mostrarError(String titulo, String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(titulo);
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+        Notifications.create()
+                .title("❌ " + titulo)
+                .text(mensaje)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(5))
+                .showError();
     }
 
+    /**
+     * Muestra notificación de éxito (no bloqueante)
+     */
     private void ok(String msg) {
         Notifications.create()
+                .title("✅ Éxito")
                 .text(msg)
                 .position(javafx.geometry.Pos.BOTTOM_RIGHT)
                 .hideAfter(javafx.util.Duration.seconds(3))
                 .showConfirm();
+    }
+
+    /**
+     * Muestra notificación de advertencia (no bloqueante)
+     */
+    private void mostrarAdvertencia(String mensaje) {
+        Notifications.create()
+                .title("⚠️ Advertencia")
+                .text(mensaje)
+                .position(javafx.geometry.Pos.BOTTOM_RIGHT)
+                .hideAfter(javafx.util.Duration.seconds(4))
+                .showWarning();
     }
 
     private void error(String msg) {
