@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "actualizacion": "2025-10-21",
+  "usuarios": [
+    {
+      "clienteId": "DEMO_CLIENT",
+      "nombre": "Cliente Demo",
+      "email": "demo@ejemplo.com",
+      "estado": "ACTIVO",
+      "plan": "DEMO",
+      "expira": "2025-11-30",
+      "notas": "Licencia de demostración con 15 productos y 10 ventas máximo"
+    },
+    {
+      "clienteId": "46958104",
+      "nombre": "Agus (DESARROLLADOR)",
+      "email": "tu@email.com",
+      "estado": "ACTIVO",
+      "plan": "FULL",
+      "expira": "2099-12-31",
+      "notas": "Licencia FULL perpetua para el desarrollador - CAMBIAR DNI_TU_DNI_AQUI por tu DNI real"
+    },
+    {
+      "clienteId": "CLI_001_BASE",
+      "nombre": "Comercio Ejemplo SRL",
+      "email": "comercio@ejemplo.com",
+      "estado": "ACTIVO",
+      "plan": "BASE",
+      "expira": "2026-12-31",
+      "notas": "Plan básico completo sin métricas avanzadas"
+    },
+    {
+      "clienteId": "CLI_002_FULL",
+      "nombre": "Empresa Premium SA",
+      "email": "premium@ejemplo.com",
+      "estado": "ACTIVO",
+      "plan": "FULL",
+      "expira": "2027-06-30",
+      "notas": "Plan completo con todas las funcionalidades"
+    },
+    {
+      "clienteId": "CLI_003_BASE",
+      "nombre": "Negocio Tercero",
+      "email": "tercero@ejemplo.com",
+      "estado": "ACTIVO",
+      "plan": "BASE",
+      "expira": "2026-06-30",
+      "notas": "Cliente plan BASE anual"
+    },
+    {
+      "clienteId": "CLI_004_SUSPENDIDO",
+      "nombre": "Cliente Moroso",
+      "email": "moroso@ejemplo.com",
+      "estado": "SUSPENDIDO",
+      "plan": "BASE",
+      "expira": "2025-10-01",
+      "notas": "Licencia suspendida por falta de pago"
+    }
+  ],
+  "firma": "99164d8d50ad2767a361516e57aa30e61150a286c2db512c2d53842f1cd72f43"
+}

@@ -3,6 +3,8 @@ package com.arielcardales.arielcardales.controller;
 import com.arielcardales.arielcardales.App;
 import com.arielcardales.arielcardales.DAO.InventarioDAO;
 import com.arielcardales.arielcardales.Entidades.ItemInventario;
+import com.arielcardales.arielcardales.Licencia.Licencia;
+import com.arielcardales.arielcardales.Licencia.LicenciaManager;
 import com.arielcardales.arielcardales.Updates.UpdateConfig;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
@@ -36,11 +38,97 @@ public class AppController {
 
     @FXML
     public void initialize() {
-        // Cargar la vista principal/hub al iniciar
+        // 1. Validar licencia PRIMERO
+        if (!validarLicenciaInicial()) {
+            // Si no hay licencia válida, mostrar error y cerrar
+            return;
+        }
+
+        // 2. Cargar la vista principal/hub
         mostrarVistaPrincipal();
 
-        // Inicializar update manager
+        // 3. Inicializar update manager
         updateManager = new UpdateManager();
+
+        // 4. Mostrar info de licencia después de cargar
+        Platform.runLater(this::mostrarInfoLicencia);
+    }
+
+    /**
+     * Valida la licencia al iniciar la aplicación
+     * @return true si la licencia es válida, false si debe cerrarse la app
+     */
+    private boolean validarLicenciaInicial() {
+        try {
+            boolean licenciaValida = LicenciaManager.validarLicencia();
+
+            if (!licenciaValida) {
+                // Mostrar error y cerrar
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Licencia no válida");
+                    alert.setHeaderText("No se pudo validar la licencia");
+                    alert.setContentText(
+                        "El sistema no pudo verificar su licencia.\n\n" +
+                        "Posibles causas:\n" +
+                        "• Licencia expirada\n" +
+                        "• Cliente no registrado\n" +
+                        "• Sin conexión a internet por más de 7 días\n\n" +
+                        "Contacte al administrador del sistema."
+                    );
+                    alert.showAndWait();
+                    Platform.exit();
+                });
+                return false;
+            }
+
+            // Verificar si está por expirar (menos de 7 días)
+            long diasRestantes = LicenciaManager.getDiasRestantes();
+            if (diasRestantes > 0 && diasRestantes <= 7) {
+                Platform.runLater(() -> {
+                    Notifications.create()
+                        .title("⚠ Licencia por expirar")
+                        .text("Su licencia vence en " + diasRestantes + " días.\n" +
+                              "Contacte al administrador para renovar.")
+                        .position(Pos.TOP_RIGHT)
+                        .showWarning();
+                });
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error del sistema");
+                alert.setHeaderText("Error al validar licencia");
+                alert.setContentText("Error: " + e.getMessage());
+                alert.showAndWait();
+                Platform.exit();
+            });
+            return false;
+        }
+    }
+
+    /**
+     * Muestra información de la licencia actual (solo en modo DEBUG)
+     */
+    private void mostrarInfoLicencia() {
+        Licencia lic = LicenciaManager.getLicencia();
+        if (lic != null) {
+            String mensaje = LicenciaManager.getMensajeEstado();
+
+            // Solo mostrar en planes DEMO o si está en modo offline
+            if (lic.getPlan() == Licencia.PlanLicencia.DEMO || LicenciaManager.isModoOffline()) {
+                Notifications.create()
+                    .title("ℹ Información de Licencia")
+                    .text(mensaje + "\nCliente: " + lic.getNombre())
+                    .position(Pos.BOTTOM_RIGHT)
+                    .hideAfter(javafx.util.Duration.seconds(10))
+                    .showInformation();
+            }
+        }
     }
 
     /**

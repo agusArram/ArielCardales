@@ -13,6 +13,9 @@ module com.arielcardales.arielcardales {
     // JDBC
     requires java.sql;
 
+    // HTTP Client para validación de licencias
+    requires java.net.http;
+
     // Paquete principal
     opens com.arielcardales.arielcardales to javafx.fxml; // Necesario para App.java
     exports com.arielcardales.arielcardales; // Para exponer el paquete principal
@@ -38,5 +41,7 @@ module com.arielcardales.arielcardales {
     opens com.arielcardales.arielcardales.controller to javafx.fxml; // Necesario para FXML
     opens com.arielcardales.arielcardales.Entidades to javafx.base;  // Necesario para TableView (PropertyValueFactory)
 
+    // Exportar paquete de licencias
+    exports com.arielcardales.arielcardales.Licencia;
 
 }

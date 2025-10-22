@@ -1,4 +1,5 @@
 com\arielcardales\arielcardales\Updates\UpdateInstaller$2.class
+com\arielcardales\arielcardales\Licencia\Licencia$PlanLicencia.class
 com\arielcardales\arielcardales\controller\VentasController$9.class
 com\arielcardales\arielcardales\Updates\UpdateException.class
 com\arielcardales\arielcardales\Util\ExportadorPDF.class
@@ -38,6 +39,7 @@ com\arielcardales\arielcardales\controller\EditarProductoController$1.class
 com\arielcardales\arielcardales\controller\VentasController$4.class
 com\arielcardales\arielcardales\Util\ExportadorExcel$Styles.class
 com\arielcardales\arielcardales\Entidades\ItemCliente.class
+com\arielcardales\arielcardales\Licencia\LicenciaManager.class
 com\arielcardales\arielcardales\DAO\CrudDAO.class
 com\arielcardales\arielcardales\controller\RentabilidadController$1.class
 com\arielcardales\arielcardales\controller\RentabilidadController$ProductoRentabilidadRow.class
@@ -73,6 +75,7 @@ com\arielcardales\arielcardales\controller\VentasController$14.class
 com\arielcardales\arielcardales\Util\TablasDialog$1.class
 com\arielcardales\arielcardales\View\VentanaProducto.class
 com\arielcardales\arielcardales\View\VentanaVenta.class
+com\arielcardales\arielcardales\Licencia\Licencia.class
 com\arielcardales\arielcardales\controller\VentasController$2.class
 com\arielcardales\arielcardales\controller\AppController.class
 com\arielcardales\arielcardales\controller\EditarProductoController$3.class
@@ -86,9 +89,11 @@ com\arielcardales\arielcardales\Updates\UpdateException$ErrorType.class
 com\arielcardales\arielcardales\Entidades\Producto.class
 com\arielcardales\arielcardales\DAO\VentaDAO$ItemParaRestaurar.class
 com\arielcardales\arielcardales\Updates\UpdateChecker.class
+com\arielcardales\arielcardales\Licencia\Licencia$EstadoLicencia.class
 com\arielcardales\arielcardales\controller\ClientesController.class
 com\arielcardales\arielcardales\DAO\RentabilidadDAO$ProductoRentabilidad.class
 com\arielcardales\arielcardales\Util\ExportadorExcel.class
+com\arielcardales\arielcardales\Licencia\LicenciaConfig.class
 com\arielcardales\arielcardales\Util\Tablas.class
 com\arielcardales\arielcardales\DAO\ProductoDAO.class
 com\arielcardales\arielcardales\controller\VentasController$12.class
