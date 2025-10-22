@@ -22,6 +22,7 @@ com\arielcardales\arielcardales\Util\AutoCompleteCliente.class
 com\arielcardales\arielcardales\controller\VentasController$3.class
 com\arielcardales\arielcardales\service\InventarioService.class
 com\arielcardales\arielcardales\Updates\UpdateManager.class
+com\arielcardales\arielcardales\controller\PrincipalViewController.class
 com\arielcardales\arielcardales\controller\AgregarProductoController.class
 com\arielcardales\arielcardales\controller\ClientesController$3.class
 com\arielcardales\arielcardales\DAO\DaoException.class

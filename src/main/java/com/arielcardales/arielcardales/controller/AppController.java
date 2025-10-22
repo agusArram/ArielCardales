@@ -36,11 +36,31 @@ public class AppController {
 
     @FXML
     public void initialize() {
-        // Cargar las métricas al iniciar la app
-        mostrarProductos();
+        // Cargar la vista principal/hub al iniciar
+        mostrarVistaPrincipal();
 
         // Inicializar update manager
         updateManager = new UpdateManager();
+    }
+
+    /**
+     * Carga la vista principal/hub con los módulos
+     */
+    private void mostrarVistaPrincipal() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/principal_home.fxml"));
+            Parent vista = loader.load();
+
+            // Obtener el controlador e inyectar referencia a AppController
+            PrincipalViewController controller = loader.getController();
+            controller.setAppController(this);
+
+            // Aplicar transición suave
+            Transiciones.cambiarVistaConFade(contenedorPrincipal, vista);
+        } catch (Exception e) {
+            e.printStackTrace();
+            mostrarError("Error al cargar vista principal", e.getMessage());
+        }
     }
 
     /** Método genérico: carga rápida de vistas simples con transición fade **/
@@ -55,6 +75,33 @@ public class AppController {
             e.printStackTrace();
             mostrarError("Error al cargar vista", "No se pudo cargar la vista: " + rutaFXML);
         }
+    }
+
+    /**
+     * Vuelve a la vista principal/hub (público para menú)
+     */
+    @FXML
+    private void volverInicio() {
+        mostrarVistaPrincipal();
+    }
+
+    /**
+     * Métodos públicos para navegación desde PrincipalViewController
+     */
+    public void mostrarProductosPublic() {
+        mostrarProductos();
+    }
+
+    public void mostrarVentasPublic() {
+        mostrarVentas();
+    }
+
+    public void mostrarClientesPublic() {
+        mostrarClientes();
+    }
+
+    public void mostrarMetricasPublic() {
+        mostrarMetricas();
     }
 
     /** Carga asíncrona de la vista de productos **/
@@ -157,17 +204,17 @@ public class AppController {
     }
 
     @FXML
-    private void mostrarMetricas() {
+    public void mostrarMetricas() {
         cargarVista("/fxml/metricas.fxml");
     }
 
     @FXML
-    private void mostrarVentas() {
+    public void mostrarVentas() {
         cargarVista("/fxml/ventas.fxml");
     }
 
     @FXML
-    private void mostrarClientes() {
+    public void mostrarClientes() {
         cargarVista("/fxml/clientes.fxml");
     }
 

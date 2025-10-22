@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.arielcardales.arielcardales.controller.PrincipalViewController"
+      spacing="0"
+      style="-fx-background-color: linear-gradient(to bottom, #E8DCC4, #D4A574);"
+      VBox.vgrow="ALWAYS">
+
+    <!-- HEADER -->
+    <VBox alignment="CENTER" spacing="10" style="-fx-padding: 40 20 30 20;">
+        <Label text="Sistema de Gestión Integral" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+            <font>
+                <Font name="System Bold" size="32.0"/>
+            </font>
+        </Label>
+        <Label text="Selecciona un módulo para comenzar" style="-fx-font-size: 16px; -fx-text-fill: #8B7355; -fx-font-style: italic;"/>
+    </VBox>
+
+    <!-- CARDS CONTAINER -->
+    <GridPane hgap="30" vgap="30" alignment="CENTER" VBox.vgrow="ALWAYS" style="-fx-padding: 20 60 60 60;">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50" />
+            <ColumnConstraints percentWidth="50" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints percentHeight="50" />
+            <RowConstraints percentHeight="50" />
+        </rowConstraints>
+
+        <!-- CARD: PRODUCTOS -->
+        <VBox alignment="CENTER" spacing="15"
+              onMouseClicked="#abrirProductos"
+              GridPane.columnIndex="0" GridPane.rowIndex="0"
+              styleClass="module-card"
+              style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3); -fx-cursor: hand; -fx-padding: 30;">
+
+            <!-- Icono grande -->
+            <Label text="📦" style="-fx-font-size: 64px;"/>
+
+            <!-- Título -->
+            <Label text="INVENTARIO" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+            </Label>
+
+            <!-- Descripción -->
+            <Label text="Gestiona productos, variantes y stock"
+                   style="-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-text-alignment: center;"
+                   wrapText="true" maxWidth="250"/>
+        </VBox>
+
+        <!-- CARD: VENTAS -->
+        <VBox alignment="CENTER" spacing="15"
+              onMouseClicked="#abrirVentas"
+              GridPane.columnIndex="1" GridPane.rowIndex="0"
+              styleClass="module-card"
+              style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3); -fx-cursor: hand; -fx-padding: 30;">
+
+            <Label text="💰" style="-fx-font-size: 64px;"/>
+
+            <Label text="VENTAS" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+            </Label>
+
+            <Label text="Registra y consulta ventas realizadas"
+                   style="-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-text-alignment: center;"
+                   wrapText="true" maxWidth="250"/>
+        </VBox>
+
+        <!-- CARD: CLIENTES -->
+        <VBox alignment="CENTER" spacing="15"
+              onMouseClicked="#abrirClientes"
+              GridPane.columnIndex="0" GridPane.rowIndex="1"
+              styleClass="module-card"
+              style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3); -fx-cursor: hand; -fx-padding: 30;">
+
+            <Label text="👥" style="-fx-font-size: 64px;"/>
+
+            <Label text="CLIENTES" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+            </Label>
+
+            <Label text="Administra tu base de clientes"
+                   style="-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-text-alignment: center;"
+                   wrapText="true" maxWidth="250"/>
+        </VBox>
+
+        <!-- CARD: MÉTRICAS -->
+        <VBox alignment="CENTER" spacing="15"
+              onMouseClicked="#abrirMetricas"
+              GridPane.columnIndex="1" GridPane.rowIndex="1"
+              styleClass="module-card"
+              style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3); -fx-cursor: hand; -fx-padding: 30;">
+
+            <Label text="📊" style="-fx-font-size: 64px;"/>
+
+            <Label text="REPORTES" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5D4E37;">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+            </Label>
+
+            <Label text="Dashboard y análisis de datos"
+                   style="-fx-font-size: 13px; -fx-text-fill: #8B7355; -fx-text-alignment: center;"
+                   wrapText="true" maxWidth="250"/>
+        </VBox>
+    </GridPane>
+
+    <!-- FOOTER CON VERSIÓN -->
+    <HBox alignment="CENTER" spacing="10" style="-fx-padding: 10; -fx-background-color: rgba(93, 78, 55, 0.1);">
+        <Label fx:id="lblVersion" text="v1.0.0" style="-fx-text-fill: #8B7355; -fx-font-size: 11px;"/>
+        <Label text="|" style="-fx-text-fill: #8B7355;"/>
+        <Label text="Sistema de Gestión Integral" style="-fx-text-fill: #8B7355; -fx-font-size: 11px;"/>
+    </HBox>
+</VBox>

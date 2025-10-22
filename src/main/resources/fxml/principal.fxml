@@ -10,20 +10,27 @@
     <!--  BARRA SUPERIOR -->
     <top>
         <HBox spacing="20" style="-fx-background-color: #b88a52; -fx-padding: 15;">
+            <!-- BOTÓN INICIO -->
+            <Button text="🏠 Inicio"
+                    onAction="#volverInicio"
+                    style="-fx-background-color: #D4A574; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20; -fx-background-radius: 5;"/>
+
+            <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
+
             <Button text="Inventario"
                     onAction="#restaurarInventarioCompleto"
                     style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-cursor: hand;"/>
 
 
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Métricas" onAction="#mostrarMetricas"
-                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-            <Button text="Productos" onAction="#verInventarioTreeExperimental"
-                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-            <Button text="Ventas" onAction="#mostrarVentas"
-                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-            <Button text="Clientes" onAction="#mostrarClientes"
-                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
+            <Button text="📊 Reportes" onAction="#mostrarMetricas"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
+            <Button text="📦 Productos" onAction="#verInventarioTreeExperimental"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
+            <Button text="💰 Ventas" onAction="#mostrarVentas"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
+            <Button text="👥 Clientes" onAction="#mostrarClientes"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
 
             <MenuBar>
                 <!-- Tus menús existentes -->
