@@ -28,6 +28,11 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\LicenciaDAO.j
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoVarianteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\RentabilidadDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteCategoriaDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteDatabase.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteProductoDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteUnidadDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\TestSqliteBackup.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\UnidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\VentaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Entidades\Categoria.java

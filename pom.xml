@@ -80,6 +80,12 @@
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
+        <!-- SQLite para backup local -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.45.1.0</version>
+        </dependency>
         <!-- loggin
 
         <dependency>
@@ -196,6 +202,7 @@
                     <include>**/*.png</include>
                     <include>**/*.jpg</include>
                     <include>**/*.properties</include>
+                    <include>**/*.sql</include>
                 </includes>
             </resource>
         </resources>
