@@ -17,9 +17,12 @@ com\arielcardales\arielcardales\DAO\AccountSuspendedException.class
 com\arielcardales\arielcardales\DAO\ClienteDAO.class
 com\arielcardales\arielcardales\DAO\VentaDAO$ProductoVendido.class
 com\arielcardales\arielcardales\Entidades\Categoria.class
+com\arielcardales\arielcardales\service\sync\SyncResult.class
+com\arielcardales\arielcardales\DAO\sqlite\SqliteProductoVarianteDAO.class
 com\arielcardales\arielcardales\controller\AppController$2.class
 com\arielcardales\arielcardales\controller\LoadingController.class
 com\arielcardales\arielcardales\controller\RentabilidadController$3.class
+com\arielcardales\arielcardales\DAO\sqlite\SqliteClienteDAO.class
 com\arielcardales\arielcardales\Util\Arboles$1.class
 com\arielcardales\arielcardales\controller\DashboardController$1.class
 com\arielcardales\arielcardales\DAO\sqlite\SqliteUnidadDAO.class
@@ -32,6 +35,7 @@ com\arielcardales\arielcardales\controller\PrincipalViewController.class
 com\arielcardales\arielcardales\controller\AgregarProductoController.class
 com\arielcardales\arielcardales\DAO\sqlite\SqliteProductoDAO.class
 com\arielcardales\arielcardales\controller\ClientesController$3.class
+com\arielcardales\arielcardales\service\sync\ConflictResolver.class
 com\arielcardales\arielcardales\DAO\DaoException.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller.class
 com\arielcardales\arielcardales\Entidades\Venta$VentaItem.class
@@ -59,6 +63,7 @@ module-info.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$ProgressCallback.class
 com\arielcardales\arielcardales\Updates\UpdateInstaller$1.class
 com\arielcardales\arielcardales\controller\ClientesController$2.class
+com\arielcardales\arielcardales\service\sync\SyncResult$SyncDirection.class
 com\arielcardales\arielcardales\Util\Arboles.class
 com\arielcardales\arielcardales\DAO\RentabilidadDAO.class
 com\arielcardales\arielcardales\DAO\sqlite\SqliteCategoriaDAO.class
@@ -76,6 +81,7 @@ com\arielcardales\arielcardales\Util\TablasDialog.class
 com\arielcardales\arielcardales\DAO\AccountExpiredException.class
 com\arielcardales\arielcardales\Updates\Updater$ProgressCallback.class
 com\arielcardales\arielcardales\controller\ExportarController.class
+com\arielcardales\arielcardales\service\sync\SyncResult$SyncStats.class
 com\arielcardales\arielcardales\Util\Mapper.class
 com\arielcardales\arielcardales\DAO\AutenticacionDAO$1.class
 com\arielcardales\arielcardales\Entidades\Unidad.class
@@ -85,6 +91,7 @@ com\arielcardales\arielcardales\Entidades\ItemInventario.class
 com\arielcardales\arielcardales\Entidades\ProductoVariante.class
 com\arielcardales\arielcardales\controller\DashboardController$2.class
 com\arielcardales\arielcardales\Util\DialogosUtil.class
+com\arielcardales\arielcardales\DAO\sqlite\SqliteVentaDAO.class
 com\arielcardales\arielcardales\controller\VentasController$14.class
 com\arielcardales\arielcardales\Util\TablasDialog$1.class
 com\arielcardales\arielcardales\View\VentanaProducto.class
@@ -122,6 +129,7 @@ com\arielcardales\arielcardales\App.class
 com\arielcardales\arielcardales\controller\VentasController$7.class
 com\arielcardales\arielcardales\service\InventarioService$ResultadoActualizacion.class
 com\arielcardales\arielcardales\session\LicenseMonitor.class
+com\arielcardales\arielcardales\DAO\sqlite\SqliteClienteDAO$Cliente.class
 com\arielcardales\arielcardales\Entidades\Cliente.class
 com\arielcardales\arielcardales\Util\ExportadorVentas.class
 com\arielcardales\arielcardales\Updates\UpdateManager$UpdateProgress.class
@@ -129,6 +137,7 @@ com\arielcardales\arielcardales\controller\EditarProductoController.class
 com\arielcardales\arielcardales\DAO\VentaDAO$VentaEstadisticas.class
 com\arielcardales\arielcardales\controller\VentasController$13.class
 com\arielcardales\arielcardales\DAO\DashboardDAO$ProductoVendido.class
+com\arielcardales\arielcardales\service\sync\ConflictResolver$ConflictResolution.class
 com\arielcardales\arielcardales\Updates\UpdateTester.class
 com\arielcardales\arielcardales\controller\VentasController$8.class
 com\arielcardales\arielcardales\controller\VentasController$1.class

@@ -29,9 +29,12 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoDAO.j
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\ProductoVarianteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\RentabilidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteCategoriaDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteClienteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteDatabase.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteProductoDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteProductoVarianteDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteUnidadDAO.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\SqliteVentaDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\sqlite\TestSqliteBackup.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\UnidadDAO.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\DAO\VentaDAO.java
@@ -48,6 +51,8 @@ C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\Licencia
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\LicenciaConfig.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\Licencia\LicenciaManager.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\InventarioService.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\sync\ConflictResolver.java
+C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\sync\SyncResult.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\service\VentanaProducto.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\LicenseMonitor.java
 C:\arielcardales\src\main\java\com\arielcardales\arielcardales\session\SessionManager.java
