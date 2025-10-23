@@ -87,14 +87,14 @@ public class ProductoTreeController {
 
         // Matriz: {Título, Propiedad, Peso, AnchoMin}
         String[][] columnas = {
-                {"Etiqueta",  "etiquetaProducto", "0.08", "60"},
-                {"Nombre",    "nombreProducto",   "0.27", "150"},
+                {"Etiqueta",  "etiquetaProducto", "0.10", "65"},
+                {"Nombre",    "nombreProducto",   "0.23", "145"},
                 {"Color",     "color",            "0.10", "70"},
                 {"Talle",     "talle",            "0.08", "60"},
                 {"Categoría", "categoria",        "0.15", "100"},
                 {"Costo",     "costo",            "0.12", "90"},
                 {"Precio",    "precio",           "0.15", "100"},
-                {"Stock",     "stockOnHand",      "0.05", "50"}
+                {"Stock",     "stockOnHand",      "0.07", "70"}
         };
 
         // ✅ Crear columnas con el helper
@@ -274,7 +274,7 @@ public class ProductoTreeController {
                         editor.configurarTexto((TreeTableColumn<ItemInventario, String>) col, prop);
 
                 case "precio", "costo" ->
-                        editor.configurarDecimal((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
+                        editor.configurarPrecioEntero((TreeTableColumn<ItemInventario, BigDecimal>) col, prop);
 
                 case "stock" ->
                         editor.configurarEntero((TreeTableColumn<ItemInventario, Integer>) col, prop, 0, Integer.MAX_VALUE);

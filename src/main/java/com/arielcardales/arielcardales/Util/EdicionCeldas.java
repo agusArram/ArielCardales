@@ -61,8 +61,121 @@ public class EdicionCeldas {
     }
 
     /**
-     * Configura edición de BigDecimal (precio, costo) con formato de moneda
+     * Configura edición de precios/costos SIN DECIMALES (para Argentina)
+     * Los valores se guardan como BigDecimal en BD pero se muestran/editan como enteros
      */
+    public void configurarPrecioEntero(TreeTableColumn<ItemInventario, BigDecimal> col, String campo) {
+        col.setCellFactory(tc -> new TreeTableCell<ItemInventario, BigDecimal>() {
+            private javafx.scene.control.TextField textField;
+
+            @Override
+            protected void updateItem(BigDecimal item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    if (isEditing()) {
+                        if (textField != null) {
+                            // Mostrar solo la parte entera al editar
+                            textField.setText(String.valueOf(item.intValue()));
+                        }
+                        setText(null);
+                        setGraphic(textField);
+                    } else {
+                        // Mostrar como "$1,234" sin decimales
+                        java.text.NumberFormat formato = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "AR"));
+                        formato.setMaximumFractionDigits(0);
+                        formato.setMinimumFractionDigits(0);
+                        setText(formato.format(item.intValue()));
+                        setGraphic(null);
+                    }
+                }
+            }
+
+            @Override
+            public void startEdit() {
+                if (isEmpty()) return;
+
+                super.startEdit();
+                createTextField();
+                setText(null);
+                setGraphic(textField);
+                textField.selectAll();
+                textField.requestFocus();
+            }
+
+            @Override
+            public void cancelEdit() {
+                super.cancelEdit();
+                java.text.NumberFormat formato = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "AR"));
+                formato.setMaximumFractionDigits(0);
+                formato.setMinimumFractionDigits(0);
+                setText(formato.format(getItem().intValue()));
+                setGraphic(null);
+            }
+
+            private void createTextField() {
+                textField = new javafx.scene.control.TextField(String.valueOf(getItem().intValue()));
+                textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
+
+                // Solo permitir números enteros
+                textField.textProperty().addListener((obs, oldValue, newValue) -> {
+                    if (!newValue.matches("\\d*")) {
+                        textField.setText(newValue.replaceAll("[^\\d]", ""));
+                    }
+                });
+
+                textField.setOnAction(evt -> commitarValor());
+                textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+                    if (!isNowFocused) commitarValor();
+                });
+            }
+
+            private void commitarValor() {
+                try {
+                    String input = textField.getText().trim();
+                    if (input.isEmpty()) input = "0";
+
+                    // Parsear como entero y convertir a BigDecimal
+                    int valorEntero = Integer.parseInt(input);
+                    BigDecimal nuevoValor = new BigDecimal(valorEntero);
+                    commitEdit(nuevoValor);
+                } catch (Exception e) {
+                    cancelEdit();
+                }
+            }
+        });
+
+        col.setOnEditCommit(event -> {
+            ItemInventario item = event.getRowValue().getValue();
+            BigDecimal nuevoValor = event.getNewValue();
+
+            // Delegar al Service (enviar como entero, sin decimales)
+            ResultadoActualizacion resultado = inventarioService.actualizarCampo(item, campo, String.valueOf(nuevoValor.intValue()));
+
+            if (resultado.isExitoso()) {
+                // Actualizar objeto en memoria
+                if (campo.equalsIgnoreCase("precio")) {
+                    item.setPrecio(nuevoValor);
+                } else {
+                    item.setCosto(nuevoValor);
+                }
+                ok(resultado.getMensaje());
+            } else {
+                error(resultado.getMensaje());
+            }
+
+            tabla.refresh();
+        });
+    }
+
+    /**
+     * Configura edición de BigDecimal (precio, costo) con formato de moneda CON DECIMALES
+     * @deprecated Usar configurarPrecioEntero() para Argentina (sin centavos)
+     */
+    @Deprecated
     public void configurarDecimal(TreeTableColumn<ItemInventario, BigDecimal> col, String campo) {
         col.setCellFactory(tc -> new TreeTableCell<ItemInventario, BigDecimal>() {
             private javafx.scene.control.TextField textField;
