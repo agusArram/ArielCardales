@@ -41,6 +41,12 @@
                         </graphic>
                     </MenuItem>
 
+                    <MenuItem text="Sincronizar Backup Local" onAction="#onSincronizarBackup">
+                        <graphic>
+                            <Label text="💾" />
+                        </graphic>
+                    </MenuItem>
+
                     <SeparatorMenuItem />
 
                     <MenuItem text="Acerca de" onAction="#onAcercaDe">

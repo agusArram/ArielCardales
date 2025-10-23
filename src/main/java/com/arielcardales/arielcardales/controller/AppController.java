@@ -9,6 +9,9 @@ import com.arielcardales.arielcardales.session.SessionPersistence;
 import com.arielcardales.arielcardales.Updates.UpdateConfig;
 import com.arielcardales.arielcardales.Updates.UpdateDialog;
 import com.arielcardales.arielcardales.Updates.UpdateManager;
+import com.arielcardales.arielcardales.Updates.SyncDialog;
+import com.arielcardales.arielcardales.service.sync.SyncService;
+import com.arielcardales.arielcardales.service.sync.SyncResult;
 import com.arielcardales.arielcardales.Util.Arboles;
 import com.arielcardales.arielcardales.Util.Transiciones;
 import javafx.application.Platform;
@@ -423,6 +426,82 @@ public class AppController {
                             "/" + UpdateConfig.getRepoName() + "/issues"
             );
         }
+    }
+
+    /**
+     * Sincroniza datos con el backup local (Supabase → SQLite)
+     */
+    @FXML
+    private void onSincronizarBackup(ActionEvent event) {
+        Stage stage = getStage();
+
+        if (stage == null) {
+            System.err.println("⚠️ No se pudo obtener Stage para sincronización");
+            mostrarError("Error", "No se pudo iniciar la sincronización");
+            return;
+        }
+
+        // 1. Mostrar confirmación SIEMPRE
+        boolean confirmado = SyncDialog.showSyncConfirmation(stage);
+        if (!confirmado) {
+            System.out.println("ℹ️ Sincronización cancelada por el usuario");
+            return;
+        }
+
+        // 2. Mostrar diálogo de progreso
+        Stage progressDialog = SyncDialog.showSyncProgress(stage);
+
+        // 3. Ejecutar sincronización en background
+        Task<SyncResult> syncTask = new Task<>() {
+            @Override
+            protected SyncResult call() {
+                System.out.println("🔄 Iniciando sincronización desde UI...");
+                SyncService syncService = new SyncService();
+                return syncService.syncFromCloud();
+            }
+        };
+
+        syncTask.setOnSucceeded(e -> {
+            // Cerrar diálogo de progreso
+            Platform.runLater(progressDialog::close);
+
+            // Obtener resultado
+            SyncResult result = syncTask.getValue();
+
+            // Mostrar resultados
+            SyncDialog.showSyncResults(stage, result);
+
+            // Mensaje en consola
+            if (result.isSuccess()) {
+                System.out.println("✅ Sincronización completada desde UI");
+                mostrarExito("Backup local sincronizado exitosamente");
+            } else {
+                System.err.println("❌ Sincronización falló: " + result.getMessage());
+            }
+        });
+
+        syncTask.setOnFailed(e -> {
+            // Cerrar diálogo de progreso
+            Platform.runLater(progressDialog::close);
+
+            // Mostrar error
+            Throwable ex = syncTask.getException();
+            String errorMsg = ex != null ? ex.getMessage() : "Error desconocido";
+
+            System.err.println("❌ Error en sincronización: " + errorMsg);
+            ex.printStackTrace();
+
+            SyncDialog.showError(
+                stage,
+                "Error de Sincronización",
+                "No se pudo completar la sincronización.\n\n" +
+                "Error: " + errorMsg + "\n\n" +
+                "Verifique su conexión a Internet e intente nuevamente."
+            );
+        });
+
+        // Iniciar tarea en background
+        new Thread(syncTask).start();
     }
 
     /**

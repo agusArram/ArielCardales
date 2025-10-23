@@ -85,6 +85,7 @@ com\arielcardales\arielcardales\controller\ExportarController.class
 com\arielcardales\arielcardales\service\sync\SyncResult$SyncStats.class
 com\arielcardales\arielcardales\Util\Mapper.class
 com\arielcardales\arielcardales\DAO\AutenticacionDAO$1.class
+com\arielcardales\arielcardales\controller\AppController$3.class
 com\arielcardales\arielcardales\Entidades\Unidad.class
 com\arielcardales\arielcardales\DAO\VentaDAO.class
 com\arielcardales\arielcardales\DAO\DashboardDAO.class
@@ -144,6 +145,7 @@ com\arielcardales\arielcardales\Updates\UpdateTester.class
 com\arielcardales\arielcardales\controller\VentasController$8.class
 com\arielcardales\arielcardales\controller\VentasController$1.class
 com\arielcardales\arielcardales\controller\LoginController$1.class
+com\arielcardales\arielcardales\Updates\SyncDialog.class
 com\arielcardales\arielcardales\DAO\Database.class
 com\arielcardales\arielcardales\controller\ProductoTreeController.class
 com\arielcardales\arielcardales\Util\Arboles$2.class

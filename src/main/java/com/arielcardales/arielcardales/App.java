@@ -114,7 +114,7 @@ public class App extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("/fxml/principal.fxml"));
         Parent root = fxmlLoader.load();
 
-        Scene scene = new Scene(root, 1200, 800); // Tamaño inicial: 1200x800
+        Scene scene = new Scene(root, 1350, 900); // Tamaño inicial: 1320x800
         scene.getStylesheets().add(App.class.getResource("/Estilos/Estilos.css").toExternalForm());
 
         stage.setScene(scene);

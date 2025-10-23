@@ -1,5 +1,7 @@
 package com.arielcardales.arielcardales.DAO;
 
+import com.arielcardales.arielcardales.session.SessionManager;
+
 import java.sql.*;
 import java.util.*;
 
@@ -40,6 +42,17 @@ public class RentabilidadDAO {
     public static Map<String, Object> obtenerMetricasRentabilidad(int dias) {
         Map<String, Object> metricas = new HashMap<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando métricas vacías");
+            metricas.put("margenPromedio", 0.0);
+            metricas.put("gananciaTotal", 0.0);
+            metricas.put("ventasTotales", 0.0);
+            metricas.put("costosTotales", 0.0);
+            return metricas;
+        }
+
         String sql = """
             WITH productos_costo AS (
                 SELECT
@@ -48,6 +61,7 @@ public class RentabilidadDAO {
                     MAX(COALESCE(v.costo, 0)) AS costo
                 FROM vInventario_variantes v
                 WHERE v.active = true
+                  AND v.cliente_id = ?
                 GROUP BY v.producto_id, v.producto_nombre
             ),
             ventas_periodo AS (
@@ -61,6 +75,7 @@ public class RentabilidadDAO {
                 JOIN producto p ON p.id = vi.productoId
                 LEFT JOIN productos_costo pc ON pc.producto_id = p.id
                 WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+                  AND v2.cliente_id = ?
                 GROUP BY pc.producto_nombre
             )
             SELECT
@@ -73,14 +88,18 @@ public class RentabilidadDAO {
 
 
         try (Connection conn = Database.get();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                metricas.put("margenPromedio", rs.getDouble("margen_promedio"));
-                metricas.put("gananciaTotal", rs.getDouble("ganancia_total"));
-                metricas.put("ventasTotales", rs.getDouble("ventas_totales"));
-                metricas.put("costosTotales", rs.getDouble("costos_totales"));
+            stmt.setString(1, clienteId);
+            stmt.setString(2, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    metricas.put("margenPromedio", rs.getDouble("margen_promedio"));
+                    metricas.put("gananciaTotal", rs.getDouble("ganancia_total"));
+                    metricas.put("ventasTotales", rs.getDouble("ventas_totales"));
+                    metricas.put("costosTotales", rs.getDouble("costos_totales"));
+                }
             }
 
         } catch (SQLException e) {
@@ -94,6 +113,15 @@ public class RentabilidadDAO {
     public static Map<String, Object> obtenerProductoMasRentable(int dias) {
         Map<String, Object> producto = new HashMap<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando producto vacío");
+            producto.put("nombre", "N/A");
+            producto.put("gananciaTotal", 0.0);
+            return producto;
+        }
+
         String sql = """
             WITH productos_costo AS (
                 SELECT
@@ -102,6 +130,7 @@ public class RentabilidadDAO {
                     MAX(COALESCE(v.costo, 0)) AS costo
                 FROM vInventario_variantes v
                 WHERE v.active = true
+                  AND v.cliente_id = ?
                 GROUP BY v.producto_id, v.producto_nombre
             )
             SELECT
@@ -112,6 +141,7 @@ public class RentabilidadDAO {
             JOIN producto p ON p.id = vi.productoId
             LEFT JOIN productos_costo pc ON pc.producto_id = p.id
             WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+              AND v2.cliente_id = ?
             GROUP BY pc.producto_nombre
             ORDER BY ganancia_total DESC
             LIMIT 1
@@ -119,15 +149,19 @@ public class RentabilidadDAO {
 
 
         try (Connection conn = Database.get();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                producto.put("nombre", rs.getString("nombre"));
-                producto.put("gananciaTotal", rs.getDouble("ganancia_total"));
-            } else {
-                producto.put("nombre", "N/A");
-                producto.put("gananciaTotal", 0.0);
+            stmt.setString(1, clienteId);
+            stmt.setString(2, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    producto.put("nombre", rs.getString("nombre"));
+                    producto.put("gananciaTotal", rs.getDouble("ganancia_total"));
+                } else {
+                    producto.put("nombre", "N/A");
+                    producto.put("gananciaTotal", 0.0);
+                }
             }
 
         } catch (SQLException e) {
@@ -141,6 +175,15 @@ public class RentabilidadDAO {
     public static Map<String, Object> obtenerCategoriaMasRentable(int dias) {
         Map<String, Object> categoria = new HashMap<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando categoría vacía");
+            categoria.put("nombre", "N/A");
+            categoria.put("gananciaTotal", 0.0);
+            return categoria;
+        }
+
         String sql = """
             WITH productos_costo AS (
                 SELECT
@@ -149,6 +192,7 @@ public class RentabilidadDAO {
                     MAX(v.categoria) AS categoria
                 FROM vInventario_variantes v
                 WHERE v.active = true
+                  AND v.cliente_id = ?
                 GROUP BY v.producto_id
             )
             SELECT
@@ -159,21 +203,26 @@ public class RentabilidadDAO {
             JOIN producto p ON p.id = vi.productoId
             LEFT JOIN productos_costo pc ON pc.producto_id = p.id
             WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+              AND v2.cliente_id = ?
             GROUP BY pc.categoria
             ORDER BY ganancia_total DESC
             LIMIT 1
             """.formatted(dias);
 
         try (Connection conn = Database.get();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                categoria.put("nombre", rs.getString("categoria"));
-                categoria.put("gananciaTotal", rs.getDouble("ganancia_total"));
-            } else {
-                categoria.put("nombre", "N/A");
-                categoria.put("gananciaTotal", 0.0);
+            stmt.setString(1, clienteId);
+            stmt.setString(2, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    categoria.put("nombre", rs.getString("categoria"));
+                    categoria.put("gananciaTotal", rs.getDouble("ganancia_total"));
+                } else {
+                    categoria.put("nombre", "N/A");
+                    categoria.put("gananciaTotal", 0.0);
+                }
             }
 
         } catch (SQLException e) {
@@ -187,6 +236,13 @@ public class RentabilidadDAO {
     public static List<ProductoRentabilidad> obtenerAnalisisProductos(int dias, Integer categoriaId) {
         List<ProductoRentabilidad> productos = new ArrayList<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando lista vacía");
+            return productos;
+        }
+
         StringBuilder sql = new StringBuilder("""
             WITH productos_info AS (
                 SELECT
@@ -196,6 +252,7 @@ public class RentabilidadDAO {
                     MAX(v.categoria) AS categoria
                 FROM vInventario_variantes v
                 WHERE v.active = true
+                  AND v.cliente_id = ?
         """);
 
         if (categoriaId != null) {
@@ -216,6 +273,7 @@ public class RentabilidadDAO {
             JOIN producto p ON p.id = vi.productoId
             LEFT JOIN productos_info pi ON pi.producto_id = p.id
             WHERE v2.fecha >= NOW() - INTERVAL '%d days'
+              AND v2.cliente_id = ?
             GROUP BY pi.producto_nombre, pi.categoria
             ORDER BY (AVG(vi.precioUnit) - COALESCE(MAX(pi.costo), 0)) * SUM(vi.qty) DESC
             """.formatted(dias));
@@ -223,9 +281,14 @@ public class RentabilidadDAO {
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 
+            int paramIndex = 1;
+            stmt.setString(paramIndex++, clienteId);  // cliente_id en CTE
+
             if (categoriaId != null) {
-                stmt.setInt(1, categoriaId);
+                stmt.setInt(paramIndex++, categoriaId);  // categoriaId opcional
             }
+
+            stmt.setString(paramIndex, clienteId);  // cliente_id en venta
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

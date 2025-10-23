@@ -1,5 +1,7 @@
 package com.arielcardales.arielcardales.DAO;
 
+import com.arielcardales.arielcardales.session.SessionManager;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,6 +20,17 @@ public class DashboardDAO {
     public static Map<String, Object> obtenerMetricasInventario() {
         Map<String, Object> metricas = new HashMap<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando métricas vacías");
+            metricas.put("totalProductos", 0);
+            metricas.put("stockBajo", 0);
+            metricas.put("sinStock", 0);
+            metricas.put("valorTotal", 0.0);
+            return metricas;
+        }
+
         String sql = """
             SELECT
                 COUNT(DISTINCT producto_id) as totalProductos,
@@ -26,17 +39,21 @@ public class DashboardDAO {
                 COALESCE(SUM(stockOnHand * precio), 0) as valorTotal
             FROM vInventario_variantes
             WHERE active = true
+              AND cliente_id = ?
             """;
 
         try (Connection conn = Database.get();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                metricas.put("totalProductos", rs.getInt("totalProductos"));
-                metricas.put("stockBajo", rs.getInt("stockBajo"));
-                metricas.put("sinStock", rs.getInt("sinStock"));
-                metricas.put("valorTotal", rs.getDouble("valorTotal"));
+            stmt.setString(1, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    metricas.put("totalProductos", rs.getInt("totalProductos"));
+                    metricas.put("stockBajo", rs.getInt("stockBajo"));
+                    metricas.put("sinStock", rs.getInt("sinStock"));
+                    metricas.put("valorTotal", rs.getDouble("valorTotal"));
+                }
             }
 
         } catch (SQLException e) {
@@ -79,6 +96,13 @@ public class DashboardDAO {
     public static List<ProductoVendido> obtenerTopProductosVendidos(int limit) {
         List<ProductoVendido> productos = new ArrayList<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando lista vacía");
+            return productos;
+        }
+
         String sql = """
             SELECT
                 vi.productoNombre as nombre,
@@ -88,6 +112,7 @@ public class DashboardDAO {
             FROM ventaItem vi
             JOIN venta v ON v.id = vi.ventaId
             WHERE v.fecha >= NOW() - INTERVAL '30 days'
+              AND v.cliente_id = ?
             GROUP BY vi.productoNombre
             ORDER BY cantidad_vendida DESC
             LIMIT ?
@@ -96,7 +121,8 @@ public class DashboardDAO {
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, limit);
+            stmt.setString(1, clienteId);
+            stmt.setInt(2, limit);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -123,6 +149,17 @@ public class DashboardDAO {
     public static Map<String, Object> obtenerMetricasVentas() {
         Map<String, Object> metricas = new HashMap<>();
 
+        // Obtener cliente_id de la sesión actual
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando métricas vacías");
+            metricas.put("totalVentas", 0);
+            metricas.put("montoTotal", 0.0);
+            metricas.put("ventasHoy", 0.0);
+            metricas.put("promedioVentaDiaria", 0.0);
+            return metricas;
+        }
+
         String sql = """
             SELECT
                 COUNT(*) as totalVentas,
@@ -130,22 +167,26 @@ public class DashboardDAO {
                 SUM(CASE WHEN fecha::date = CURRENT_DATE THEN total ELSE 0 END) as ventasHoy
             FROM venta
             WHERE fecha >= NOW() - INTERVAL '30 days'
+              AND cliente_id = ?
             """;
 
         try (Connection conn = Database.get();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                int totalVentas = rs.getInt("totalVentas");
-                double montoTotal = rs.getDouble("montoTotal");
-                double ventasHoy = rs.getDouble("ventasHoy");
-                double promedioVentaDiaria = totalVentas > 0 ? montoTotal / 30.0 : 0;
+            stmt.setString(1, clienteId);
 
-                metricas.put("totalVentas", totalVentas);
-                metricas.put("montoTotal", montoTotal);
-                metricas.put("ventasHoy", ventasHoy);
-                metricas.put("promedioVentaDiaria", promedioVentaDiaria);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int totalVentas = rs.getInt("totalVentas");
+                    double montoTotal = rs.getDouble("montoTotal");
+                    double ventasHoy = rs.getDouble("ventasHoy");
+                    double promedioVentaDiaria = totalVentas > 0 ? montoTotal / 30.0 : 0;
+
+                    metricas.put("totalVentas", totalVentas);
+                    metricas.put("montoTotal", montoTotal);
+                    metricas.put("ventasHoy", ventasHoy);
+                    metricas.put("promedioVentaDiaria", promedioVentaDiaria);
+                }
             }
 
         } catch (SQLException e) {

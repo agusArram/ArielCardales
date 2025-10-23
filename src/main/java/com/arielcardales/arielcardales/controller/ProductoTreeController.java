@@ -88,12 +88,12 @@ public class ProductoTreeController {
         // Matriz: {Título, Propiedad, Peso, AnchoMin}
         String[][] columnas = {
                 {"Etiqueta",  "etiquetaProducto", "0.08", "60"},
-                {"Nombre",    "nombreProducto",   "0.30", "150"},
+                {"Nombre",    "nombreProducto",   "0.27", "150"},
                 {"Color",     "color",            "0.10", "70"},
                 {"Talle",     "talle",            "0.08", "60"},
                 {"Categoría", "categoria",        "0.15", "100"},
                 {"Costo",     "costo",            "0.12", "90"},
-                {"Precio",    "precio",           "0.12", "90"},
+                {"Precio",    "precio",           "0.15", "100"},
                 {"Stock",     "stockOnHand",      "0.05", "50"}
         };
 
