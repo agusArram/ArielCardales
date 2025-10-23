@@ -724,6 +724,13 @@ public class ProductoTreeController {
 
     /**
      * Elimina de forma recursiva los nodos cuyo stock > 2.
+     *
+     * IMPORTANTE: Los productos padre tienen stock = 0 por defecto.
+     * Solo debemos considerar el stock de las variantes (hijos).
+     *
+     * Lógica:
+     * - Si es VARIANTE (hijo): verificar si stock <= 2
+     * - Si es PADRE: NO verificar su stock, solo mostrar si tiene hijos con stock bajo
      */
     private boolean filtrarPorStockBajo(TreeItem<ItemInventario> nodo) {
         if (nodo == null || nodo.getChildren() == null) return false;
@@ -736,11 +743,19 @@ public class ProductoTreeController {
             ItemInventario data = hijo.getValue();
 
             boolean coincide = false;
-            if (data != null && data.getStockOnHand() <= 2) {
+
+            // ✅ Solo verificar stock si es una VARIANTE (hijo)
+            // Los padres siempre tienen stock = 0, no los consideramos
+            if (data != null && data.isEsVariante() && data.getStockOnHand() <= 2) {
                 coincide = true;
             }
 
+            // Verificar recursivamente si tiene hijos que coinciden
             boolean hijosCoinciden = filtrarPorStockBajo(hijo);
+
+            // Eliminar nodo solo si:
+            // - NO es una variante con stock bajo
+            // - Y NO tiene hijos con stock bajo
             if (!coincide && !hijosCoinciden) {
                 it.remove();
             } else {
