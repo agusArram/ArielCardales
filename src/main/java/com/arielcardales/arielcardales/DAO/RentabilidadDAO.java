@@ -243,52 +243,69 @@ public class RentabilidadDAO {
             return productos;
         }
 
+        // Consulta SIMPLIFICADA: empezar desde VENTAS, no desde inventario
+        // Solo muestra productos/variantes que realmente se vendieron
         StringBuilder sql = new StringBuilder("""
-            WITH productos_info AS (
-                SELECT
-                    v.producto_id,
-                    v.producto_nombre,
-                    MAX(COALESCE(v.costo, 0)) AS costo,
-                    MAX(v.categoria) AS categoria
-                FROM vInventario_variantes v
-                WHERE v.active = true
-                  AND v.cliente_id = ?
-        """);
+            SELECT
+                CASE
+                    WHEN vi.variante_id IS NOT NULL THEN
+                        CONCAT(p.nombre, ' - ', pv.color, '/', pv.talle)
+                    ELSE
+                        p.nombre
+                END AS nombre,
+                c.nombre AS categoria,
+                AVG(vi.precioUnit) AS precio_venta,
+                COALESCE(
+                    CASE
+                        WHEN vi.variante_id IS NOT NULL THEN MAX(pv.costo)
+                        ELSE MAX(p.costo)
+                    END,
+                    0
+                ) AS costo,
+                SUM(vi.qty) AS cantidad_vendida
+            FROM ventaItem vi
+            JOIN venta v ON v.id = vi.ventaId
+            JOIN producto p ON p.id = vi.productoId
+            JOIN categoria c ON c.id = p.categoriaId
+            LEFT JOIN producto_variante pv ON pv.id = vi.variante_id
+            WHERE v.fecha >= NOW() - INTERVAL '%d days'
+              AND v.cliente_id = ?
+              AND p.cliente_id = ?
+        """.formatted(dias));
 
         if (categoriaId != null) {
-            sql.append(" AND v.categoriaid = ? ");
+            sql.append(" AND p.categoriaId = ? ");
         }
 
         sql.append("""
-        GROUP BY v.producto_id, v.producto_nombre
-            )
-            SELECT
-                pi.producto_nombre AS nombre,
-                pi.categoria,
-                AVG(vi.precioUnit) AS precio_venta,
-                COALESCE(MAX(pi.costo), 0) AS costo,
-                SUM(vi.qty) AS cantidad_vendida
-            FROM ventaItem vi
-            JOIN venta v2 ON v2.id = vi.ventaId
-            JOIN producto p ON p.id = vi.productoId
-            LEFT JOIN productos_info pi ON pi.producto_id = p.id
-            WHERE v2.fecha >= NOW() - INTERVAL '%d days'
-              AND v2.cliente_id = ?
-            GROUP BY pi.producto_nombre, pi.categoria
-            ORDER BY (AVG(vi.precioUnit) - COALESCE(MAX(pi.costo), 0)) * SUM(vi.qty) DESC
-            """.formatted(dias));
+            GROUP BY
+                CASE
+                    WHEN vi.variante_id IS NOT NULL THEN
+                        CONCAT(p.nombre, ' - ', pv.color, '/', pv.talle)
+                    ELSE
+                        p.nombre
+                END,
+                c.nombre,
+                vi.variante_id
+            ORDER BY (AVG(vi.precioUnit) - COALESCE(
+                CASE
+                    WHEN vi.variante_id IS NOT NULL THEN MAX(pv.costo)
+                    ELSE MAX(p.costo)
+                END,
+                0
+            )) * SUM(vi.qty) DESC
+            """);
 
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 
             int paramIndex = 1;
-            stmt.setString(paramIndex++, clienteId);  // cliente_id en CTE
+            stmt.setString(paramIndex++, clienteId);  // cliente_id en venta
+            stmt.setString(paramIndex++, clienteId);  // cliente_id en producto
 
             if (categoriaId != null) {
                 stmt.setInt(paramIndex++, categoriaId);  // categoriaId opcional
             }
-
-            stmt.setString(paramIndex, clienteId);  // cliente_id en venta
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
