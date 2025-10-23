@@ -50,34 +50,28 @@ public class SqliteProductoDAO {
         String clienteId = SqliteDatabase.getClienteId();
 
         String sql = """
-            INSERT INTO producto (etiqueta, nombre, descripcion, categoriaId, unidadId,
+            INSERT INTO producto (id, etiqueta, nombre, descripcion, categoriaId, unidadId,
                                   precio, costo, stockOnHand, active, cliente_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = SqliteDatabase.get();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, producto.getEtiqueta());
-            ps.setString(2, producto.getNombre());
-            ps.setString(3, producto.getDescripcion());
-            ps.setLong(4, producto.getCategoriaId());
-            ps.setLong(5, producto.getUnidadId());
-            ps.setDouble(6, producto.getPrecio().doubleValue());
-            ps.setDouble(7, producto.getCosto().doubleValue());
-            ps.setInt(8, producto.getStockOnHand());
-            ps.setInt(9, producto.isActive() ? 1 : 0);
-            ps.setString(10, clienteId);
+            ps.setLong(1, producto.getId());
+            ps.setString(2, producto.getEtiqueta());
+            ps.setString(3, producto.getNombre());
+            ps.setString(4, producto.getDescripcion());
+            ps.setLong(5, producto.getCategoriaId());
+            ps.setLong(6, producto.getUnidadId());
+            ps.setDouble(7, producto.getPrecio().doubleValue());
+            ps.setDouble(8, producto.getCosto().doubleValue());
+            ps.setInt(9, producto.getStockOnHand());
+            ps.setInt(10, producto.isActive() ? 1 : 0);
+            ps.setString(11, clienteId);
 
             ps.executeUpdate();
-
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Error obteniendo ID generado para producto");
-                }
-            }
+            return producto.getId();
         }
     }
 

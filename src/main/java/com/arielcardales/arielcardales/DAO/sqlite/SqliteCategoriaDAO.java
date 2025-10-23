@@ -57,30 +57,24 @@ public class SqliteCategoriaDAO {
     public static long insert(Categoria categoria) throws SQLException {
         String clienteId = SqliteDatabase.getClienteId();
 
-        String sql = "INSERT INTO categoria (nombre, parentId, cliente_id) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO categoria (id, nombre, parentId, cliente_id) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = SqliteDatabase.get();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, categoria.getNombre());
+            ps.setLong(1, categoria.getId());
+            ps.setString(2, categoria.getNombre());
 
             if (categoria.getParentId() != null) {
-                ps.setLong(2, categoria.getParentId());
+                ps.setLong(3, categoria.getParentId());
             } else {
-                ps.setNull(2, Types.INTEGER);
+                ps.setNull(3, Types.INTEGER);
             }
 
-            ps.setString(3, clienteId);
+            ps.setString(4, clienteId);
 
             ps.executeUpdate();
-
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Error obteniendo ID generado para categoría");
-                }
-            }
+            return categoria.getId();
         }
     }
 

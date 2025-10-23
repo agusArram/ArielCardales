@@ -51,25 +51,18 @@ public class SqliteUnidadDAO {
     public static long insert(Unidad unidad) throws SQLException {
         String clienteId = SqliteDatabase.getClienteId();
 
-        String sql = "INSERT INTO unidad (nombre, abreviatura, cliente_id) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO unidad (id, nombre, abreviatura, cliente_id) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = SqliteDatabase.get();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, unidad.getNombre());
-            ps.setString(2, unidad.getAbreviatura());
-            ps.setString(3, clienteId);
+            ps.setLong(1, unidad.getId());
+            ps.setString(2, unidad.getNombre());
+            ps.setString(3, unidad.getAbreviatura());
+            ps.setString(4, clienteId);
 
             ps.executeUpdate();
-
-            // Obtener el ID generado
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Error obteniendo ID generado para unidad");
-                }
-            }
+            return unidad.getId();
         }
     }
 

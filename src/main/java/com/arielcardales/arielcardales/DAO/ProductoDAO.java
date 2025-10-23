@@ -18,7 +18,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     select p.id,
            p.etiqueta,
            p.nombre,
-           p.descripcion, p.categoria,
+           p.categoria,
            p.unidad,
            p.precio,
            p.costo,
@@ -83,6 +83,35 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             throw new DaoException("Error buscando productos: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Obtiene todos los productos con IDs completos (para sincronización)
+     * Incluye categoriaId y unidadId para mantener integridad referencial
+     */
+    public List<Producto> findAllForSync() {
+        String clienteId = SessionManager.getInstance().getClienteId();
+        String sql = """
+           select p.id, p.etiqueta, p.nombre, p.descripcion,
+                  p.categoriaId, p.unidadId, p.precio, p.costo,
+                  p.stockOnHand, p.active, p.updatedAt
+             from producto p
+            where p.active = true AND p.cliente_id = ?
+            order by p.nombre asc
+        """;
+        try (Connection c = Database.get();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, clienteId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Producto> resultado = new ArrayList<>();
+                while (rs.next()) resultado.add(Mapper.getProductoBasico(rs));
+                return resultado;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new DaoException("Error obteniendo productos para sync: " + e.getMessage(), e);
+        }
+    }
+
     // ----- CRUD "real" contra tabla producto (para ABM) -----
     @Override
     public Optional<Producto> findById(Long id) {

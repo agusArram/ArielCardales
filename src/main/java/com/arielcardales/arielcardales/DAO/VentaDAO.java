@@ -17,11 +17,10 @@ public class VentaDAO {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
             SELECT
-                id, clienteNombre, fecha, medioPago, total,
-                totalItems, cantidadProductos
-            FROM vVentasResumen
-            WHERE cliente_id = ?
-            ORDER BY fecha DESC
+                v.id, v.clienteNombre, v.fecha, v.medioPago, v.total
+            FROM venta v
+            WHERE v.cliente_id = ?
+            ORDER BY v.fecha DESC
         """;
 
         List<Venta> ventas = new ArrayList<>();
@@ -52,11 +51,11 @@ public class VentaDAO {
             throws SQLException {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = """
-            SELECT id, clienteNombre, fecha, medioPago, total
-            FROM vVentasResumen
-            WHERE DATE(fecha) BETWEEN ? AND ?
-              AND cliente_id = ?
-            ORDER BY fecha DESC
+            SELECT v.id, v.clienteNombre, v.fecha, v.medioPago, v.total
+            FROM venta v
+            WHERE DATE(v.fecha) BETWEEN ? AND ?
+              AND v.cliente_id = ?
+            ORDER BY v.fecha DESC
         """;
 
         List<Venta> ventas = new ArrayList<>();

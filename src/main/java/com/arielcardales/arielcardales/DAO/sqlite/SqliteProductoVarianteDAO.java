@@ -82,32 +82,26 @@ public class SqliteProductoVarianteDAO {
 
         String sql = """
             INSERT INTO producto_variante
-            (producto_id, color, talle, precio, costo, stock, etiqueta, active, cliente_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, producto_id, color, talle, precio, costo, stock, etiqueta, active, cliente_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = SqliteDatabase.get();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setLong(1, variante.getProductoId());
-            ps.setString(2, variante.getColor());
-            ps.setString(3, variante.getTalle());
-            ps.setDouble(4, variante.getPrecio().doubleValue());
-            ps.setDouble(5, variante.getCosto().doubleValue());
-            ps.setInt(6, variante.getStock());
-            ps.setString(7, variante.getEtiqueta());
-            ps.setInt(8, variante.isActive() ? 1 : 0);
-            ps.setString(9, clienteId);
+            ps.setLong(1, variante.getId());
+            ps.setLong(2, variante.getProductoId());
+            ps.setString(3, variante.getColor());
+            ps.setString(4, variante.getTalle());
+            ps.setDouble(5, variante.getPrecio().doubleValue());
+            ps.setDouble(6, variante.getCosto().doubleValue());
+            ps.setInt(7, variante.getStock());
+            ps.setString(8, variante.getEtiqueta());
+            ps.setInt(9, variante.isActive() ? 1 : 0);
+            ps.setString(10, clienteId);
 
             ps.executeUpdate();
-
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Error obteniendo ID generado para variante");
-                }
-            }
+            return variante.getId();
         }
     }
 

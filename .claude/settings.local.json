@@ -9,7 +9,8 @@
       "Bash(psql \"$PG_URL\" -c \"\\d vInventario_variantes\")",
       "Bash(python generar_firma_licencias.py:*)",
       "Bash(java:*)",
-      "Bash(mvn exec:java:*)"
+      "Bash(mvn exec:java:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

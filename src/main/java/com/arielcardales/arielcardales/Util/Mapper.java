@@ -8,6 +8,7 @@ import com.arielcardales.arielcardales.Entidades.ProductoVariante;
 import com.arielcardales.arielcardales.Entidades.Venta;
 import com.arielcardales.arielcardales.Entidades.Venta.VentaItem;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -22,10 +23,18 @@ public class Mapper {
         p.setId(rs.getLong("id"));
         p.setEtiqueta(rs.getString("etiqueta"));
         p.setNombre(rs.getString("nombre"));
-        p.setDescripcion(rs.getString("descripcion"));
+        // descripcion es opcional - no todas las vistas la incluyen
+        try {
+            p.setDescripcion(rs.getString("descripcion"));
+        } catch (SQLException e) {
+            p.setDescripcion(null);
+        }
         p.setCategoria(rs.getString("categoria"));
         p.setUnidad(rs.getString("unidad"));
         p.setPrecio(rs.getBigDecimal("precio"));
+        // costo es opcional - usar 0 si no existe
+        BigDecimal costo = rs.getBigDecimal("costo");
+        p.setCosto(costo != null ? costo : BigDecimal.ZERO);
         p.setStockOnHand(rs.getInt("stockOnHand"));
         return p;
     }
@@ -65,7 +74,20 @@ public class Mapper {
         p.setCategoriaId(rs.getLong("categoriaId"));
         p.setUnidadId(rs.getLong("unidadId"));
         p.setPrecio(rs.getBigDecimal("precio"));
+        BigDecimal costo = rs.getBigDecimal("costo");
+        p.setCosto(costo != null ? costo : BigDecimal.ZERO);
         p.setStockOnHand(rs.getInt("stockOnHand"));
+        p.setActive(rs.getBoolean("active"));
+
+        // updatedAt puede estar presente o no
+        try {
+            java.sql.Timestamp ts = rs.getTimestamp("updatedAt");
+            if (ts != null) {
+                p.setUpdatedAt(ts.toLocalDateTime());
+            }
+        } catch (SQLException e) {
+            // updatedAt no disponible, ignorar
+        }
         return p;
     }
 

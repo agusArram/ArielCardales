@@ -52,28 +52,22 @@ public class SqliteVentaDAO {
         String clienteId = SqliteDatabase.getClienteId();
 
         String sql = """
-            INSERT INTO venta (clienteNombre, fecha, medioPago, total, cliente_id)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO venta (id, clienteNombre, fecha, medioPago, total, cliente_id)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = SqliteDatabase.get();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, venta.getClienteNombre());
-            ps.setString(2, venta.getFecha() != null ? venta.getFecha().toString() : null);
-            ps.setString(3, venta.getMedioPago());
-            ps.setDouble(4, venta.getTotal().doubleValue());
-            ps.setString(5, clienteId);
+            ps.setLong(1, venta.getId());
+            ps.setString(2, venta.getClienteNombre());
+            ps.setString(3, venta.getFecha() != null ? venta.getFecha().toString() : null);
+            ps.setString(4, venta.getMedioPago());
+            ps.setDouble(5, venta.getTotal().doubleValue());
+            ps.setString(6, clienteId);
 
             ps.executeUpdate();
-
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getLong(1);
-                } else {
-                    throw new SQLException("Error obteniendo ID generado para venta");
-                }
-            }
+            return venta.getId();
         }
     }
 

@@ -52,6 +52,7 @@ com\arielcardales\arielcardales\controller\VentasController$4.class
 com\arielcardales\arielcardales\Util\ExportadorExcel$Styles.class
 com\arielcardales\arielcardales\Entidades\ItemCliente.class
 com\arielcardales\arielcardales\Licencia\LicenciaManager.class
+com\arielcardales\arielcardales\service\sync\SyncService.class
 com\arielcardales\arielcardales\DAO\CrudDAO.class
 com\arielcardales\arielcardales\controller\RentabilidadController$1.class
 com\arielcardales\arielcardales\controller\RentabilidadController$ProductoRentabilidadRow.class
@@ -105,6 +106,7 @@ com\arielcardales\arielcardales\Util\EdicionCeldas$2.class
 com\arielcardales\arielcardales\controller\RentabilidadController$2.class
 com\arielcardales\arielcardales\controller\ProductoTreeController$2.class
 com\arielcardales\arielcardales\Launcher.class
+com\arielcardales\arielcardales\service\sync\TestSync.class
 com\arielcardales\arielcardales\controller\VentasController$11.class
 com\arielcardales\arielcardales\Updates\UpdateException$ErrorType.class
 com\arielcardales\arielcardales\Entidades\Producto.class
