@@ -525,6 +525,7 @@ public class VentaDAO {
     /**
      * Anula una venta: elimina items, restaura stock y elimina la venta
      * ⚠️ Transacción completa con rollback automático si falla
+     * ✅ Maneja correctamente productos base Y variantes
      */
     public static boolean anularVenta(Long ventaId) throws SQLException {
         String clienteId = SessionManager.getInstance().getClienteId();
@@ -533,8 +534,9 @@ public class VentaDAO {
 
             try {
                 // 1️⃣ Obtener items de la venta para restaurar stock
+                // IMPORTANTE: Necesitamos tanto productoId como variante_id
                 String sqlItems = """
-                    SELECT vi.productoId, vi.qty
+                    SELECT vi.productoId, vi.variante_id, vi.qty
                     FROM ventaItem vi
                     JOIN venta v ON v.id = vi.ventaId
                     WHERE vi.ventaId = ?
@@ -549,27 +551,53 @@ public class VentaDAO {
                         while (rs.next()) {
                             items.add(new ItemParaRestaurar(
                                     rs.getLong("productoId"),
+                                    rs.getObject("variante_id") != null ? rs.getLong("variante_id") : null,
                                     rs.getInt("qty")
                             ));
                         }
                     }
                 }
 
-                // 2️⃣ Restaurar stock de cada producto
-                String sqlRestaurarStock = """
-                UPDATE producto
-                SET stockOnHand = stockOnHand + ?
-                WHERE id = ? AND cliente_id = ?
-            """;
+                // 2️⃣ Restaurar stock de cada producto/variante
+                // Si variante_id es NULL → actualizar tabla producto
+                // Si variante_id NO es NULL → actualizar tabla producto_variante
 
-                try (PreparedStatement ps = conn.prepareStatement(sqlRestaurarStock)) {
+                String sqlRestaurarStockProducto = """
+                    UPDATE producto
+                    SET stockonhand = stockonhand + ?
+                    WHERE id = ? AND cliente_id = ?
+                """;
+
+                String sqlRestaurarStockVariante = """
+                    UPDATE producto_variante
+                    SET stock = stock + ?
+                    WHERE id = ? AND cliente_id = ?
+                """;
+
+                try (PreparedStatement psProducto = conn.prepareStatement(sqlRestaurarStockProducto);
+                     PreparedStatement psVariante = conn.prepareStatement(sqlRestaurarStockVariante)) {
+
                     for (ItemParaRestaurar item : items) {
-                        ps.setInt(1, item.cantidad);
-                        ps.setLong(2, item.productoId);
-                        ps.setString(3, clienteId);
-                        ps.addBatch();
+                        if (item.varianteId == null) {
+                            // Producto SIN variantes → restaurar en tabla producto
+                            psProducto.setInt(1, item.cantidad);
+                            psProducto.setLong(2, item.productoId);
+                            psProducto.setString(3, clienteId);
+                            psProducto.addBatch();
+                            System.out.println("📦 Restaurando stock en PRODUCTO id=" + item.productoId + ", qty=" + item.cantidad);
+                        } else {
+                            // Producto CON variantes → restaurar en tabla producto_variante
+                            psVariante.setInt(1, item.cantidad);
+                            psVariante.setLong(2, item.varianteId);
+                            psVariante.setString(3, clienteId);
+                            psVariante.addBatch();
+                            System.out.println("📦 Restaurando stock en VARIANTE id=" + item.varianteId + ", qty=" + item.cantidad);
+                        }
                     }
-                    ps.executeBatch();
+
+                    // Ejecutar ambos batches
+                    psProducto.executeBatch();
+                    psVariante.executeBatch();
                 }
 
                 // 3️⃣ Eliminar items de la venta (verificar que pertenezca al cliente)
@@ -613,13 +641,16 @@ public class VentaDAO {
 
     /**
      * Clase auxiliar para restaurar stock
+     * Incluye tanto productoId como varianteId para manejar productos con/sin variantes
      */
     private static class ItemParaRestaurar {
         Long productoId;
+        Long varianteId;  // NULL si es producto sin variantes
         int cantidad;
 
-        ItemParaRestaurar(Long productoId, int cantidad) {
+        ItemParaRestaurar(Long productoId, Long varianteId, int cantidad) {
             this.productoId = productoId;
+            this.varianteId = varianteId;
             this.cantidad = cantidad;
         }
     }
