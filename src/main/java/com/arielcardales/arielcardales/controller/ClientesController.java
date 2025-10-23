@@ -582,6 +582,7 @@ public class ClientesController {
         cliente.setDni(item.getDni());
         cliente.setTelefono(item.getTelefono());
         cliente.setEmail(item.getEmail());
+        cliente.setNotas(item.getNotas());  // ✅ FIX: Incluir notas al editar
         return cliente;
     }
 
