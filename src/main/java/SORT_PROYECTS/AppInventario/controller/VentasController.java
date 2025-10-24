@@ -1,6 +1,7 @@
 package SORT_PROYECTS.AppInventario.controller;
 
 import SORT_PROYECTS.AppInventario.Util.DialogosUtil;
+import SORT_PROYECTS.AppInventario.Util.ExportadorPDF;
 import SORT_PROYECTS.AppInventario.Util.Tablas;
 import SORT_PROYECTS.AppInventario.DAO.VentaDAO;
 import SORT_PROYECTS.AppInventario.DAO.ProductoDAO;
@@ -22,12 +23,17 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.geometry.Pos;
+import javafx.stage.FileChooser;
 import javafx.stage.Screen;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.text.NumberFormat;
@@ -465,33 +471,69 @@ public class VentasController {
 
 
     private void cargarEstadisticasEnSegundoPlano() {
-        LocalDate inicio = dpFechaInicio.getValue();
-        LocalDate fin = dpFechaFin.getValue();
+        // ✅ CALCULAR ESTADÍSTICAS DESDE LAS VENTAS ACTUALMENTE MOSTRADAS EN LA TABLA
+        // Esto asegura que las estadísticas coincidan con lo que el usuario ve
 
-        if (inicio == null || fin == null) return;
+        Task<Void> task = new Task<>() {
+            private int totalVentas = 0;
+            private BigDecimal montoTotal = BigDecimal.ZERO;
+            private BigDecimal promedioVenta = BigDecimal.ZERO;
+            private BigDecimal ventaMayor = BigDecimal.ZERO;
+            private BigDecimal ventaMenor = BigDecimal.ZERO;
 
-        Task<VentaDAO.VentaEstadisticas> task = new Task<>() {
             @Override
-            protected VentaDAO.VentaEstadisticas call() throws Exception {
-                return VentaDAO.obtenerEstadisticas(inicio, fin);
+            protected Void call() throws Exception {
+                if (ventasData == null || ventasData.isEmpty()) {
+                    return null;
+                }
+
+                totalVentas = ventasData.size();
+
+                // Calcular totales desde la lista de ventas en memoria
+                List<BigDecimal> montos = new ArrayList<>();
+                for (Venta v : ventasData) {
+                    if (v.getTotal() != null) {
+                        montos.add(v.getTotal());
+                        montoTotal = montoTotal.add(v.getTotal());
+                    }
+                }
+
+                if (!montos.isEmpty()) {
+                    promedioVenta = montoTotal.divide(
+                        new BigDecimal(montos.size()),
+                        2,
+                        java.math.RoundingMode.HALF_UP
+                    );
+
+                    ventaMayor = montos.stream()
+                        .max(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
+
+                    ventaMenor = montos.stream()
+                        .min(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void succeeded() {
+                NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+                lblTotalVentas.setText(String.valueOf(totalVentas));
+                lblTotalMonto.setText(formato.format(montoTotal));
+                lblPromedioVenta.setText(formato.format(promedioVenta));
+                lblVentaMayor.setText(formato.format(ventaMayor));
+                lblVentaMenor.setText(formato.format(ventaMenor));
+            }
+
+            @Override
+            protected void failed() {
+                System.err.println("⚠️ Error al calcular estadísticas (no crítico)");
+                getException().printStackTrace();
             }
         };
-
-        task.setOnSucceeded(e -> {
-            VentaDAO.VentaEstadisticas stats = task.getValue();
-            NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
-
-            lblTotalVentas.setText(String.valueOf(stats.getTotalVentas()));
-            lblTotalMonto.setText(formato.format(stats.getTotalMonto()));
-            lblPromedioVenta.setText(formato.format(stats.getPromedioVenta()));
-            lblVentaMayor.setText(formato.format(stats.getVentaMayor()));
-            lblVentaMenor.setText(formato.format(stats.getVentaMenor()));
-        });
-
-        task.setOnFailed(e -> {
-            System.err.println("⚠️ Error al cargar estadísticas (no crítico)");
-            e.getSource().getException().printStackTrace();
-        });
 
         new Thread(task).start();
     }
@@ -1069,5 +1111,120 @@ public class VentasController {
         });
 
         new Thread(task).start();
+    }
+
+    /**
+     * Exporta las ventas actualmente mostradas en la tabla a PDF
+     */
+    @FXML
+    private void exportarVentasPDF() {
+        if (ventasData == null || ventasData.isEmpty()) {
+            mostrarAlerta("No hay ventas para exportar");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Guardar Ventas como PDF");
+        fileChooser.setInitialFileName("Ventas_" +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf");
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+        );
+
+        Stage stage = (Stage) tablaVentas.getScene().getWindow();
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+            Task<Void> exportTask = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    // Preparar datos de ventas
+                    List<String[]> ventasParaExportar = new ArrayList<>();
+                    NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+                    for (Venta v : ventasData) {
+                        String fecha = v.getFecha() != null ?
+                            v.getFecha().format(formatoFecha) : "-";
+
+                        // Obtener etiquetas
+                        StringBuilder etiquetas = new StringBuilder();
+                        StringBuilder productos = new StringBuilder();
+                        int cantidadTotal = 0;
+
+                        if (v.getItems() != null && !v.getItems().isEmpty()) {
+                            for (int i = 0; i < v.getItems().size(); i++) {
+                                VentaItem vi = v.getItems().get(i);
+                                if (i > 0) {
+                                    etiquetas.append(", ");
+                                    productos.append(", ");
+                                }
+                                etiquetas.append(vi.getProductoEtiqueta());
+                                productos.append(vi.getNombreCompleto());
+                                cantidadTotal += vi.getQty();
+                            }
+                        }
+
+                        ventasParaExportar.add(new String[]{
+                            String.valueOf(v.getId()),
+                            fecha,
+                            v.getClienteNombre() != null ? v.getClienteNombre() : "-",
+                            v.getMedioPago() != null ? v.getMedioPago() : "-",
+                            etiquetas.toString(),
+                            productos.toString(),
+                            String.valueOf(cantidadTotal),
+                            v.getTotal() != null ? formato.format(v.getTotal()) : "$0,00"
+                        });
+                    }
+
+                    // Calcular totales
+                    BigDecimal montoTotal = ventasData.stream()
+                        .map(Venta::getTotal)
+                        .filter(t -> t != null)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    // Determinar período
+                    LocalDate inicio = dpFechaInicio.getValue();
+                    LocalDate fin = dpFechaFin.getValue();
+                    String periodoTexto;
+
+                    if (inicio != null && fin != null) {
+                        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                        periodoTexto = "Período: " + inicio.format(fmt) + " a " + fin.format(fmt);
+                    } else {
+                        periodoTexto = "Todas las ventas";
+                    }
+
+                    // Exportar a PDF
+                    ExportadorPDF.exportarVentas(
+                        ventasParaExportar,
+                        periodoTexto,
+                        ventasData.size(),
+                        formato.format(montoTotal),
+                        file.getAbsolutePath()
+                    );
+
+                    return null;
+                }
+
+                @Override
+                protected void succeeded() {
+                    Notifications.create()
+                        .title("Exportación exitosa")
+                        .text("Ventas exportadas a:\n" + file.getName())
+                        .position(Pos.BOTTOM_RIGHT)
+                        .showInformation();
+                }
+
+                @Override
+                protected void failed() {
+                    Throwable ex = getException();
+                    mostrarError("Error al exportar",
+                        "No se pudo exportar el PDF:\n" + (ex != null ? ex.getMessage() : "Error desconocido"));
+                    ex.printStackTrace();
+                }
+            };
+
+            new Thread(exportTask).start();
+        }
     }
 }

@@ -21,6 +21,8 @@
 
         <Region HBox.hgrow="ALWAYS"/>
 
+        <Button fx:id="btnExportarPDF" text="📄 Exportar PDF" onAction="#exportarDashboardPDF"
+                style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15;"/>
         <Button fx:id="btnRefrescar" text="🔄 Refrescar" onAction="#refrescarDashboard"
                 style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
     </HBox>

@@ -1,6 +1,7 @@
 package SORT_PROYECTS.AppInventario.controller;
 
 import SORT_PROYECTS.AppInventario.DAO.DashboardDAO;
+import SORT_PROYECTS.AppInventario.Util.ExportadorPDF;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -8,13 +9,20 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import org.controlsfx.control.Notifications;
 
+import java.io.File;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,6 +62,10 @@ public class DashboardController {
 
     private final ObservableList<ProductoRanking> topProductosData = FXCollections.observableArrayList();
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+    // Cache de métricas para exportar
+    private Map<String, Object> ultimasMetricasInventario;
+    private Map<String, Object> ultimasMetricasVentas;
 
     /**
      * Enum para períodos de análisis
@@ -112,7 +124,50 @@ public class DashboardController {
         configurarTabla();
         configurarGraficos();
         configurarPeriodo();
+        configurarTooltips();
         cargarDashboardAsync();
+    }
+
+    /**
+     * Configura tooltips explicativos para las métricas
+     */
+    private void configurarTooltips() {
+        // Tooltips de inventario
+        Tooltip.install(lblTotalProductos.getParent(), new Tooltip(
+            "Cantidad total de productos únicos en el inventario.\n" +
+            "Cuenta productos base sin importar variantes."
+        ));
+
+        Tooltip.install(lblStockBajo.getParent(), new Tooltip(
+            "Productos y variantes con stock entre 1 y 5 unidades.\n" +
+            "⚠ Requiere reposición pronto."
+        ));
+
+        Tooltip.install(lblSinStock.getParent(), new Tooltip(
+            "Productos y variantes con 0 unidades en stock.\n" +
+            "❌ No disponibles para venta."
+        ));
+
+        Tooltip.install(lblValorTotal.getParent(), new Tooltip(
+            "Valor total del inventario actual.\n" +
+            "Calculado como: Stock × Precio de venta"
+        ));
+
+        // Tooltips de ventas
+        Tooltip.install(lblVentasHoy.getParent(), new Tooltip(
+            "Monto total vendido el día de hoy.\n" +
+            "Se actualiza en tiempo real."
+        ));
+
+        Tooltip.install(lblTotalVentas30.getParent(), new Tooltip(
+            "Monto total vendido en los últimos 30 días.\n" +
+            "Incluye todas las ventas completadas."
+        ));
+
+        Tooltip.install(lblPromedioDiario.getParent(), new Tooltip(
+            "Promedio de ventas diarias (últimos 30 días).\n" +
+            "Calculado como: Total 30 días ÷ 30"
+        ));
     }
 
     /**
@@ -229,6 +284,10 @@ public class DashboardController {
 
             @Override
             protected void succeeded() {
+                // Guardar métricas para exportar
+                ultimasMetricasInventario = metricasInventario;
+                ultimasMetricasVentas = metricasVentas;
+
                 // Actualizar UI con métricas de inventario
                 lblTotalProductos.setText(String.valueOf(metricasInventario.get("totalProductos")));
                 lblStockBajo.setText(String.valueOf(metricasInventario.get("stockBajo")));
@@ -336,6 +395,85 @@ public class DashboardController {
         Notifications.create()
             .text("Refrescando dashboard...")
             .showInformation();
+    }
+
+    /**
+     * Exporta las estadísticas del dashboard a PDF
+     */
+    @FXML
+    private void exportarDashboardPDF() {
+        if (ultimasMetricasInventario == null || ultimasMetricasVentas == null) {
+            Notifications.create()
+                .title("Error")
+                .text("No hay datos para exportar. Por favor, espera a que cargue el dashboard.")
+                .showWarning();
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Guardar Dashboard como PDF");
+        fileChooser.setInitialFileName("Dashboard_" +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf");
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+        );
+
+        Stage stage = (Stage) btnRefrescar.getScene().getWindow();
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+            Task<Void> exportTask = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    // Preparar datos de top productos
+                    List<String[]> topProductos = new ArrayList<>();
+                    for (ProductoRanking p : topProductosData) {
+                        topProductos.add(new String[]{
+                            String.valueOf(p.getRank()),
+                            p.getNombre(),
+                            String.valueOf(p.getCantidad()),
+                            p.getGanancia()
+                        });
+                    }
+
+                    // Obtener período seleccionado
+                    Periodo periodo = cbPeriodo.getValue();
+                    String textoPeriodo = periodo != null ? periodo.getTexto() : "30 días";
+
+                    // Exportar a PDF
+                    ExportadorPDF.exportarDashboard(
+                        ultimasMetricasInventario,
+                        ultimasMetricasVentas,
+                        topProductos,
+                        textoPeriodo,
+                        file.getAbsolutePath()
+                    );
+
+                    return null;
+                }
+
+                @Override
+                protected void succeeded() {
+                    Notifications.create()
+                        .title("Exportación exitosa")
+                        .text("Dashboard exportado a:\n" + file.getName())
+                        .position(Pos.TOP_RIGHT)
+                        .showInformation();
+                }
+
+                @Override
+                protected void failed() {
+                    Throwable ex = getException();
+                    Notifications.create()
+                        .title("Error al exportar")
+                        .text("No se pudo exportar el PDF:\n" + (ex != null ? ex.getMessage() : "Error desconocido"))
+                        .showError();
+                    ex.printStackTrace();
+                }
+            };
+
+            new Thread(exportTask).start();
+        }
     }
 
     /**

@@ -30,6 +30,15 @@
 
         <Region HBox.hgrow="ALWAYS"/>
 
+        <Button text="📄 Exportar PDF"
+                fx:id="btnExportarPDF"
+                onAction="#exportarVentasPDF"
+                style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-cursor: hand;">
+            <font>
+                <Font size="13.0"/>
+            </font>
+        </Button>
+
         <Button text="🗑 Anular"
                 fx:id="btnAnularVenta"
                 onAction="#anularVentaSeleccionada"

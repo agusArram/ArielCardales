@@ -48,6 +48,7 @@ SORT_PROYECTS\AppInventario\DAO\InvalidCredentialsException.class
 SORT_PROYECTS\AppInventario\Util\ExportadorExcel$Styles.class
 SORT_PROYECTS\AppInventario\controller\AgregarVarianteController.class
 module-info.class
+SORT_PROYECTS\AppInventario\controller\VentasController$15.class
 SORT_PROYECTS\AppInventario\controller\ClientesController$2.class
 SORT_PROYECTS\AppInventario\service\sync\ConflictResolver.class
 SORT_PROYECTS\AppInventario\DAO\ProductoDAO.class
@@ -85,6 +86,7 @@ SORT_PROYECTS\AppInventario\Util\Tablas$1.class
 SORT_PROYECTS\AppInventario\Entidades\Venta.class
 SORT_PROYECTS\AppInventario\Util\Arboles$2.class
 SORT_PROYECTS\AppInventario\DAO\AutenticacionDAO$1.class
+SORT_PROYECTS\AppInventario\controller\DashboardController$4.class
 SORT_PROYECTS\AppInventario\Util\Mapper.class
 SORT_PROYECTS\AppInventario\controller\AgregarProductoController.class
 SORT_PROYECTS\AppInventario\controller\RentabilidadController$ProductoRentabilidadRow.class
