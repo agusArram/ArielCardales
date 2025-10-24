@@ -8,8 +8,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import org.controlsfx.control.Notifications;
 
 import java.text.NumberFormat;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class DashboardController {
 
     @FXML private Button btnRefrescar;
+    @FXML private ComboBox<Periodo> cbPeriodo;
 
     // Labels de métricas de inventario
     @FXML private Label lblTotalProductos;
@@ -39,10 +42,43 @@ public class DashboardController {
     @FXML private TableColumn<ProductoRanking, Integer> colCantidad;
     @FXML private TableColumn<ProductoRanking, String> colGanancia;
 
+    // Gráficos
+    @FXML private BarChart<String, Number> chartVentasMensuales;
+    @FXML private CategoryAxis xAxisMeses;
+    @FXML private NumberAxis yAxisMonto;
+    @FXML private PieChart chartVentasCategorias;
+    @FXML private Label lblTituloBarChart;
+    @FXML private Label lblTituloCategoria;
+
     @FXML private VBox vboxLoading;
 
     private final ObservableList<ProductoRanking> topProductosData = FXCollections.observableArrayList();
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+
+    /**
+     * Enum para períodos de análisis
+     */
+    public enum Periodo {
+        SIETE_DIAS(7, "7 días"),
+        QUINCE_DIAS(15, "15 días"),
+        UN_MES(30, "1 mes"),
+        SEIS_MESES(180, "6 meses"),
+        UN_ANIO(365, "1 año");
+
+        private final int dias;
+        private final String texto;
+
+        Periodo(int dias, String texto) {
+            this.dias = dias;
+            this.texto = texto;
+        }
+
+        public int getDias() { return dias; }
+        public String getTexto() { return texto; }
+
+        @Override
+        public String toString() { return texto; }
+    }
 
     /**
      * Clase auxiliar para representar un producto en el ranking
@@ -74,7 +110,45 @@ public class DashboardController {
     @FXML
     public void initialize() {
         configurarTabla();
+        configurarGraficos();
+        configurarPeriodo();
         cargarDashboardAsync();
+    }
+
+    /**
+     * Configura el ComboBox de período y su listener
+     */
+    private void configurarPeriodo() {
+        // Llenar ComboBox con períodos
+        cbPeriodo.setItems(FXCollections.observableArrayList(Periodo.values()));
+
+        // Seleccionar "1 mes" por defecto
+        cbPeriodo.setValue(Periodo.UN_MES);
+
+        // Listener para cambio de período
+        cbPeriodo.valueProperty().addListener((obs, oldPeriodo, newPeriodo) -> {
+            if (newPeriodo != null) {
+                cargarDashboardAsync();
+            }
+        });
+    }
+
+    /**
+     * Configura los gráficos (formato de ejes, colores, etc)
+     */
+    private void configurarGraficos() {
+        // Configurar formato de moneda en eje Y del BarChart
+        yAxisMonto.setTickLabelFormatter(new StringConverter<Number>() {
+            @Override
+            public String toString(Number number) {
+                return currencyFormat.format(number.doubleValue());
+            }
+
+            @Override
+            public Number fromString(String string) {
+                return null;
+            }
+        });
     }
 
     /**
@@ -120,10 +194,20 @@ public class DashboardController {
      * Carga todas las métricas del dashboard en segundo plano
      */
     private void cargarDashboardAsync() {
+        // Obtener período seleccionado
+        Periodo periodo = cbPeriodo.getValue();
+        if (periodo == null) {
+            periodo = Periodo.UN_MES; // Por defecto
+        }
+        final int diasPeriodo = periodo.getDias();
+        final String textoPeriodo = periodo.getTexto();
+
         Task<Void> task = new Task<>() {
             private Map<String, Object> metricasInventario;
             private Map<String, Object> metricasVentas;
             private List<DashboardDAO.ProductoVendido> topProductos;
+            private List<DashboardDAO.VentaMensual> ventasMensuales;
+            private List<DashboardDAO.VentaCategoria> ventasCategorias;
 
             @Override
             protected Void call() throws Exception {
@@ -135,6 +219,10 @@ public class DashboardController {
 
                 // Cargar top 5 productos más vendidos
                 topProductos = DashboardDAO.obtenerTopProductosVendidos(5);
+
+                // Cargar datos de gráficos con el período seleccionado
+                ventasMensuales = DashboardDAO.obtenerVentasPorPeriodo(diasPeriodo);
+                ventasCategorias = DashboardDAO.obtenerVentasPorCategoria(diasPeriodo);
 
                 return null;
             }
@@ -165,6 +253,20 @@ public class DashboardController {
                     ));
                 }
 
+                // Actualizar títulos dinámicos según el período
+                String tituloComparacion = diasPeriodo <= 30
+                    ? "💰 Comparación diaria - últimos " + textoPeriodo
+                    : "💰 Comparación mensual - últimos " + textoPeriodo;
+                lblTituloBarChart.setText(tituloComparacion);
+                lblTituloCategoria.setText("🏷 Ventas por categoría (últimos " + textoPeriodo + ")");
+
+                // Actualizar label del eje X
+                xAxisMeses.setLabel(diasPeriodo <= 30 ? "Día" : "Mes");
+
+                // Actualizar gráficos
+                actualizarGraficoVentasMensuales(ventasMensuales);
+                actualizarGraficoVentasCategorias(ventasCategorias);
+
                 ocultarLoading();
             }
 
@@ -181,6 +283,48 @@ public class DashboardController {
 
         mostrarLoading();
         new Thread(task).start();
+    }
+
+    /**
+     * Actualiza el gráfico de barras con ventas mensuales
+     */
+    private void actualizarGraficoVentasMensuales(List<DashboardDAO.VentaMensual> ventas) {
+        chartVentasMensuales.getData().clear();
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Ventas");
+
+        for (DashboardDAO.VentaMensual venta : ventas) {
+            XYChart.Data<String, Number> data = new XYChart.Data<>(venta.getMes(), venta.getMonto());
+            series.getData().add(data);
+
+            // Agregar tooltip a cada barra
+            data.nodeProperty().addListener((obs, oldNode, newNode) -> {
+                if (newNode != null) {
+                    Tooltip tooltip = new Tooltip(
+                        venta.getMes() + "\n" +
+                        "Ventas: " + venta.getCantidad() + "\n" +
+                        "Total: " + currencyFormat.format(venta.getMonto())
+                    );
+                    Tooltip.install(newNode, tooltip);
+                }
+            });
+        }
+
+        chartVentasMensuales.getData().add(series);
+    }
+
+    /**
+     * Actualiza el gráfico circular con ventas por categoría
+     */
+    private void actualizarGraficoVentasCategorias(List<DashboardDAO.VentaCategoria> ventas) {
+        ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
+
+        for (DashboardDAO.VentaCategoria venta : ventas) {
+            pieData.add(new PieChart.Data(venta.getCategoria(), venta.getMonto()));
+        }
+
+        chartVentasCategorias.setData(pieData);
     }
 
     /**

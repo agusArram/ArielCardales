@@ -199,4 +199,165 @@ public class DashboardDAO {
 
         return metricas;
     }
+
+    /**
+     * Clase auxiliar para ventas mensuales
+     */
+    public static class VentaMensual {
+        private String mes;
+        private double monto;
+        private int cantidad;
+
+        public VentaMensual(String mes, double monto, int cantidad) {
+            this.mes = mes;
+            this.monto = monto;
+            this.cantidad = cantidad;
+        }
+
+        public String getMes() { return mes; }
+        public double getMonto() { return monto; }
+        public int getCantidad() { return cantidad; }
+    }
+
+    /**
+     * Obtiene ventas agrupadas por período (días o meses según duración)
+     * @param dias Número de días a consultar (ej: 7, 15, 30, 180, 365)
+     * @return Lista de ventas agrupadas
+     */
+    public static List<VentaMensual> obtenerVentasPorPeriodo(int dias) {
+        List<VentaMensual> ventas = new ArrayList<>();
+
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando lista vacía");
+            return ventas;
+        }
+
+        // Si el período es <= 30 días, agrupar por día. Si no, agrupar por mes
+        String sql;
+        if (dias <= 30) {
+            // Agrupar por día
+            sql = """
+                SELECT
+                    TO_CHAR(fecha::date, 'DD Mon') as mes,
+                    TO_CHAR(fecha::date, 'YYYY-MM-DD') as mes_orden,
+                    SUM(total) as monto_total,
+                    COUNT(*) as cantidad_ventas
+                FROM venta
+                WHERE fecha >= CURRENT_DATE - INTERVAL '%d days'
+                  AND cliente_id = ?
+                GROUP BY fecha::date, mes_orden
+                ORDER BY mes_orden ASC
+                """.formatted(dias);
+        } else {
+            // Agrupar por mes
+            sql = """
+                SELECT
+                    TO_CHAR(DATE_TRUNC('month', fecha), 'Mon YYYY') as mes,
+                    TO_CHAR(DATE_TRUNC('month', fecha), 'YYYY-MM') as mes_orden,
+                    SUM(total) as monto_total,
+                    COUNT(*) as cantidad_ventas
+                FROM venta
+                WHERE fecha >= CURRENT_DATE - INTERVAL '%d days'
+                  AND cliente_id = ?
+                GROUP BY DATE_TRUNC('month', fecha), mes_orden
+                ORDER BY mes_orden ASC
+                """.formatted(dias);
+        }
+
+        try (Connection conn = Database.get();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ventas.add(new VentaMensual(
+                        rs.getString("mes"),
+                        rs.getDouble("monto_total"),
+                        rs.getInt("cantidad_ventas")
+                    ));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ventas;
+    }
+
+    /**
+     * Clase auxiliar para ventas por categoría
+     */
+    public static class VentaCategoria {
+        private String categoria;
+        private double monto;
+        private int cantidad;
+
+        public VentaCategoria(String categoria, double monto, int cantidad) {
+            this.categoria = categoria;
+            this.monto = monto;
+            this.cantidad = cantidad;
+        }
+
+        public String getCategoria() { return categoria; }
+        public double getMonto() { return monto; }
+        public int getCantidad() { return cantidad; }
+    }
+
+    /**
+     * Obtiene ventas agrupadas por categoría
+     * @param dias Número de días a consultar
+     * @return Lista de ventas por categoría
+     */
+    public static List<VentaCategoria> obtenerVentasPorCategoria(int dias) {
+        List<VentaCategoria> ventas = new ArrayList<>();
+
+        String clienteId = SessionManager.getInstance().getClienteId();
+        if (clienteId == null) {
+            System.err.println("⚠️ No hay sesión activa - retornando lista vacía");
+            return ventas;
+        }
+
+        String sql = """
+            SELECT
+                COALESCE(p.categoria, 'Sin categoría') as categoria,
+                SUM(vi.qty * vi.precioUnit) as monto_total,
+                SUM(vi.qty) as cantidad_vendida
+            FROM ventaItem vi
+            JOIN venta v ON v.id = vi.ventaId
+            LEFT JOIN (
+                SELECT DISTINCT producto_id, categoria
+                FROM vInventario_variantes
+                WHERE cliente_id = ?
+            ) p ON p.producto_id = vi.productoId
+            WHERE v.fecha >= CURRENT_DATE - INTERVAL '%d days'
+              AND v.cliente_id = ?
+            GROUP BY categoria
+            ORDER BY monto_total DESC
+            """.formatted(dias);
+
+        try (Connection conn = Database.get();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, clienteId);
+            stmt.setString(2, clienteId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ventas.add(new VentaCategoria(
+                        rs.getString("categoria"),
+                        rs.getDouble("monto_total"),
+                        rs.getInt("cantidad_vendida")
+                    ));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ventas;
+    }
 }

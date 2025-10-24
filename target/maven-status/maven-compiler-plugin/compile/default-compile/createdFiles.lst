@@ -30,6 +30,8 @@ SORT_PROYECTS\AppInventario\Util\Arboles$1.class
 SORT_PROYECTS\AppInventario\service\InventarioService$ResultadoActualizacion.class
 SORT_PROYECTS\AppInventario\Updates\Updater$ProgressCallback.class
 SORT_PROYECTS\AppInventario\DAO\AccountExpiredException.class
+SORT_PROYECTS\AppInventario\controller\DashboardController$3.class
+SORT_PROYECTS\AppInventario\DAO\DashboardDAO$VentaMensual.class
 SORT_PROYECTS\AppInventario\Util\AutoCompleteCliente.class
 SORT_PROYECTS\AppInventario\Updates\UpdateInstaller.class
 SORT_PROYECTS\AppInventario\Entidades\Producto.class
@@ -133,6 +135,7 @@ SORT_PROYECTS\AppInventario\controller\DashboardController$1.class
 SORT_PROYECTS\AppInventario\controller\VentasController$12.class
 SORT_PROYECTS\AppInventario\App$1.class
 SORT_PROYECTS\AppInventario\Util\Transiciones.class
+SORT_PROYECTS\AppInventario\DAO\DashboardDAO$VentaCategoria.class
 SORT_PROYECTS\AppInventario\service\sync\TestSync.class
 SORT_PROYECTS\AppInventario\Updates\UpdateConfig.class
 SORT_PROYECTS\AppInventario\Updates\UpdateDialog.class
@@ -145,6 +148,7 @@ SORT_PROYECTS\AppInventario\Util\EdicionCeldas$2.class
 SORT_PROYECTS\AppInventario\Licencia\Licencia.class
 SORT_PROYECTS\AppInventario\Util\Arboles.class
 SORT_PROYECTS\AppInventario\Entidades\ItemCliente.class
+SORT_PROYECTS\AppInventario\controller\DashboardController$Periodo.class
 SORT_PROYECTS\AppInventario\Updates\UpdateInstaller$1.class
 SORT_PROYECTS\AppInventario\View\VentanaVenta.class
 SORT_PROYECTS\AppInventario\Util\DialogosUtil.class
