@@ -698,9 +698,9 @@ public class AppController {
         txtEmail.setPromptText("email@ejemplo.com");
 
         PasswordField txtPassword = new PasswordField();
-        txtPassword.setPromptText("Contraseña (mín. 6 caracteres)");
+        txtPassword.setPromptText("Mín. 6 caracteres, al menos 1 letra y 1 número");
         TextField txtPasswordVisible = new TextField();
-        txtPasswordVisible.setPromptText("Contraseña (mín. 6 caracteres)");
+        txtPasswordVisible.setPromptText("Mín. 6 caracteres, al menos 1 letra y 1 número");
         txtPasswordVisible.setVisible(false);
         txtPasswordVisible.setManaged(false);
 
@@ -710,6 +710,12 @@ public class AppController {
         txtPasswordConfirmVisible.setPromptText("Confirmar contraseña");
         txtPasswordConfirmVisible.setVisible(false);
         txtPasswordConfirmVisible.setManaged(false);
+
+        // Label para mostrar errores de validación
+        Label lblError = new Label();
+        lblError.setStyle("-fx-text-fill: red; -fx-font-weight: bold; -fx-wrap-text: true;");
+        lblError.setMaxWidth(400);
+        lblError.setVisible(false);
 
         // Sincronizar campos de contraseña
         txtPassword.textProperty().addListener((obs, old, newVal) -> {
@@ -810,29 +816,87 @@ public class AppController {
         txtNotas.setPrefRowCount(2);
 
         // Layout
-        grid.add(new Label("*Cliente ID:"), 0, 0);
-        grid.add(txtClienteId, 1, 0);
-        grid.add(new Label("*Nombre:"), 0, 1);
-        grid.add(txtNombre, 1, 1);
-        grid.add(new Label("*Email:"), 0, 2);
-        grid.add(txtEmail, 1, 2);
-        grid.add(new Label("*Contraseña:"), 0, 3);
-        grid.add(stackPassword, 1, 3);
-        grid.add(new Label("*Confirmar:"), 0, 4);
-        grid.add(stackPasswordConfirm, 1, 4);
-        grid.add(new Label("Estado:"), 0, 5);
-        grid.add(cbEstado, 1, 5);
-        grid.add(new Label("Plan:"), 0, 6);
-        grid.add(cbPlan, 1, 6);
-        grid.add(new Label("Fecha Expiración:"), 0, 7);
-        grid.add(dpExpiracion, 1, 7);
-        grid.add(new Label("Notas:"), 0, 8);
-        grid.add(txtNotas, 1, 8);
+        grid.add(lblError, 0, 0, 2, 1); // Error label spans 2 columns
+        grid.add(new Label("*Cliente ID:"), 0, 1);
+        grid.add(txtClienteId, 1, 1);
+        grid.add(new Label("*Nombre:"), 0, 2);
+        grid.add(txtNombre, 1, 2);
+        grid.add(new Label("*Email:"), 0, 3);
+        grid.add(txtEmail, 1, 3);
+        grid.add(new Label("*Contraseña:"), 0, 4);
+        grid.add(stackPassword, 1, 4);
+        grid.add(new Label("*Confirmar:"), 0, 5);
+        grid.add(stackPasswordConfirm, 1, 5);
+        grid.add(new Label("Estado:"), 0, 6);
+        grid.add(cbEstado, 1, 6);
+        grid.add(new Label("Plan:"), 0, 7);
+        grid.add(cbPlan, 1, 7);
+        grid.add(new Label("Fecha Expiración:"), 0, 8);
+        grid.add(dpExpiracion, 1, 8);
+        grid.add(new Label("Notas:"), 0, 9);
+        grid.add(txtNotas, 1, 9);
 
         dialog.getDialogPane().setContent(grid);
 
         // Focus en primer campo
         Platform.runLater(() -> txtClienteId.requestFocus());
+
+        // VALIDACIÓN ANTES DE CERRAR EL DIÁLOGO
+        final javafx.scene.control.Button registrarButton =
+            (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(btnRegistrar);
+
+        registrarButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            // Obtener valores
+            String clienteId = txtClienteId.getText().trim();
+            String nombre = txtNombre.getText().trim();
+            String email = txtEmail.getText().trim();
+            String password = txtPassword.getText();
+            String passwordConfirm = txtPasswordConfirm.getText();
+
+            // Validar campos requeridos
+            if (clienteId.isEmpty() || nombre.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                lblError.setText("Por favor complete todos los campos marcados con *");
+                lblError.setVisible(true);
+                event.consume(); // Evitar que se cierre el diálogo
+                return;
+            }
+
+            // Validar cliente_id (solo letras, números, guiones bajos)
+            if (!clienteId.matches("^[a-zA-Z0-9_]+$")) {
+                lblError.setText("Cliente ID inválido. Solo letras, números y guiones bajos.\nEjemplos: tienda_juan, cliente001");
+                lblError.setVisible(true);
+                event.consume();
+                return;
+            }
+
+            // Validar email
+            if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                lblError.setText("Email inválido. Ingrese un email válido");
+                lblError.setVisible(true);
+                event.consume();
+                return;
+            }
+
+            // Validar contraseñas coincidan
+            if (!password.equals(passwordConfirm)) {
+                lblError.setText("Las contraseñas no coinciden");
+                lblError.setVisible(true);
+                event.consume();
+                return;
+            }
+
+            // Validar contraseña con PasswordUtil (incluye: mín 6 chars, letra, número)
+            if (!SORT_PROYECTS.AppInventario.Util.PasswordUtil.validarPassword(password)) {
+                String error = SORT_PROYECTS.AppInventario.Util.PasswordUtil.getPasswordError(password);
+                lblError.setText("Contraseña inválida:\n" + error);
+                lblError.setVisible(true);
+                event.consume();
+                return;
+            }
+
+            // Si pasa todas las validaciones, ocultar el error y permitir cerrar
+            lblError.setVisible(false);
+        });
 
         // Procesar resultado
         dialog.showAndWait().ifPresent(response -> {
@@ -854,46 +918,18 @@ public class AppController {
 
     /**
      * Registra un nuevo usuario en la base de datos
+     * NOTA: Las validaciones se realizan en el diálogo antes de llamar este método
      */
     private void registrarNuevoUsuario(String clienteId, String nombre, String email,
                                        String password, String passwordConfirm,
                                        String estado, String plan,
                                        java.time.LocalDate fechaExpiracion, String notas) {
-        // Validaciones
-        if (clienteId.isEmpty() || nombre.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            mostrarError("Campos requeridos", "Por favor complete todos los campos marcados con *");
-            return;
-        }
-
-        if (!password.equals(passwordConfirm)) {
-            mostrarError("Error de contraseña", "Las contraseñas no coinciden");
-            return;
-        }
-
-        if (password.length() < 6) {
-            mostrarError("Contraseña débil", "La contraseña debe tener al menos 6 caracteres");
-            return;
-        }
-
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-            mostrarError("Email inválido", "Por favor ingrese un email válido");
-            return;
-        }
-
-        // Validar cliente_id (solo letras, números, guiones bajos)
-        if (!clienteId.matches("^[a-zA-Z0-9_]+$")) {
-            mostrarError("Cliente ID inválido",
-                "El Cliente ID solo puede contener letras, números y guiones bajos.\n" +
-                "Ejemplos: tienda_juan, cliente001, negocio123");
-            return;
-        }
 
         // Registrar en background
         Task<Boolean> registroTask = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
-                AutenticacionDAO dao =
-                    new AutenticacionDAO();
+                AutenticacionDAO dao = new AutenticacionDAO();
 
                 return dao.registrar(
                     clienteId,
