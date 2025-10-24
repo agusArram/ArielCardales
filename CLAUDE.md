@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 JavaFX 21 desktop application for inventory management with PostgreSQL database (hosted on Supabase). The application supports product catalog management, sales tracking, variant products (color/size), and export functionality (Excel/PDF). It includes an auto-update system that checks GitHub releases.
 
-**Main Class**: `com.arielcardales.arielcardales.Launcher`
+**Main Class**: `SORT_PROYECTS.AppInventario.Launcher`
 **Entry Point**: `Launcher.main()` → `App.launch()` → loads `/fxml/principal.fxml`
 
 ## Build & Run Commands
@@ -35,36 +35,36 @@ No test suite currently exists. The project includes JUnit 5 dependencies but `s
 
 ### Layer Structure
 
-**DAO Layer** (`com.arielcardales.arielcardales.DAO`)
+**DAO Layer** (`com.arielcardales.AppInventario.DAO`)
 - Generic CRUD interface: `CrudDAO<T, ID>` defines `findAll()`, `findById()`, `insert()`, `update()`, `deleteById()`
 - Database connection: `Database.get()` returns HikariCP pooled connection
 - Connection configured via environment variables (`PG_URL`, `PG_USER`, `PG_PASSWORD`) with hardcoded defaults
 - DAOs: `ProductoDAO`, `ProductoVarianteDAO`, `CategoriaDAO`, `UnidadDAO`, `VentaDAO`, `InventarioDAO`, `LicenciaDAO`
 
-**Service Layer** (`com.arielcardales.arielcardales.service`)
+**Service Layer** (`com.arielcardales.AppInventario.service`)
 - `InventarioService`: Business logic for inventory operations, product selection dialogs, tree loading with filters
 
-**Controllers** (`com.arielcardales.arielcardales.controller`)
+**Controllers** (`com.arielcardales.AppInventario.controller`)
 - `AppController`: Main navigation controller, handles view switching and update checks
 - `ProductoTreeController`: Complex TreeTableView for hierarchical product/variant display with inline editing
 - `VentasController`: Sales management
 - `AgregarProductoController`, `EditarProductoController`, `AgregarVarianteController`: Product CRUD forms
 - `ExportarController`: Export functionality
 
-**Entities** (`com.arielcardales.arielcardales.Entidades`)
+**Entities** (`com.arielcardales.AppInventario.Entidades`)
 - `Producto`: Base product entity
 - `ProductoVariante`: Product variants with color/size
 - `ItemInventario`: Unified view model for tree display (combines products and variants)
 - `Categoria`, `Unidad`, `Venta`: Supporting entities
 
-**Utilities** (`com.arielcardales.arielcardales.Util`)
+**Utilities** (`com.arielcardales.AppInventario.Util`)
 - `Mapper`: ResultSet → Entity mapping
 - `Arboles`: Helper for creating TreeTableView structures
 - `EdicionCeldas`: Custom cell editors for TreeTableView inline editing
 - `Tablas`, `TablasDialog`: Table utilities
 - `ExportadorExcel`, `ExportadorPDF`, `ExportadorVentas`: Export functionality using Apache POI and OpenPDF
 
-**Updates System** (`com.arielcardales.arielcardales.Updates`)
+**Updates System** (`com.arielcardales.AppInventario.Updates`)
 - `UpdateManager`: Orchestrates update workflow
 - `UpdateChecker`: Fetches latest release from GitHub API
 - `UpdateDownloader`: Downloads release artifacts
@@ -122,7 +122,7 @@ No test suite currently exists. The project includes JUnit 5 dependencies but `s
 
 **Module System**: Uses Java Platform Module System (module-info.java)
 - Required modules: `javafx.controls`, `javafx.fxml`, `java.sql`, `com.zaxxer.hikari`, `org.apache.poi.poi`, `org.apache.poi.ooxml`, `com.github.librepdf.openpdf`, `org.json`
-- Opens packages: `com.arielcardales.arielcardales.controller` (to javafx.fxml), `com.arielcardales.arielcardales.Entidades` (to javafx.base for PropertyValueFactory)
+- Opens packages: `com.arielcardales.AppInventario.controller` (to javafx.fxml), `com.arielcardales.AppInventario.Entidades` (to javafx.base for PropertyValueFactory)
 
 **Launch Pattern**: `Launcher.main()` launches `App` to avoid JavaFX module issues
 
@@ -182,7 +182,7 @@ Or modify hardcoded defaults in `Database.java` static initializer.
 
 - Java 21 with preview features enabled (`--enable-preview`)
 - UTF-8 encoding
-- Main class: `com.arielcardales.arielcardales.Launcher`
+- Main class: `SORT_PROYECTS.AppInventario.Launcher`
 
 ## License System
 

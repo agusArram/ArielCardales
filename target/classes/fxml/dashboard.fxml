@@ -6,7 +6,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.arielcardales.arielcardales.controller.DashboardController"
+      fx:controller="SORT_PROYECTS.AppInventario.controller.DashboardController"
       spacing="15" styleClass="root"
       VBox.vgrow="ALWAYS"
       HBox.hgrow="ALWAYS"

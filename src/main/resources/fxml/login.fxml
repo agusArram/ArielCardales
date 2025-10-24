@@ -6,7 +6,7 @@
 <?import javafx.scene.text.*?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.arielcardales.arielcardales.controller.LoginController"
+      fx:controller="SORT_PROYECTS.AppInventario.controller.LoginController"
       alignment="CENTER" spacing="20" styleClass="login-container"
       stylesheets="@../Estilos/Estilos.css">
 
@@ -48,8 +48,20 @@
                     <Font name="Lora" size="14"/>
                 </font>
             </Label>
-            <PasswordField fx:id="passwordField" promptText="••••••••"
-                           styleClass="login-input" onAction="#handleLogin"/>
+            <StackPane>
+                <PasswordField fx:id="passwordField" promptText="••••••••"
+                               styleClass="login-input" onAction="#handleLogin"/>
+                <TextField fx:id="passwordFieldVisible" promptText="Contraseña"
+                           styleClass="login-input" onAction="#handleLogin" visible="false" managed="false"/>
+                <Button fx:id="btnTogglePassword" text="👁"
+                        onAction="#togglePasswordVisibility"
+                        style="-fx-background-color: transparent; -fx-cursor: hand; -fx-font-size: 16px; -fx-padding: 5;"
+                        StackPane.alignment="CENTER_RIGHT">
+                    <StackPane.margin>
+                        <Insets right="5"/>
+                    </StackPane.margin>
+                </Button>
+            </StackPane>
         </VBox>
 
         <!-- Mensaje de error -->

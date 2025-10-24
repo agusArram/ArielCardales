@@ -7,7 +7,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.arielcardales.arielcardales.controller.VentasController"
+      fx:controller="SORT_PROYECTS.AppInventario.controller.VentasController"
       spacing="0"
       style="-fx-background-color: #E8DCC4;"
       VBox.vgrow="ALWAYS">

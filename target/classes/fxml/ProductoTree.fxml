@@ -6,7 +6,7 @@
 <BorderPane
         xmlns="http://javafx.com/javafx"
         xmlns:fx="http://javafx.com/fxml"
-        fx:controller="com.arielcardales.arielcardales.controller.ProductoTreeController"
+        fx:controller="SORT_PROYECTS.AppInventario.controller.ProductoTreeController"
         style="-fx-padding: 0;"
         VBox.vgrow="ALWAYS"
         HBox.hgrow="ALWAYS">

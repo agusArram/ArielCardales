@@ -36,7 +36,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>com.arielcardales.arielcardales.Launcher</mainClass>
+              <mainClass>SORT_PROYECTS.AppInventario.Launcher</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -54,7 +54,7 @@
           </execution>
         </executions>
         <configuration>
-          <mainClass>com.arielcardales.arielcardales.Launcher</mainClass>
+          <mainClass>SORT_PROYECTS.AppInventario.Launcher</mainClass>
           <launcher>app</launcher>
           <jlinkZipName>app</jlinkZipName>
           <jlinkImageName>app</jlinkImageName>
@@ -75,7 +75,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.arielcardales.arielcardales.Launcher</mainClass>
+                  <mainClass>SORT_PROYECTS.AppInventario.Launcher</mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -91,7 +91,7 @@
           <appVersion>1.0.0</appVersion>
           <vendor>Ariel Cardales</vendor>
           <destination>target/dist</destination>
-          <module>com.arielcardales.arielcardales/com.arielcardales.arielcardales.Launcher</module>
+          <module>com.arielcardales.arielcardales/SORT_PROYECTS.AppInventario.Launcher</module>
           <runtimeImage>target/java-runtime</runtimeImage>
           <javaOptions>
             <option>--enable-preview</option>

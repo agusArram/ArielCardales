@@ -4,7 +4,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.arielcardales.arielcardales.controller.AppController"
+            fx:controller="SORT_PROYECTS.AppInventario.controller.AppController"
             stylesheets="@../Estilos/Estilos.css">
 
     <!--  BARRA SUPERIOR -->

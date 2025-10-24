@@ -6,7 +6,7 @@
 <?import javafx.scene.text.*?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.arielcardales.arielcardales.controller.LoadingController"
+      fx:controller="SORT_PROYECTS.AppInventario.controller.LoadingController"
       alignment="CENTER" spacing="25" styleClass="login-container"
       stylesheets="@../Estilos/Estilos.css">
 

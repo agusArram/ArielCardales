@@ -5,7 +5,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.arielcardales.arielcardales.controller.AgregarProductoController"
+            fx:controller="SORT_PROYECTS.AppInventario.controller.AgregarProductoController"
             prefWidth="380" prefHeight="500"
             styleClass="form-cuero"
             stylesheets="@../Estilos/Estilos.css">

@@ -1,4 +1,4 @@
-module com.arielcardales.arielcardales {
+module com.arielcardales.AppInventario {
     // JavaFX
     requires javafx.controls;
     requires javafx.fxml;
@@ -17,8 +17,8 @@ module com.arielcardales.arielcardales {
     requires java.net.http;
 
     // Paquete principal
-    opens com.arielcardales.arielcardales to javafx.fxml; // Necesario para App.java
-    exports com.arielcardales.arielcardales; // Para exponer el paquete principal
+    opens SORT_PROYECTS.AppInventario to javafx.fxml; // Necesario para App.java
+    exports SORT_PROYECTS.AppInventario; // Para exponer el paquete principal
 
 
     requires com.zaxxer.hikari; // Solo si usás pool de conexiones HikariCP.
@@ -29,7 +29,7 @@ module com.arielcardales.arielcardales {
     requires org.apache.poi.ooxml;
     requires com.github.librepdf.openpdf;
     requires java.desktop;
-    //requires com.arielcardales.arielcardales;
+    //requires com.arielcardales.AppInventario;
     requires javafx.graphics;
     requires javafx.base;
     requires java.prefs;
@@ -39,10 +39,10 @@ module com.arielcardales.arielcardales {
     // requires jdk.compiler; // ⚠️ Esto es para generar código dinámicamente (annotation processors, etc.)
 
     // Exportar para que el FXML pueda acceder
-    opens com.arielcardales.arielcardales.controller to javafx.fxml; // Necesario para FXML
-    opens com.arielcardales.arielcardales.Entidades to javafx.base;  // Necesario para TableView (PropertyValueFactory)
+    opens SORT_PROYECTS.AppInventario.controller to javafx.fxml; // Necesario para FXML
+    opens SORT_PROYECTS.AppInventario.Entidades to javafx.base;  // Necesario para TableView (PropertyValueFactory)
 
     // Exportar paquete de licencias
-    exports com.arielcardales.arielcardales.Licencia;
+    exports SORT_PROYECTS.AppInventario.Licencia;
 
 }
