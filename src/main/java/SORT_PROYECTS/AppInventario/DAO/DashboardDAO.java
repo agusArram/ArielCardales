@@ -34,8 +34,14 @@ public class DashboardDAO {
         String sql = """
             SELECT
                 COUNT(DISTINCT producto_id) as totalProductos,
-                COUNT(DISTINCT CASE WHEN stockOnHand > 0 AND stockOnHand <= 5 THEN variante_id END) as stockBajo,
-                COUNT(DISTINCT CASE WHEN stockOnHand = 0 THEN variante_id END) as sinStock,
+                COUNT(DISTINCT CASE
+                    WHEN stockOnHand > 0 AND stockOnHand <= 5 THEN
+                        COALESCE(variante_id, producto_id)
+                END) as stockBajo,
+                COUNT(DISTINCT CASE
+                    WHEN stockOnHand = 0 THEN
+                        COALESCE(variante_id, producto_id)
+                END) as sinStock,
                 COALESCE(SUM(stockOnHand * precio), 0) as valorTotal
             FROM vInventario_variantes
             WHERE active = true
