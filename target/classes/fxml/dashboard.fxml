@@ -98,7 +98,7 @@
     <!-- Top 5 Productos Más Vendidos -->
     <StackPane VBox.vgrow="NEVER" minHeight="250" maxHeight="250">
         <VBox spacing="10">
-            <Label text="🏆 Top 5 Productos Más Vendidos (últimos 30 días)" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <Label text="🏆 Top 5 Productos Más Vendidos" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 
             <TableView fx:id="tablaTopProductos" prefHeight="200" style="-fx-font-size: 14px;">
                 <columns>
