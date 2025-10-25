@@ -52,7 +52,7 @@ public final class Database {
                 cfg.setPassword(pass);
 
                 // Pool & rendimiento
-                int maxPool = Integer.parseInt(getEnv("PG_POOL_SIZE", "5"));
+                int maxPool = Integer.parseInt(getEnv("PG_POOL_SIZE", "10"));
                 cfg.setMaximumPoolSize(maxPool);
                 cfg.setMinimumIdle(Math.min(1, maxPool));
                 cfg.setAutoCommit(true);

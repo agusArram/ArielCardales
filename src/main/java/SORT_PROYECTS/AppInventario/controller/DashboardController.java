@@ -270,10 +270,10 @@ public class DashboardController {
                 metricasInventario = DashboardDAO.obtenerMetricasInventario();
 
                 // Cargar métricas de ventas
-                metricasVentas = DashboardDAO.obtenerMetricasVentas();
+                metricasVentas = DashboardDAO.obtenerMetricasVentas(diasPeriodo);
 
                 // Cargar top 5 productos más vendidos
-                topProductos = DashboardDAO.obtenerTopProductosVendidos(5);
+                topProductos = DashboardDAO.obtenerTopProductosVendidos(5, diasPeriodo);
 
                 // Cargar datos de gráficos con el período seleccionado
                 ventasMensuales = DashboardDAO.obtenerVentasPorPeriodo(diasPeriodo);
@@ -296,7 +296,7 @@ public class DashboardController {
 
                 // Actualizar UI con métricas de ventas
                 lblVentasHoy.setText(currencyFormat.format(metricasVentas.get("ventasHoy")));
-                lblTotalVentas30.setText(currencyFormat.format(metricasVentas.get("montoTotal")));
+                lblTotalVentas30.setText(currencyFormat.format(metricasVentas.get("montoTotal"))); // Este es el lbl del valor
                 lblPromedioDiario.setText(currencyFormat.format(metricasVentas.get("promedioVentaDiaria")));
 
                 // Actualizar tabla de top productos

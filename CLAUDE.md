@@ -211,3 +211,5 @@ cliente.email=client@example.com
 3. If valid → continue; if invalid/expired → exit app
 
 **Administration:** Manage licenses directly in Supabase or via SQL queries. See `SISTEMA_LICENCIAS_DB.md` for details.
+
+**TENE EN CUENTA LAS VARIANTES DE PRODUCTOS,**

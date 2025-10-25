@@ -99,7 +99,10 @@ public class DashboardDAO {
     /**
      * Obtiene el top N de productos más vendidos (últimos 30 días)
      */
-    public static List<ProductoVendido> obtenerTopProductosVendidos(int limit) {
+    /**
+     * Obtiene el top N de productos más vendidos (según período en días)
+     */
+    public static List<ProductoVendido> obtenerTopProductosVendidos(int limit, int dias) {
         List<ProductoVendido> productos = new ArrayList<>();
 
         // Obtener cliente_id de la sesión actual
@@ -109,6 +112,7 @@ public class DashboardDAO {
             return productos;
         }
 
+        // --- INICIO DEL CAMBIO ---
         String sql = """
             SELECT
                 vi.productoNombre as nombre,
@@ -117,26 +121,29 @@ public class DashboardDAO {
                 SUM(vi.qty * vi.precioUnit) as total_ventas
             FROM ventaItem vi
             JOIN venta v ON v.id = vi.ventaId
-            WHERE v.fecha >= NOW() - INTERVAL '30 days'
+            WHERE v.fecha >= NOW() - (INTERVAL '1 day' * ?) -- CAMBIO CLAVE
               AND v.cliente_id = ?
             GROUP BY vi.productoNombre
             ORDER BY cantidad_vendida DESC
             LIMIT ?
-            """;
+            """; // Se eliminó .formatted(dias)
 
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, clienteId);
-            stmt.setInt(2, limit);
+            // Se añaden los parámetros en orden
+            stmt.setInt(1, dias);       // Parámetro para el INTERVAL
+            stmt.setString(2, clienteId); // Parámetro para v.cliente_id
+            stmt.setInt(3, limit);      // Parámetro para LIMIT
 
             try (ResultSet rs = stmt.executeQuery()) {
+                // --- FIN DEL CAMBIO ---
                 while (rs.next()) {
                     productos.add(new ProductoVendido(
-                        rs.getString("etiqueta"),
-                        rs.getString("nombre"),
-                        rs.getInt("cantidad_vendida"),
-                        rs.getDouble("total_ventas")
+                            rs.getString("etiqueta"),
+                            rs.getString("nombre"),
+                            rs.getInt("cantidad_vendida"),
+                            rs.getDouble("total_ventas")
                     ));
                 }
             }
@@ -152,7 +159,7 @@ public class DashboardDAO {
      * Obtiene métricas de ventas (últimos 30 días)
      * @return Map con claves: totalVentas, ventasHoy, promedioVentaDiaria
      */
-    public static Map<String, Object> obtenerMetricasVentas() {
+    public static Map<String, Object> obtenerMetricasVentas(int dias) {
         Map<String, Object> metricas = new HashMap<>();
 
         // Obtener cliente_id de la sesión actual
@@ -166,28 +173,35 @@ public class DashboardDAO {
             return metricas;
         }
 
+        // --- INICIO DEL CAMBIO ---
+        // 1. Se elimina .formatted()
+        // 2. Se reemplaza '%d days' por '1 day' * ?
+        //    (Esta es la forma segura de pasar un intervalo como parámetro en SQL)
         String sql = """
             SELECT
                 COUNT(*) as totalVentas,
                 SUM(total) as montoTotal,
                 SUM(CASE WHEN fecha::date = CURRENT_DATE THEN total ELSE 0 END) as ventasHoy
             FROM venta
-            WHERE fecha >= NOW() - INTERVAL '30 days'
+            WHERE fecha >= NOW() - (INTERVAL '1 day' * ?) -- CAMBIO CLAVE
               AND cliente_id = ?
-            """;
+            """; // Se eliminó .formatted(dias)
 
         try (Connection conn = Database.get();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, clienteId);
+            // 3. Se añaden los parámetros en orden
+            stmt.setInt(1, dias);       // Parámetro para el INTERVAL
+            stmt.setString(2, clienteId); // Parámetro para el cliente_id
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int totalVentas = rs.getInt("totalVentas");
                     double montoTotal = rs.getDouble("montoTotal");
                     double ventasHoy = rs.getDouble("ventasHoy");
-                    double promedioVentaDiaria = totalVentas > 0 ? montoTotal / 30.0 : 0;
 
+                    // Cálculo del promedio (esto ya estaba bien)
+                    double promedioVentaDiaria = (totalVentas > 0 && dias > 0) ? montoTotal / (double)dias : 0;
                     metricas.put("totalVentas", totalVentas);
                     metricas.put("montoTotal", montoTotal);
                     metricas.put("ventasHoy", ventasHoy);
@@ -202,6 +216,7 @@ public class DashboardDAO {
             metricas.put("ventasHoy", 0.0);
             metricas.put("promedioVentaDiaria", 0.0);
         }
+        // --- FIN DEL CAMBIO ---
 
         return metricas;
     }
