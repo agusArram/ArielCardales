@@ -28,7 +28,7 @@ public class UnidadDAO {
             ORDER BY nombre
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);
@@ -56,7 +56,7 @@ public class UnidadDAO {
         Map<String, Long> map = new HashMap<>();
         String sql = "SELECT id, nombre FROM unidad WHERE cliente_id = ? ORDER BY nombre";
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);

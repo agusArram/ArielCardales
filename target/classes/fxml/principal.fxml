@@ -32,6 +32,11 @@
             <Button text="👥 Clientes" onAction="#mostrarClientes"
                     style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 8 15; -fx-cursor: hand; -fx-background-radius: 5;"/>
 
+            <!-- Indicador de estado de conexión -->
+            <Label fx:id="labelEstadoConexion" text="🟢 Online"
+                   style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5; -fx-cursor: hand;"
+                   onMouseClicked="#onClickEstadoConexion"/>
+
             <MenuBar>
                 <!-- Menú de Ayuda -->
                 <Menu text="Ayuda">

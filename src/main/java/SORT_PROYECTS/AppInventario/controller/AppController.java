@@ -44,6 +44,9 @@ public class AppController {
     @FXML
     private Menu menuAdministracion;
 
+    @FXML
+    private Label labelEstadoConexion;
+
     private Parent vistaProductos;
     private UpdateManager updateManager;
 
@@ -65,7 +68,10 @@ public class AppController {
         // 4. Inicializar update manager
         updateManager = new UpdateManager();
 
-        // 5. Mostrar info de licencia después de cargar
+        // 5. Inicializar indicador de estado de conexión
+        inicializarIndicadorConexion();
+
+        // 6. Mostrar info de licencia después de cargar
         Platform.runLater(this::mostrarInfoLicencia);
     }
 
@@ -968,5 +974,151 @@ public class AppController {
         });
 
         new Thread(registroTask).start();
+    }
+
+    // ========================================
+    // INDICADOR DE ESTADO DE CONEXIÓN
+    // ========================================
+
+    /**
+     * Inicializa el indicador de estado de conexión
+     * Configura un timer que actualiza el estado cada 30 segundos
+     */
+    private void inicializarIndicadorConexion() {
+        // Actualizar estado inicial
+        actualizarEstadoConexion();
+
+        // Timer para actualizar cada 30 segundos
+        javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(
+                javafx.util.Duration.seconds(30),
+                event -> actualizarEstadoConexion()
+            )
+        );
+        timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+        timeline.play();
+    }
+
+    /**
+     * Actualiza el indicador visual de estado de conexión
+     */
+    private void actualizarEstadoConexion() {
+        if (labelEstadoConexion == null) {
+            return;
+        }
+
+        Platform.runLater(() -> {
+            String mensaje = SORT_PROYECTS.AppInventario.DAO.Database.getStatusMessageSafe();
+            labelEstadoConexion.setText(mensaje);
+
+            // Cambiar estilo según estado
+            if (SORT_PROYECTS.AppInventario.DAO.Database.isOnline()) {
+                labelEstadoConexion.setStyle(
+                    "-fx-background-color: rgba(0, 128, 0, 0.3); " +
+                    "-fx-text-fill: #90EE90; " +
+                    "-fx-font-size: 12px; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 8 15; " +
+                    "-fx-background-radius: 5; " +
+                    "-fx-cursor: hand;"
+                );
+            } else {
+                labelEstadoConexion.setStyle(
+                    "-fx-background-color: rgba(255, 0, 0, 0.3); " +
+                    "-fx-text-fill: #FFB6C1; " +
+                    "-fx-font-size: 12px; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-padding: 8 15; " +
+                    "-fx-background-radius: 5; " +
+                    "-fx-cursor: hand;"
+                );
+            }
+        });
+    }
+
+    /**
+     * Maneja el click en el indicador de estado
+     * Muestra un diálogo con información detallada y opciones
+     */
+    @FXML
+    private void onClickEstadoConexion() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Estado de Conexión");
+        alert.setHeaderText(SORT_PROYECTS.AppInventario.DAO.Database.getStatusMessage());
+
+        String contenido;
+        if (SORT_PROYECTS.AppInventario.DAO.Database.isOnline()) {
+            contenido = """
+                ✓ Conectado a Supabase (PostgreSQL)
+
+                Todas las operaciones se guardan en la nube automáticamente.
+                El backup local se actualiza al sincronizar desde el menú Ayuda.
+                """;
+        } else {
+            contenido = """
+                ⚠ Sin conexión a Supabase
+
+                Usando backup local (SQLite) como respaldo.
+                Los cambios se guardan localmente.
+
+                Cuando recuperes la conexión, sincroniza desde:
+                Menú Ayuda → Sincronizar Backup Local
+                """;
+
+            // Agregar botón "Intentar Reconectar"
+            ButtonType btnReconectar = new ButtonType("Intentar Reconectar");
+            alert.getButtonTypes().add(0, btnReconectar);
+
+            alert.showAndWait().ifPresent(response -> {
+                if (response == btnReconectar) {
+                    intentarReconexion();
+                }
+            });
+            return;
+        }
+
+        alert.setContentText(contenido);
+        alert.showAndWait();
+    }
+
+    /**
+     * Intenta reconectar a Supabase
+     */
+    private void intentarReconexion() {
+        System.out.println("🔄 Intentando reconectar a Supabase...");
+
+        Task<Boolean> reconectTask = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return SORT_PROYECTS.AppInventario.DAO.Database.tryReconnect();
+            }
+        };
+
+        reconectTask.setOnSucceeded(event -> {
+            boolean exito = reconectTask.getValue();
+            actualizarEstadoConexion();
+
+            if (exito) {
+                Notifications.create()
+                    .title("Reconexión Exitosa")
+                    .text("Se restableció la conexión a Supabase")
+                    .showInformation();
+            } else {
+                Notifications.create()
+                    .title("Reconexión Fallida")
+                    .text("No se pudo conectar a Supabase. Seguirás trabajando offline.")
+                    .showWarning();
+            }
+        });
+
+        reconectTask.setOnFailed(event -> {
+            actualizarEstadoConexion();
+            Notifications.create()
+                .title("Error de Reconexión")
+                .text("Error al intentar reconectar")
+                .showError();
+        });
+
+        new Thread(reconectTask).start();
     }
 }

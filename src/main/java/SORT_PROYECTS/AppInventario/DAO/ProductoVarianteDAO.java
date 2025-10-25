@@ -28,7 +28,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             ORDER BY pv.producto_id, pv.color, pv.talle
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);
@@ -59,7 +59,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
               AND p.cliente_id = ?
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
@@ -91,7 +91,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
         """;
 
 
-        try (Connection conn = Database.get()) {
+        try (Connection conn = Database.getWithFallback()) {
             // Verificar propiedad del producto
             try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
                 psCheck.setLong(1, v.getProductoId());
@@ -144,7 +144,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
               AND p.cliente_id = ?
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, v.getColor());
@@ -177,7 +177,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
               AND p.cliente_id = ?
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
@@ -210,7 +210,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
             ORDER BY pv.color, pv.talle
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, productoId);
@@ -246,7 +246,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
               AND p.cliente_id = ?
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, cantidad);
@@ -279,7 +279,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
         // Mapear nombres del modelo Java a columnas reales de la BD
         if (columna.equalsIgnoreCase("stockOnHand")) columna = "stock";
 
-        try (Connection conn = Database.get()) {
+        try (Connection conn = Database.getWithFallback()) {
             // ✅ VALIDACIÓN: Si edita color o talle, verificar duplicados
             if (columna.equalsIgnoreCase("color") || columna.equalsIgnoreCase("talle")) {
                 // 1. Obtener datos actuales de la variante (con cliente_id check)
@@ -365,7 +365,7 @@ public class ProductoVarianteDAO implements CrudDAO<ProductoVariante, Long> {
               AND p.cliente_id = ?
         """;
 
-        try (Connection conn = Database.get();
+        try (Connection conn = Database.getWithFallback();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, productoId);

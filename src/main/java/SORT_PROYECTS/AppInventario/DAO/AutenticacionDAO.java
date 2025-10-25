@@ -44,7 +44,7 @@ public class AutenticacionDAO {
             WHERE LOWER(email) = LOWER(?)
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, email.trim());
@@ -130,7 +130,7 @@ public class AutenticacionDAO {
             WHERE LOWER(email) = LOWER(?)
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, email.trim());
@@ -221,7 +221,7 @@ public class AutenticacionDAO {
             VALUES (?, ?, ?, ?, 'ACTIVO', ?::plan_licencia, ?, ?)
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId.trim());
@@ -294,7 +294,7 @@ public class AutenticacionDAO {
             VALUES (?, ?, ?, ?, ?::estado_licencia, ?::plan_licencia, ?, ?)
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId.trim());
@@ -366,7 +366,7 @@ public class AutenticacionDAO {
             WHERE email = ?
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, nuevoHash);
@@ -412,7 +412,7 @@ public class AutenticacionDAO {
             WHERE email = ?
         """;
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, nuevoHash);
@@ -453,7 +453,7 @@ public class AutenticacionDAO {
 
         String sql = "SELECT estado::text FROM licencia WHERE LOWER(email) = LOWER(?)";
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, email.trim());
@@ -488,7 +488,7 @@ public class AutenticacionDAO {
     public boolean existeEmail(String email) {
         String sql = "SELECT 1 FROM licencia WHERE LOWER(email) = LOWER(?)";
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, email.trim());
@@ -511,7 +511,7 @@ public class AutenticacionDAO {
     public boolean existeClienteId(String clienteId) {
         String sql = "SELECT 1 FROM licencia WHERE cliente_id = ?";
 
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId.trim());

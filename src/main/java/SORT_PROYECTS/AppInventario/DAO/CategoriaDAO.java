@@ -26,7 +26,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
              where c.cliente_id = ?
              order by c.nombre asc
         """;
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);
@@ -47,7 +47,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public List<Categoria> findAll() {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "select id, nombre, parentId, createdAt from categoria where cliente_id = ? order by nombre";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);
@@ -66,7 +66,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public Optional<Categoria> findById(Long id) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "select id, nombre, parentId, createdAt from categoria where id = ? AND cliente_id = ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.setString(2, clienteId);
@@ -83,7 +83,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public Long insert(Categoria cat) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "insert into categoria (nombre, parentId, cliente_id) values (?, ?, ?) returning id";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, cat.getNombre());
             if (cat.getParentId() == null) ps.setNull(2, Types.BIGINT);
@@ -104,7 +104,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public boolean update(Categoria cat) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "update categoria set nombre = ?, parentId = ? where id = ? AND cliente_id = ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, cat.getNombre());
             if (cat.getParentId() == null) ps.setNull(2, Types.BIGINT);
@@ -121,7 +121,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public boolean deleteById(Long id) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "delete from categoria where id = ? AND cliente_id = ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.setString(2, clienteId);
@@ -135,7 +135,7 @@ public class CategoriaDAO implements CrudDAO<Categoria, Long> {
     public Map<String, Long> mapNombreId() {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "select id, nombre from categoria where cliente_id = ? order by nombre";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, clienteId);

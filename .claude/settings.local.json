@@ -10,7 +10,8 @@
       "Bash(python generar_firma_licencias.py:*)",
       "Bash(java:*)",
       "Bash(mvn exec:java:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

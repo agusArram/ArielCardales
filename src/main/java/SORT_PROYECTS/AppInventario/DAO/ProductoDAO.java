@@ -31,20 +31,48 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     @Override
     public List<Producto> findAll() {
         String clienteId = SessionManager.getInstance().getClienteId();
-        String sql = sqlBase + " where p.active = true AND p.cliente_id = ? order by p.nombre asc";
-        try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setString(1, clienteId);
+        try (Connection c = Database.getWithFallback()) {
+            // Detectar si es SQLite o PostgreSQL
+            boolean isSqlite = Database.isSqlite(c);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                List<Producto> resultado = new ArrayList<>();
-                while (rs.next()) resultado.add(Mapper.getProducto(rs));
-                return resultado;
+            String sql;
+            if (isSqlite) {
+                // SQLite: usar JOIN directo porque no tiene la vista vInventario
+                sql = """
+                    SELECT p.id,
+                           p.etiqueta,
+                           p.nombre,
+                           COALESCE(c.nombre, '') as categoria,
+                           COALESCE(u.nombre, '') as unidad,
+                           p.precio,
+                           p.costo,
+                           p.stockOnHand,
+                           p.active,
+                           p.updatedAt
+                      FROM producto p
+                      LEFT JOIN categoria c ON c.id = p.categoriaId
+                      LEFT JOIN unidad u ON u.id = p.unidadId
+                     WHERE p.active = 1 AND p.cliente_id = ?
+                     ORDER BY p.nombre ASC
+                """;
+            } else {
+                // PostgreSQL: usar la vista vInventario
+                sql = sqlBase + " where p.active = true AND p.cliente_id = ? order by p.nombre asc";
             }
 
-        }catch (SQLException e) {
-            e.printStackTrace(); // 🔥 Esto imprime la causa real en consola
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, clienteId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Producto> resultado = new ArrayList<>();
+                    while (rs.next()) resultado.add(Mapper.getProducto(rs));
+                    return resultado;
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new DaoException("Error obteniendo productos: " + e.getMessage(), e);
         }
     }
@@ -55,31 +83,58 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         String like = "%" + (q == null ? "" : q.trim()) + "%";
         int lim = (limit <= 0) ? 50 : limit;
 
-        String sql = sqlBase + """
-            where p.active = true
-            and p.cliente_id = ?
-            and (p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?)
-            order by similarity(p.nombre, ?) desc, p.nombre asc
-            limit ?
-        """;
+        try (Connection c = Database.getWithFallback()) {
+            boolean isSqlite = Database.isSqlite(c);
 
-        try (Connection c = Database.get();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            //podria usar mapper aca, para los set
-            ps.setString(1, clienteId);
-            ps.setString(2, like);
-            ps.setString(3, like);
-            ps.setString(4, like);
-            ps.setString(5, q);
-            ps.setInt(6, lim);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                List<Producto> resultado = new ArrayList<>();
-                while (rs.next()) resultado.add(Mapper.getProducto(rs));
-                return resultado;
+            String sql;
+            if (isSqlite) {
+                // SQLite: usar LIKE simple con JOIN
+                sql = """
+                    SELECT p.id, p.etiqueta, p.nombre,
+                           COALESCE(c.nombre, '') as categoria,
+                           COALESCE(u.nombre, '') as unidad,
+                           p.precio, p.costo, p.stockOnHand, p.active, p.updatedAt
+                      FROM producto p
+                      LEFT JOIN categoria c ON c.id = p.categoriaId
+                      LEFT JOIN unidad u ON u.id = p.unidadId
+                     WHERE p.active = 1
+                       AND p.cliente_id = ?
+                       AND (p.nombre LIKE ? OR p.etiqueta LIKE ? OR c.nombre LIKE ?)
+                     ORDER BY p.nombre ASC
+                     LIMIT ?
+                """;
+            } else {
+                // PostgreSQL: usar ilike + similarity
+                sql = sqlBase + """
+                    where p.active = true
+                    and p.cliente_id = ?
+                    and (p.nombre ilike ? or p.etiqueta ilike ? or p.categoria ilike ?)
+                    order by similarity(p.nombre, ?) desc, p.nombre asc
+                    limit ?
+                """;
             }
-        }catch (SQLException e) {
-            e.printStackTrace(); // Esto imprime la causa real en consola
+
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, clienteId);
+                ps.setString(2, like);
+                ps.setString(3, like);
+                ps.setString(4, like);
+
+                if (isSqlite) {
+                    ps.setInt(5, lim);
+                } else {
+                    ps.setString(5, q);
+                    ps.setInt(6, lim);
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Producto> resultado = new ArrayList<>();
+                    while (rs.next()) resultado.add(Mapper.getProducto(rs));
+                    return resultado;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new DaoException("Error buscando productos: " + e.getMessage(), e);
         }
     }
@@ -98,7 +153,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             where p.active = true AND p.cliente_id = ?
             order by p.nombre asc
         """;
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -123,7 +178,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
              from producto p
             where p.id = ? AND p.cliente_id = ?
         """;
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.setString(2, clienteId);
@@ -145,7 +200,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             returning id
         """;
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, p.getEtiqueta());
@@ -181,7 +236,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
                stockOnHand = ?
          where id = ? AND cliente_id = ?
     """;
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setString(1, p.getNombre());
@@ -217,7 +272,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     public boolean existsByEtiqueta(String etiqueta) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "select 1 from producto where etiqueta = ? AND cliente_id = ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, etiqueta);
             ps.setString(2, clienteId);
@@ -232,7 +287,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     public String getUltimaEtiqueta() {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "select etiqueta from producto where cliente_id = ? order by id desc limit 1";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -251,7 +306,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         String clienteId = SessionManager.getInstance().getClienteId();
         // Soft delete: marcar como inactivo en lugar de eliminar físicamente
         String sql = "UPDATE producto SET active = false WHERE id = ? AND cliente_id = ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.setString(2, clienteId);
@@ -265,7 +320,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
     public boolean descontarStock(long idProducto, int cantidadVendida) {
         String clienteId = SessionManager.getInstance().getClienteId();
         String sql = "UPDATE producto SET stockOnHand = stockOnHand - ? WHERE id = ? AND cliente_id = ? AND stockOnHand >= ?";
-        try (Connection c = Database.get();
+        try (Connection c = Database.getWithFallback();
              PreparedStatement ps = c.prepareStatement(sql)) {
 
             ps.setInt(1, cantidadVendida);
@@ -286,7 +341,7 @@ public class ProductoDAO implements CrudDAO<Producto, Long> {
         String clienteId = SessionManager.getInstance().getClienteId();
         boolean actualizado = false;
 
-        try (Connection conn = Database.get()) {
+        try (Connection conn = Database.getWithFallback()) {
             campo = campo.trim().toLowerCase();
             String sql;
 

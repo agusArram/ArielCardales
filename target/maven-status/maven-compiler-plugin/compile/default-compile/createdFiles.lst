@@ -1,4 +1,5 @@
 SORT_PROYECTS\AppInventario\controller\VentasController$4.class
+SORT_PROYECTS\AppInventario\DAO\ConnectionMode.class
 SORT_PROYECTS\AppInventario\Util\ExportadorExcel.class
 SORT_PROYECTS\AppInventario\Entidades\Cliente.class
 SORT_PROYECTS\AppInventario\App.class
@@ -108,6 +109,7 @@ SORT_PROYECTS\AppInventario\controller\VentasController$5.class
 SORT_PROYECTS\AppInventario\Updates\UpdateManager.class
 SORT_PROYECTS\AppInventario\controller\LoadingController.class
 SORT_PROYECTS\AppInventario\Updates\UpdateException$ErrorType.class
+SORT_PROYECTS\AppInventario\controller\AppController$4.class
 SORT_PROYECTS\AppInventario\DAO\sqlite\SqliteDatabase.class
 SORT_PROYECTS\AppInventario\controller\VentasController$14.class
 SORT_PROYECTS\AppInventario\Updates\UpdateInstaller$ProgressCallback.class
