@@ -4,26 +4,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.arielcardales</groupId>
+    <!-- === CAMBIOS AQUÍ === -->
+    <groupId>SORT_PROYECTS</groupId> <!-- Refleja la estructura de carpetas -->
     <artifactId>AppInventario</artifactId>
-    <version>1.0.0</version>
-    <name>ArielCardales</name>
+    <version>1.0.0</version> <!-- Podrías sincronizar esto con UpdateConfig.CURRENT_VERSION -->
+    <name>AppInventario</name>   <!-- Nombre del proyecto -->
+    <!-- === FIN CAMBIOS === -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>21</maven.compiler.release>
-        <javafx.version>21.0.6</javafx.version>
-        <junit.version>5.12.1</junit.version>
+        <maven.compiler.release>21</maven.compiler.release> <!-- Asegúrate de tener JDK 21 -->
+        <javafx.version>21.0.6</javafx.version> <!-- O la versión que estés usando -->
+        <junit.version>5.12.1</junit.version> <!-- O la versión que estés usando -->
     </properties>
 
     <dependencies>
         <!-- JavaFX -->
-        <!-- Para JSON (parsing de respuesta GitHub API) -->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20231013</version>
-        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -39,70 +35,53 @@
         <dependency>
             <groupId>org.controlsfx</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>11.2.1</version>
+            <version>11.2.1</version> <!-- O la versión que estés usando -->
         </dependency>
 
-        <!--
-
+        <!-- Para JSON (parsing de respuesta GitHub API) -->
         <dependency>
-            <groupId>com.dlsc.formsfx</groupId>
-            <artifactId>formsfx-core</artifactId>
-            <version>11.6.0</version>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version> <!-- O la versión más reciente -->
         </dependency>
-
-        <dependency>
-            <groupId>net.synedra</groupId>
-            <artifactId>validatorfx</artifactId>
-            <version>0.6.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.kordamp.ikonli</groupId>
-            <artifactId>ikonli-javafx</artifactId>
-            <version>12.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kordamp.bootstrapfx</groupId>
-            <artifactId>bootstrapfx-core</artifactId>
-            <version>0.4.0</version>
-        </dependency>
-
-                -->
 
         <!-- DB -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.3</version>
+            <version>42.7.3</version> <!-- O la versión más reciente -->
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>5.1.0</version>
+            <version>5.1.0</version> <!-- O la versión más reciente -->
         </dependency>
-        <!-- SQLite para backup local -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.45.1.0</version>
+            <version>3.45.1.0</version> <!-- O la versión más reciente -->
         </dependency>
-        <!-- loggin
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.8</version>
-        </dependency>
-        -->
 
         <!-- BCrypt para hash de passwords -->
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>bcrypt</artifactId>
-            <version>0.10.2</version>
+            <version>0.10.2</version> <!-- O la versión más reciente -->
         </dependency>
 
-        <!-- Tests -->
+        <!-- Exportar a Excel y PDF -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version> <!-- O la versión más reciente -->
+        </dependency>
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>1.3.32</version> <!-- O la versión más reciente -->
+        </dependency>
+
+        <!-- Tests (opcional si no los usás) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -115,19 +94,6 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- Exportar a exel dsp la otra a pdf -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.librepdf</groupId>
-            <artifactId>openpdf</artifactId>
-            <version>1.3.32</version>
-        </dependency>
-
-
     </dependencies>
 
     <build>
@@ -138,8 +104,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <release>21</release>
-                    <encoding>UTF-8</encoding>
+                    <release>${maven.compiler.release}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
@@ -176,23 +142,28 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>libs/</classpathPrefix>
+                            <!-- === CAMBIO AQUÍ === -->
                             <mainClass>SORT_PROYECTS.AppInventario.Launcher</mainClass>
+                            <!-- === FIN CAMBIO === -->
                         </manifest>
                     </archive>
                 </configuration>
             </plugin>
 
-            <!-- JavaFX Maven Plugin -->
+            <!-- JavaFX Maven Plugin (Opcional si no usás jlink/jpackage) -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
+                    <!-- === CAMBIO AQUÍ === -->
                     <mainClass>SORT_PROYECTS.AppInventario.Launcher</mainClass>
+                    <!-- === FIN CAMBIO === -->
                 </configuration>
             </plugin>
         </plugins>
 
+        <!-- Configuración de recursos (parece estar bien) -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -203,6 +174,8 @@
                     <include>**/*.jpg</include>
                     <include>**/*.properties</include>
                     <include>**/*.sql</include>
+                    <include>**/*.ttf</include> <!-- Agregado para fuentes -->
+                    <include>**/*.txt</include> <!-- Agregado para OFL.txt, README.txt -->
                 </includes>
             </resource>
         </resources>

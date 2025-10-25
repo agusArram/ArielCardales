@@ -341,7 +341,9 @@ public class DashboardController {
         };
 
         mostrarLoading();
-        new Thread(task).start();
+        Thread thread = new Thread(task);
+        thread.setDaemon(true); // <-- ESTA ES LA LÍNEA CLAVE
+        thread.start();
     }
 
     /**
@@ -473,6 +475,9 @@ public class DashboardController {
             };
 
             new Thread(exportTask).start();
+            Thread thread = new Thread(exportTask);
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 

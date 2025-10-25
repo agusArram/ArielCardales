@@ -266,7 +266,9 @@ public class RentabilidadController {
         };
 
         mostrarLoading();
-        new Thread(task).start();
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**

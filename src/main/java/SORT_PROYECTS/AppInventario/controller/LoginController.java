@@ -242,7 +242,9 @@ public class LoginController {
         });
 
         // Ejecutar en thread separado
-        new Thread(loginTask).start();
+        Thread thread = new Thread(loginTask);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // ============================================================================
