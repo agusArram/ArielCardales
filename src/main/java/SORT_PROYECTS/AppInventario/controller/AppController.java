@@ -13,6 +13,8 @@ import SORT_PROYECTS.AppInventario.Updates.UpdateManager;
 import SORT_PROYECTS.AppInventario.Updates.SyncDialog;
 import SORT_PROYECTS.AppInventario.service.sync.SyncService;
 import SORT_PROYECTS.AppInventario.service.sync.SyncResult;
+// --- IMPORT NUEVO ---
+import SORT_PROYECTS.AppInventario.Util.Permisos;
 import SORT_PROYECTS.AppInventario.Util.Arboles;
 import SORT_PROYECTS.AppInventario.Util.Transiciones;
 import javafx.application.Platform;
@@ -47,6 +49,14 @@ public class AppController {
     @FXML
     private Label labelEstadoConexion;
 
+    // --- NUEVO FXML (Ejemplo) ---
+    // Debes agregar estos @FXML si quieres controlar más menús
+    @FXML
+    private MenuItem menuSincronizarBackup;
+
+    @FXML
+    private Menu menuExportar; // Suponiendo que tienes un menú "Exportar"
+
     private Parent vistaProductos;
     private UpdateManager updateManager;
 
@@ -59,8 +69,9 @@ public class AppController {
             return;
         }
 
-        // 2. Configurar visibilidad del menú de administración según el plan
-        configurarMenuAdministracion();
+        // 2. Configurar visibilidad de menús según el plan
+        // ESTA FUNCIÓN AHORA HACE MÁS QUE SOLO EL MENÚ ADMIN
+        configurarPermisosUI();
 
         // 3. Cargar la vista principal/hub
         mostrarVistaPrincipal();
@@ -76,51 +87,57 @@ public class AppController {
     }
 
     /**
-     * Configura la visibilidad del menú de administración según el plan de licencia
-     * Solo el plan DEV tiene acceso a funciones de administración
+     * Configura la visibilidad de todos los elementos de la UI
+     * controlados por permisos (Admin, Exportar, etc.)
      */
-    private void configurarMenuAdministracion() {
-        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        System.out.println("🔐 CONFIGURANDO MENÚ DE ADMINISTRACIÓN");
-
+    private void configurarPermisosUI() {
         SessionManager session = SessionManager.getInstance();
-        Licencia licencia = session.getLicenciaSafe();
 
-        System.out.println("   menuAdministracion: " + (menuAdministracion != null ? "✓ Inyectado" : "✗ NULL"));
-        System.out.println("   Sesión autenticada: " + (session.isAutenticado() ? "✓ SÍ" : "✗ NO"));
-        System.out.println("   licencia: " + (licencia != null ? "✓ Cargada" : "✗ NULL"));
+        // --- 1. CONFIGURAR MENÚ ADMINISTRACIÓN ---
+        // Usamos el helper centralizado en lugar de lógica local
+        boolean tieneAccesoAdmin = session.canAccess(Permisos.ADMIN_MENU);
 
-        if (menuAdministracion != null && licencia != null) {
-            Licencia.PlanLicencia plan = licencia.getPlan();
-            System.out.println("   Plan actual: " + plan);
-            System.out.println("   Cliente: " + licencia.getNombre() + " (" + licencia.getEmail() + ")");
-            System.out.println("   Cliente ID: " + licencia.getClienteId());
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🔐 CONFIGURANDO PERMISOS DE UI");
+        System.out.println("   Plan actual: " + session.getPlan());
+        System.out.println("   ¿Tiene acceso admin?: " + (tieneAccesoAdmin ? "SÍ" : "NO"));
 
-            // Solo mostrar el menú de administración si el plan es DEV
-            boolean tieneAcceso = plan == Licencia.PlanLicencia.DEV;
-
-            System.out.println("   ¿Es plan DEV?: " + (tieneAcceso ? "SÍ" : "NO"));
-
-            // Ocultar el menú si no tiene acceso, además de deshabilitarlo
-            menuAdministracion.setVisible(tieneAcceso);
-            menuAdministracion.setDisable(!tieneAcceso);
-
-            if (tieneAcceso) {
-                System.out.println("   ✅ RESULTADO: Menú de administración VISIBLE y HABILITADO");
-            } else {
-                System.out.println("   🔒 RESULTADO: Menú de administración OCULTO y DESHABILITADO");
-            }
+        if (menuAdministracion != null) {
+            menuAdministracion.setVisible(tieneAccesoAdmin);
+            menuAdministracion.setDisable(!tieneAccesoAdmin);
         } else {
-            System.out.println("   ⚠️ ERROR: No se pudo configurar el menú");
-            if (menuAdministracion == null) {
-                System.out.println("      - menuAdministracion es NULL (problema de fx:id)");
-            }
-            if (licencia == null) {
-                System.out.println("      - licencia es NULL (sin sesión activa)");
-            }
+            System.out.println("   ⚠️ ERROR: menuAdministracion es NULL (problema de fx:id)");
         }
 
+        // --- 2. CONFIGURAR OTROS PERMISOS (EJEMPLO) ---
+        // (Descomenta esto si tienes un @FXML para un menú "Exportar")
+        /*
+        boolean puedeExportar = session.canAccess(Permisos.EXPORTAR_PDF) || session.canAccess(Permisos.EXPORTAR_EXCEL);
+        System.out.println("   ¿Puede exportar?: " + (puedeExportar ? "SÍ" : "NO"));
+        if (menuExportar != null) {
+            menuExportar.setVisible(puedeExportar);
+            menuExportar.setDisable(!puedeExportar);
+        }
+        */
+
+        // (Descomenta si tienes @FXML para métricas avanzadas)
+        /*
+        boolean puedeVerMetricas = session.canAccess(Permisos.METRICAS_AVANZADAS);
+        System.out.println("   ¿Puede ver métricas avanzadas?: " + (puedeVerMetricas ? "SÍ" : "NO"));
+        // ... (lógica para deshabilitar el botón/menú de métricas) ...
+        */
+
         System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    }
+
+    /**
+     * Configura la visibilidad del menú de administración según el plan de licencia
+     * SOLO ACCESIBLE PARA PLAN DEV
+     * * @deprecated Reemplazado por {@link #configurarPermisosUI()}
+     */
+    private void configurarMenuAdministracion() {
+        // Esta lógica ahora está dentro de configurarPermisosUI()
+        configurarPermisosUI();
     }
 
     /**
@@ -139,27 +156,27 @@ public class AppController {
         // Verificar si está por expirar (menos de 7 días)
         if (diasRestantes > 0 && diasRestantes <= 7) {
             Notifications.create()
-                .title("⚠ Licencia por expirar")
-                .text("Su licencia vence en " + diasRestantes + " días.\n" +
-                      "Contacte al administrador para renovar.")
-                .position(Pos.TOP_RIGHT)
-                .showWarning();
+                    .title("⚠ Licencia por expirar")
+                    .text("Su licencia vence en " + diasRestantes + " días.\n" +
+                            "Contacte al administrador para renovar.")
+                    .position(Pos.TOP_RIGHT)
+                    .showWarning();
         }
 
         // Solo mostrar info en planes DEMO o si quedan pocos días
         if (lic.getPlan() == Licencia.PlanLicencia.DEMO || diasRestantes <= 7) {
             String estado = diasRestantes < 0 ? "❌ Expirada" :
-                           diasRestantes <= 7 ? "⚠ " + diasRestantes + " días restantes" :
-                           "✅ Activa";
+                    diasRestantes <= 7 ? "⚠ " + diasRestantes + " días restantes" :
+                            "✅ Activa";
 
             Notifications.create()
-                .title("ℹ Información de Licencia")
-                .text("Plan: " + lic.getPlan() + "\n" +
-                      "Estado: " + estado + "\n" +
-                      "Cliente: " + lic.getNombre())
-                .position(Pos.BOTTOM_RIGHT)
-                .hideAfter(javafx.util.Duration.seconds(10))
-                .showInformation();
+                    .title("ℹ Información de Licencia")
+                    .text("Plan: " + lic.getPlan() + "\n" +
+                            "Estado: " + estado + "\n" +
+                            "Cliente: " + lic.getNombre())
+                    .position(Pos.BOTTOM_RIGHT)
+                    .hideAfter(javafx.util.Duration.seconds(10))
+                    .showInformation();
         }
     }
 
@@ -188,6 +205,15 @@ public class AppController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(rutaFXML));
             Parent vista = loader.load();
+
+            // --- VALIDACIÓN DE PERMISOS (EJEMPLO) ---
+            // Protegemos la vista de métricas
+            if (rutaFXML.contains("metricas.fxml")) {
+                if (!SessionManager.getInstance().canAccess(Permisos.METRICAS_AVANZADAS)) {
+                    mostrarError("Acceso Denegado", "Su plan actual no incluye métricas avanzadas.");
+                    return; // No carga la vista
+                }
+            }
 
             // Aplicar transición suave
             Transiciones.cambiarVistaConFade(contenedorPrincipal, vista);
@@ -325,6 +351,7 @@ public class AppController {
 
     @FXML
     public void mostrarMetricas() {
+        // Ahora, esta llamada está protegida por la lógica dentro de cargarVista()
         cargarVista("/fxml/metricas.fxml");
     }
 
@@ -500,11 +527,11 @@ public class AppController {
             ex.printStackTrace();
 
             SyncDialog.showError(
-                stage,
-                "Error de Sincronización",
-                "No se pudo completar la sincronización.\n\n" +
-                "Error: " + errorMsg + "\n\n" +
-                "Verifique su conexión a Internet e intente nuevamente."
+                    stage,
+                    "Error de Sincronización",
+                    "No se pudo completar la sincronización.\n\n" +
+                            "Error: " + errorMsg + "\n\n" +
+                            "Verifique su conexión a Internet e intente nuevamente."
             );
         });
 
@@ -665,20 +692,23 @@ public class AppController {
      */
     @FXML
     private void mostrarRegistroUsuario() {
-        // PROTECCIÓN: Verificar que el usuario tenga plan DEV
+        // --- LÓGICA DE PERMISOS ACTUALIZADA ---
         SessionManager session = SessionManager.getInstance();
-        Licencia licencia = session.getLicenciaSafe();
 
-        if (licencia == null || licencia.getPlan() != Licencia.PlanLicencia.DEV) {
+        if (!session.canAccess(Permisos.ADMIN_MENU)) {
             mostrarError("Acceso Denegado",
-                "Esta función solo está disponible para administradores del sistema.\n\n" +
-                "Plan actual: " + (licencia != null ? licencia.getPlan() : "DESCONOCIDO") + "\n" +
-                "Requerido: DEV");
+                    "Esta función solo está disponible para administradores del sistema.\n\n" +
+                            "Plan actual: " + session.getPlan() + "\n" +
+                            "Requerido: DEV");
             System.out.println("🚫 Intento de acceso a administración sin plan DEV");
-            System.out.println("   Usuario: " + (licencia != null ? licencia.getNombre() : "Sin sesión"));
-            System.out.println("   Plan: " + (licencia != null ? licencia.getPlan() : "null"));
+            System.out.println("   Usuario: " + session.getNombreUsuario());
+            System.out.println("   Plan: " + session.getPlan());
             return;
         }
+
+        // El resto de tu código de diálogo va aquí...
+        // (Es largo, así que lo omito, pero está perfecto como lo tenías)
+        // ...
 
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Administración - Registrar Nuevo Usuario");
@@ -808,7 +838,7 @@ public class AppController {
 
         ComboBox<String> cbEstado = new ComboBox<>();
         cbEstado.getItems().addAll("ACTIVO", "SUSPENDIDO", "EXPIRADO", "VENCIDO");
-        cbEstado.setValue("ACTIVA");
+        cbEstado.setValue("ACTIVO"); // Corregido de "ACTIVA"
 
         ComboBox<String> cbPlan = new ComboBox<>();
         cbPlan.getItems().addAll("DEMO", "BASE", "FULL", "DEV");
@@ -849,7 +879,7 @@ public class AppController {
 
         // VALIDACIÓN ANTES DE CERRAR EL DIÁLOGO
         final javafx.scene.control.Button registrarButton =
-            (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(btnRegistrar);
+                (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(btnRegistrar);
 
         registrarButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             // Obtener valores
@@ -908,19 +938,20 @@ public class AppController {
         dialog.showAndWait().ifPresent(response -> {
             if (response == btnRegistrar) {
                 registrarNuevoUsuario(
-                    txtClienteId.getText().trim(),
-                    txtNombre.getText().trim(),
-                    txtEmail.getText().trim(),
-                    txtPassword.getText(),
-                    txtPasswordConfirm.getText(),
-                    cbEstado.getValue(),
-                    cbPlan.getValue(),
-                    dpExpiracion.getValue(),
-                    txtNotas.getText().trim()
+                        txtClienteId.getText().trim(),
+                        txtNombre.getText().trim(),
+                        txtEmail.getText().trim(),
+                        txtPassword.getText(),
+                        txtPasswordConfirm.getText(),
+                        cbEstado.getValue(),
+                        cbPlan.getValue(),
+                        dpExpiracion.getValue(),
+                        txtNotas.getText().trim()
                 );
             }
         });
     }
+
 
     /**
      * Registra un nuevo usuario en la base de datos
@@ -938,14 +969,14 @@ public class AppController {
                 AutenticacionDAO dao = new AutenticacionDAO();
 
                 return dao.registrar(
-                    clienteId,
-                    nombre,
-                    email,
-                    password,
-                    estado,
-                    plan,
-                    fechaExpiracion,
-                    notas.isEmpty() ? null : notas
+                        clienteId,
+                        nombre,
+                        email,
+                        password,
+                        estado,
+                        plan,
+                        fechaExpiracion,
+                        notas.isEmpty() ? null : notas
                 );
             }
         };
@@ -953,23 +984,23 @@ public class AppController {
         registroTask.setOnSucceeded(event -> {
             if (registroTask.getValue()) {
                 mostrarExito("Usuario registrado exitosamente!\n\n" +
-                    "Cliente ID: " + clienteId + "\n" +
-                    "Email: " + email + "\n" +
-                    "Plan: " + plan + "\n" +
-                    "Expira: " + fechaExpiracion);
+                        "Cliente ID: " + clienteId + "\n" +
+                        "Email: " + email + "\n" +
+                        "Plan: " + plan + "\n" +
+                        "Expira: " + fechaExpiracion);
             } else {
                 mostrarError("Error de registro",
-                    "No se pudo registrar el usuario.\n" +
-                    "Posibles causas:\n" +
-                    "• El email ya está registrado\n" +
-                    "• El cliente_id ya existe");
+                        "No se pudo registrar el usuario.\n" +
+                                "Posibles causas:\n" +
+                                "• El email ya está registrado\n" +
+                                "• El cliente_id ya existe");
             }
         });
 
         registroTask.setOnFailed(event -> {
             Throwable ex = registroTask.getException();
             mostrarError("Error al registrar",
-                "Error: " + (ex != null ? ex.getMessage() : "Desconocido"));
+                    "Error: " + (ex != null ? ex.getMessage() : "Desconocido"));
             ex.printStackTrace();
         });
 
@@ -990,10 +1021,10 @@ public class AppController {
 
         // Timer para actualizar cada 30 segundos
         javafx.animation.Timeline timeline = new javafx.animation.Timeline(
-            new javafx.animation.KeyFrame(
-                javafx.util.Duration.seconds(30),
-                event -> actualizarEstadoConexion()
-            )
+                new javafx.animation.KeyFrame(
+                        javafx.util.Duration.seconds(30),
+                        event -> actualizarEstadoConexion()
+                )
         );
         timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
         timeline.play();
@@ -1014,23 +1045,23 @@ public class AppController {
             // Cambiar estilo según estado
             if (SORT_PROYECTS.AppInventario.DAO.Database.isOnline()) {
                 labelEstadoConexion.setStyle(
-                    "-fx-background-color: rgba(0, 128, 0, 0.3); " +
-                    "-fx-text-fill: #90EE90; " +
-                    "-fx-font-size: 12px; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 8 15; " +
-                    "-fx-background-radius: 5; " +
-                    "-fx-cursor: hand;"
+                        "-fx-background-color: rgba(0, 128, 0, 0.3); " +
+                                "-fx-text-fill: #90EE90; " +
+                                "-fx-font-size: 12px; " +
+                                "-fx-font-weight: bold; " +
+                                "-fx-padding: 8 15; " +
+                                "-fx-background-radius: 5; " +
+                                "-fx-cursor: hand;"
                 );
             } else {
                 labelEstadoConexion.setStyle(
-                    "-fx-background-color: rgba(255, 0, 0, 0.3); " +
-                    "-fx-text-fill: #FFB6C1; " +
-                    "-fx-font-size: 12px; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 8 15; " +
-                    "-fx-background-radius: 5; " +
-                    "-fx-cursor: hand;"
+                        "-fx-background-color: rgba(255, 0, 0, 0.3); " +
+                                "-fx-text-fill: #FFB6C1; " +
+                                "-fx-font-size: 12px; " +
+                                "-fx-font-weight: bold; " +
+                                "-fx-padding: 8 15; " +
+                                "-fx-background-radius: 5; " +
+                                "-fx-cursor: hand;"
                 );
             }
         });
@@ -1100,23 +1131,23 @@ public class AppController {
 
             if (exito) {
                 Notifications.create()
-                    .title("Reconexión Exitosa")
-                    .text("Se restableció la conexión a Supabase")
-                    .showInformation();
+                        .title("Reconexión Exitosa")
+                        .text("Se restableció la conexión a Supabase")
+                        .showInformation();
             } else {
                 Notifications.create()
-                    .title("Reconexión Fallida")
-                    .text("No se pudo conectar a Supabase. Seguirás trabajando offline.")
-                    .showWarning();
+                        .title("Reconexión Fallida")
+                        .text("No se pudo conectar a Supabase. Seguirás trabajando offline.")
+                        .showWarning();
             }
         });
 
         reconectTask.setOnFailed(event -> {
             actualizarEstadoConexion();
             Notifications.create()
-                .title("Error de Reconexión")
-                .text("Error al intentar reconectar")
-                .showError();
+                    .title("Error de Reconexión")
+                    .text("Error al intentar reconectar")
+                    .showError();
         });
 
         new Thread(reconectTask).start();

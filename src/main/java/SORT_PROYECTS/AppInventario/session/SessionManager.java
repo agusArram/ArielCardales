@@ -1,6 +1,7 @@
 package SORT_PROYECTS.AppInventario.session;
 
 import SORT_PROYECTS.AppInventario.Licencia.Licencia;
+import SORT_PROYECTS.AppInventario.Util.Permisos;
 
 /**
  * Gestor de sesión global para sistema multi-tenant
@@ -163,7 +164,7 @@ public class SessionManager {
 
     /**
      * Verifica si el usuario actual puede acceder a una funcionalidad
-     *
+     * (Método legado que pasa la llamada a la licencia)
      * @param funcionalidad Nombre de la funcionalidad a validar
      * @return true si tiene acceso
      */
@@ -225,13 +226,95 @@ public class SessionManager {
         }
 
         return String.format(
-            "Sesión: %s (%s) | Plan: %s | Días restantes: %d | cliente_id: %s",
-            licenciaActual.getNombre(),
-            licenciaActual.getEmail(),
-            licenciaActual.getPlan(),
-            getDiasRestantes(),
-            clienteId
+                "Sesión: %s (%s) | Plan: %s | Días restantes: %d | cliente_id: %s",
+                licenciaActual.getNombre(),
+                licenciaActual.getEmail(),
+                licenciaActual.getPlan(),
+                getDiasRestantes(),
+                clienteId
         );
+    }
+
+    /**
+     * Verifica si el plan actual tiene acceso a una función (On/Off).
+     * @param permiso (ej: Permisos.EXPORTAR_PDF)
+     * @return true si tiene permiso, false si no.
+     */
+    public boolean canAccess(String permiso) {
+        if (!isAutenticado()) {
+            return false;
+        }
+
+        // --- CORRECCIÓN DE BUG ---
+        // No usar 'instance.getPlan()', usar 'getPlan()' o 'this.getPlan()'
+        Licencia.PlanLicencia plan = getPlan();
+
+        switch (plan) {
+            case DEV:
+                // El plan DEV tiene acceso a TODO
+                return true;
+
+            case FULL:
+                // El plan FULL tiene acceso a todo MENOS las funciones de admin
+                return !permiso.equals(Permisos.ADMIN_MENU);
+
+            case BASE:
+                // El plan BASE tiene acceso limitado
+                switch (permiso) {
+                    case Permisos.EXPORTAR_PDF:
+                    case Permisos.EXPORTAR_EXCEL:
+                    case Permisos.METRICAS_AVANZADAS:
+                        return false; // El plan BASE no puede hacer esto
+                    default:
+                        return true; // Pero sí puede hacer todo lo demás (ej: ver productos)
+                }
+
+            case DEMO:
+                // El plan DEMO tampoco puede exportar ni ver métricas avanzadas
+                switch (permiso) {
+                    case Permisos.EXPORTAR_PDF:
+                    case Permisos.EXPORTAR_EXCEL:
+                    case Permisos.METRICAS_AVANZADAS:
+                        return false;
+                    default:
+                        return true;
+                }
+
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Obtiene el límite numérico para una función (para el plan DEMO).
+     * @param limite (ej: Permisos.MAX_PRODUCTOS)
+     * @return El límite numérico (ej: 15 o Integer.MAX_VALUE si es ilimitado)
+     */
+    public int getLimit(String limite) {
+        if (!isAutenticado()) {
+            return 0;
+        }
+
+        // --- CORRECCIÓN DE BUG ---
+        // No usar 'instance.getPlan()', usar 'getPlan()' o 'this.getPlan()'
+        Licencia.PlanLicencia plan = getPlan();
+
+        // Por defecto, el límite es "infinito"
+        if (plan != Licencia.PlanLicencia.DEMO) {
+            return Integer.MAX_VALUE;
+        }
+
+        // Si es DEMO, aplicamos los límites
+        switch (limite) {
+            case Permisos.MAX_PRODUCTOS:
+                return 15; // Límite de 15 productos
+            case Permisos.MAX_VENTAS:
+                return 10; // Límite de 10 ventas
+            case Permisos.MAX_CLIENTES:
+                return 5;  // Límite de 5 clientes
+            default:
+                return Integer.MAX_VALUE;
+        }
     }
 
     /**
