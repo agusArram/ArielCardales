@@ -166,8 +166,15 @@ public class UpdateInstaller {
         script.append("echo.\n");
         script.append("\n");
         script.append("REM Esperar a que la app se cierre\n");
-        script.append("echo Esperando a que la aplicacion se cierre...\n");
-        script.append("timeout /t 3 /nobreak >nul\n");
+        script.append("echo Esperando a que AppInventario.exe se cierre...\n");
+        script.append(":waitloop\n");
+        script.append("tasklist | findstr \"AppInventario.exe\" >nul\n");
+        script.append("if %errorlevel% == 0 (\n");
+        script.append("    echo ...esperando...\n");
+        script.append("    timeout /t 1 /nobreak >nul\n");
+        script.append("    goto waitloop\n");
+        script.append(")\n");
+        script.append("echo Aplicacion cerrada. Continuando con la actualizacion.\n");
         script.append("\n");
         script.append("REM Copiar archivos nuevos\n");
         script.append("echo Copiando archivos nuevos...\n");

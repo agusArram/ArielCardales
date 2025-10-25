@@ -36,7 +36,7 @@ public class UpdateChecker {
             URL url = new URL(UpdateConfig.API_URL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            conn.setRequestProperty("User-Agent", "ArielCardales-Updater");
+            conn.setRequestProperty("User-Agent", "AppInventario-Updater");
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);

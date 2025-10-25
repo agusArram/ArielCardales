@@ -125,6 +125,9 @@ public class App extends Application {
 
         // 🔒 Iniciar monitor de licencias en background
         LicenseMonitor.getInstance().iniciar();
+
+        // 🚀 INICIAR SISTEMA DE ACTUALIZACIONES
+        initUpdateSystem(stage);
     }
 
     /**
