@@ -4,147 +4,154 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.chart.*?>
+<VBox  xmlns="http://javafx.com/javafx"
+       xmlns:fx="http://javafx.com/fxml"
+       fx:controller="SORT_PROYECTS.AppInventario.controller.DashboardController" >
+    <ScrollPane VBox.vgrow="ALWAYS"
+                fitToWidth="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED"
+                styleClass="scroll-pane-transparente">
+    <VBox
+          spacing="15" styleClass="root"
+          VBox.vgrow="ALWAYS"
+          HBox.hgrow="ALWAYS"
+          style="-fx-padding: 10;">
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="SORT_PROYECTS.AppInventario.controller.DashboardController"
-      spacing="15" styleClass="root"
-      VBox.vgrow="ALWAYS"
-      HBox.hgrow="ALWAYS"
-      style="-fx-padding: 10;">
+        <!-- Controles superiores: Período y Refrescar -->
+        <HBox alignment="CENTER_LEFT" spacing="15">
+            <Label text="📅 Período de análisis:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <ComboBox fx:id="cbPeriodo" promptText="Seleccionar período"
+                      style="-fx-font-size: 13px; -fx-pref-width: 150px;"/>
 
-    <!-- Controles superiores: Período y Refrescar -->
-    <HBox alignment="CENTER_LEFT" spacing="15">
-        <Label text="📅 Período de análisis:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-        <ComboBox fx:id="cbPeriodo" promptText="Seleccionar período"
-                  style="-fx-font-size: 13px; -fx-pref-width: 150px;"/>
+            <Region HBox.hgrow="ALWAYS"/>
 
-        <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnExportarPDF" text="📄 Exportar PDF" onAction="#exportarDashboardPDF"
+                    style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15;"/>
+            <Button fx:id="btnRefrescar" text="🔄 Refrescar" onAction="#refrescarDashboard"
+                    style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
+        </HBox>
 
-        <Button fx:id="btnExportarPDF" text="📄 Exportar PDF" onAction="#exportarDashboardPDF"
-                style="-fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-        <Button fx:id="btnRefrescar" text="🔄 Refrescar" onAction="#refrescarDashboard"
-                style="-fx-background-color: #e6c89b; -fx-font-weight: bold; -fx-padding: 5 15;"/>
-    </HBox>
+        <!-- Cards de Métricas -->
+        <GridPane hgap="15" vgap="15" HBox.hgrow="ALWAYS">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
+            </columnConstraints>
 
-    <!-- Cards de Métricas -->
-    <GridPane hgap="15" vgap="15" HBox.hgrow="ALWAYS">
-        <columnConstraints>
-            <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="25" minWidth="180" hgrow="ALWAYS"/>
-        </columnConstraints>
+            <!-- Card 1: Total Productos -->
+            <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Total Productos" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblTotalProductos" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+            </VBox>
 
-        <!-- Card 1: Total Productos -->
-        <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Total Productos" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblTotalProductos" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
-        </VBox>
+            <!-- Card 2: Stock Bajo -->
+            <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Stock Bajo (≤5)" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblStockBajo" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff9800;"/>
+            </VBox>
 
-        <!-- Card 2: Stock Bajo -->
-        <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Stock Bajo (≤5)" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblStockBajo" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #ff9800;"/>
-        </VBox>
+            <!-- Card 3: Sin Stock -->
+            <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Sin Stock" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblSinStock" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f44336;"/>
+            </VBox>
 
-        <!-- Card 3: Sin Stock -->
-        <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Sin Stock" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblSinStock" text="0" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f44336;"/>
-        </VBox>
+            <!-- Card 4: Valor Total -->
+            <VBox GridPane.columnIndex="3" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Valor Inventario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblValorTotal" text="0.00" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #4caf50;"/>
+            </VBox>
+        </GridPane>
 
-        <!-- Card 4: Valor Total -->
-        <VBox GridPane.columnIndex="3" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Valor Inventario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblValorTotal" text="0.00" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #4caf50;"/>
-        </VBox>
-    </GridPane>
+        <!-- Cards de Ventas (últimos 30 días) -->
+        <GridPane hgap="15" vgap="15" HBox.hgrow="ALWAYS">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
+            </columnConstraints>
 
-    <!-- Cards de Ventas (últimos 30 días) -->
-    <GridPane hgap="15" vgap="15" HBox.hgrow="ALWAYS">
-        <columnConstraints>
-            <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
-            <ColumnConstraints percentWidth="33.33" minWidth="200" hgrow="ALWAYS"/>
-        </columnConstraints>
+            <!-- Card: Ventas Hoy -->
+            <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Ventas Hoy" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblVentasHoy" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            </VBox>
 
-        <!-- Card: Ventas Hoy -->
-        <VBox GridPane.columnIndex="0" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Ventas Hoy" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblVentasHoy" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-        </VBox>
+            <!-- Card: Total 30 días -->
+            <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Total 30 días" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblTotalVentas30" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            </VBox>
 
-        <!-- Card: Total 30 días -->
-        <VBox GridPane.columnIndex="1" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Total 30 días" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblTotalVentas30" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-        </VBox>
+            <!-- Card: Promedio Diario -->
+            <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                <Label text="Promedio Diario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
+                <Label fx:id="lblPromedioDiario" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            </VBox>
+        </GridPane>
 
-        <!-- Card: Promedio Diario -->
-        <VBox GridPane.columnIndex="2" styleClass="metric-card" spacing="8">
-            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
-            <Label text="Promedio Diario" style="-fx-font-size: 14px; -fx-text-fill: #666;"/>
-            <Label fx:id="lblPromedioDiario" text="0.00" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-        </VBox>
-    </GridPane>
+        <!-- Top 5 Productos Más Vendidos -->
+        <StackPane VBox.vgrow="NEVER" minHeight="250" maxHeight="250">
+            <VBox spacing="10">
+                <Label text="🏆 Top 5 Productos Más Vendidos" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 
-    <!-- Top 5 Productos Más Vendidos -->
-    <StackPane VBox.vgrow="NEVER" minHeight="250" maxHeight="250">
-        <VBox spacing="10">
-            <Label text="🏆 Top 5 Productos Más Vendidos" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <TableView fx:id="tablaTopProductos" prefHeight="200" style="-fx-font-size: 14px;">
+                    <columns>
+                        <TableColumn fx:id="colRank" text="#" minWidth="50" maxWidth="70" styleClass="col-center"/>
+                        <TableColumn fx:id="colNombre" text="Producto" minWidth="200"/>
+                        <TableColumn fx:id="colCantidad" text="Cantidad" minWidth="100" maxWidth="150" styleClass="col-center"/>
+                        <TableColumn fx:id="colGanancia" text="Total Ventas" minWidth="120" maxWidth="180" styleClass="col-center"/>
+                    </columns>
+                </TableView>
+            </VBox>
 
-            <TableView fx:id="tablaTopProductos" prefHeight="200" style="-fx-font-size: 14px;">
-                <columns>
-                    <TableColumn fx:id="colRank" text="#" minWidth="50" maxWidth="70" styleClass="col-center"/>
-                    <TableColumn fx:id="colNombre" text="Producto" minWidth="200"/>
-                    <TableColumn fx:id="colCantidad" text="Cantidad" minWidth="100" maxWidth="150" styleClass="col-center"/>
-                    <TableColumn fx:id="colGanancia" text="Total Ventas" minWidth="120" maxWidth="180" styleClass="col-center"/>
-                </columns>
-            </TableView>
-        </VBox>
+            <!-- Indicador de carga -->
+            <VBox fx:id="vboxLoading" alignment="CENTER" spacing="15"
+                  style="-fx-background-color: rgba(229, 203, 161, 0.95); -fx-padding: 30;"
+                  visible="false" managed="false">
+                <ProgressIndicator prefWidth="60" prefHeight="60"/>
+                <Label text="Cargando métricas del dashboard..." style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            </VBox>
+        </StackPane>
 
-        <!-- Indicador de carga -->
-        <VBox fx:id="vboxLoading" alignment="CENTER" spacing="15"
-              style="-fx-background-color: rgba(229, 203, 161, 0.95); -fx-padding: 30;"
-              visible="false" managed="false">
-            <ProgressIndicator prefWidth="60" prefHeight="60"/>
-            <Label text="Cargando métricas del dashboard..." style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
-        </VBox>
-    </StackPane>
+        <!-- Gráficos de Análisis -->
+        <Label text="📊 Análisis de Ventas" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 10 0 0 0;"/>
 
-    <!-- Gráficos de Análisis -->
-    <Label text="📊 Análisis de Ventas" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 10 0 0 0;"/>
+        <HBox spacing="15" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" minHeight="300">
+            <!-- Gráfico de barras: Ventas por mes -->
+            <VBox spacing="5" HBox.hgrow="ALWAYS" styleClass="metric-card">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label fx:id="lblTituloBarChart" text="💰 Comparación últimos 3 meses" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                <BarChart fx:id="chartVentasMensuales" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"
+                          legendVisible="false" animated="true">
+                    <xAxis>
+                        <CategoryAxis fx:id="xAxisMeses" label="Mes" side="BOTTOM"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis fx:id="yAxisMonto" label="Monto ($)" side="LEFT" tickLabelFormatter="$null"/>
+                    </yAxis>
+                </BarChart>
+            </VBox>
 
-    <HBox spacing="15" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" minHeight="300">
-        <!-- Gráfico de barras: Ventas por mes -->
-        <VBox spacing="5" HBox.hgrow="ALWAYS" styleClass="metric-card">
-            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-            <Label fx:id="lblTituloBarChart" text="💰 Comparación últimos 3 meses" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <BarChart fx:id="chartVentasMensuales" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"
-                      legendVisible="false" animated="true">
-                <xAxis>
-                    <CategoryAxis fx:id="xAxisMeses" label="Mes" side="BOTTOM"/>
-                </xAxis>
-                <yAxis>
-                    <NumberAxis fx:id="yAxisMonto" label="Monto ($)" side="LEFT" tickLabelFormatter="$null"/>
-                </yAxis>
-            </BarChart>
-        </VBox>
+            <!-- Gráfico circular: Ventas por categoría -->
+            <VBox spacing="5" HBox.hgrow="ALWAYS" styleClass="metric-card">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label fx:id="lblTituloCategoria" text="🏷 Ventas por categoría (últimos 30 días)" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                <PieChart fx:id="chartVentasCategorias" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"
+                          legendVisible="false" animated="true" labelLineLength="10"/>
+            </VBox>
+        </HBox>
 
-        <!-- Gráfico circular: Ventas por categoría -->
-        <VBox spacing="5" HBox.hgrow="ALWAYS" styleClass="metric-card">
-            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-            <Label fx:id="lblTituloCategoria" text="🏷 Ventas por categoría (últimos 30 días)" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <PieChart fx:id="chartVentasCategorias" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"
-                      legendVisible="false" animated="true" labelLineLength="10"/>
-        </VBox>
-    </HBox>
+    </VBox>
 
-</VBox>
+</ScrollPane></VBox>

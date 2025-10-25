@@ -818,3 +818,21 @@
     -fx-background-color: #d4ba8a;
 }
 
+/* Para que el ScrollPane no tenga un fondo blanco feo */
+.scroll-pane-transparente {
+    -fx-background-color: transparent;
+}
+.scroll-pane-transparente > .viewport {
+    -fx-background-color: transparent;
+}
+
+/*
+ * Elimina el borde azul (anillo de foco) de los
+ * botones del menú principal (Dashboard, Rentabilidad, etc.)
+ */
+.boton-menu-principal:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-box-shadow: none;
+}
+
